@@ -126,7 +126,7 @@ Ensure `package.json` `scripts` contains at least:
 "scripts": {
   "dev": "vite",
   "build": "tsc -b && vite build",
-  "lint": "eslint .",
+  "lint": "oxlint",
   "preview": "vite preview",
   "test": "vitest run",
   "test:watch": "vitest"
@@ -627,7 +627,7 @@ Intermediate/Advanced pathways. Pure frontend, no backend.
 - `npm run dev` — dev server
 - `npm run build` — type-check + bundle
 - `npm test` — run Vitest once
-- `npm run lint` — ESLint
+- `npm run lint` — oxlint (ships with the current Vite template)
 
 ## Spec & plans
 - Design: `docs/superpowers/specs/2026-06-27-claude-code-craft-design.md`
