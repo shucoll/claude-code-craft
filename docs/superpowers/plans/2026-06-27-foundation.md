@@ -388,7 +388,11 @@ test('toggleTheme flips theme and html class and persists', () => {
 })
 
 test('useTheme throws when used outside provider', () => {
+  // React logs the thrown render error to console.error; silence it for this
+  // assertion so suite output stays pristine. The throw itself is still asserted.
+  const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
   expect(() => render(<BareConsumer />)).toThrow(/ThemeProvider/)
+  errorSpy.mockRestore()
 })
 
 function BareConsumer() {
