@@ -1,7 +1,8 @@
 import { act, render, renderHook } from '@testing-library/react'
+import type { ReactNode } from 'react'
 import { LanguageProvider, useLanguage } from './LanguageContext'
 
-const wrapper = ({ children }: { children: React.ReactNode }) => (
+const wrapper = ({ children }: { children: ReactNode }) => (
   <LanguageProvider>{children}</LanguageProvider>
 )
 

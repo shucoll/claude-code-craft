@@ -1,8 +1,9 @@
 import { render, screen } from '@testing-library/react'
+import type { ReactNode } from 'react'
 import { LanguageProvider } from '../../context/LanguageContext'
 import { WhenLang } from './WhenLang'
 
-function renderWithLang(lang: string, ui: React.ReactNode) {
+function renderWithLang(lang: string, ui: ReactNode) {
   localStorage.setItem('ccc:lang', JSON.stringify(lang))
   return render(<LanguageProvider>{ui}</LanguageProvider>)
 }
