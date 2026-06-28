@@ -1,4 +1,5 @@
 import { MDXProvider } from '@mdx-js/react'
+import { motion, useReducedMotion } from 'framer-motion'
 import { Suspense, lazy, useEffect, useMemo } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { mdxComponents } from '../components/mdx/mdxComponents'
@@ -19,6 +20,7 @@ export function LessonPage() {
   const { levelId, moduleId, lessonId } = useParams()
   const { markCompleted, markVisited } = useProgress()
   const navigate = useNavigate()
+  const reduce = useReducedMotion()
 
   const location = useMemo(
     () =>
@@ -43,7 +45,13 @@ export function LessonPage() {
   }
 
   return (
-    <article className="mx-auto max-w-2xl px-6 py-10">
+    <motion.article
+      key={location.lesson.id}
+      initial={{ opacity: 0, y: reduce ? 0 : 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: reduce ? 0 : 0.22, ease: [0.16, 1, 0.3, 1] }}
+      className="mx-auto max-w-2xl px-6 py-10"
+    >
       <MDXProvider components={mdxComponents}>
         <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
           <LessonContent />
@@ -55,6 +63,6 @@ export function LessonPage() {
           {next ? 'Mark complete & continue' : 'Mark complete'}
         </Button>
       </footer>
-    </article>
+    </motion.article>
   )
 }
