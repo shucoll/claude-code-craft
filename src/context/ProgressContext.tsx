@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useMemo, type ReactNode } from 'react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { STORAGE_KEYS } from '../lib/storageKeys'
 import type { ProgressMap } from '../lib/progressMath'
@@ -17,19 +17,28 @@ const ProgressContext = createContext<ProgressContextValue | null>(null)
 export function ProgressProvider({ children }: { children: ReactNode }) {
   const [progress, setProgress] = useLocalStorage<ProgressMap>(STORAGE_KEYS.progress, {})
 
-  const getStatus = (lessonId: string): LessonStatus => progress[lessonId] ?? 'unvisited'
-
-  const markVisited = (lessonId: string) =>
-    setProgress((prev) => (prev[lessonId] ? prev : { ...prev, [lessonId]: 'visited' }))
-
-  const markCompleted = (lessonId: string) =>
-    setProgress((prev) => ({ ...prev, [lessonId]: 'completed' }))
-
-  return (
-    <ProgressContext.Provider value={{ progress, getStatus, markVisited, markCompleted }}>
-      {children}
-    </ProgressContext.Provider>
+  const getStatus = useCallback(
+    (lessonId: string): LessonStatus => progress[lessonId] ?? 'unvisited',
+    [progress],
   )
+
+  const markVisited = useCallback(
+    (lessonId: string) =>
+      setProgress((prev) => (prev[lessonId] ? prev : { ...prev, [lessonId]: 'visited' })),
+    [setProgress],
+  )
+
+  const markCompleted = useCallback(
+    (lessonId: string) => setProgress((prev) => ({ ...prev, [lessonId]: 'completed' })),
+    [setProgress],
+  )
+
+  const value = useMemo<ProgressContextValue>(
+    () => ({ progress, getStatus, markVisited, markCompleted }),
+    [progress, getStatus, markVisited, markCompleted],
+  )
+
+  return <ProgressContext.Provider value={value}>{children}</ProgressContext.Provider>
 }
 
 export function useProgress(): ProgressContextValue {
