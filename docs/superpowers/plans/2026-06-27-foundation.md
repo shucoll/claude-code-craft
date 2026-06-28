@@ -126,7 +126,7 @@ Ensure `package.json` `scripts` contains at least:
 "scripts": {
   "dev": "vite",
   "build": "tsc -b && vite build",
-  "lint": "eslint .",
+  "lint": "oxlint",
   "preview": "vite preview",
   "test": "vitest run",
   "test:watch": "vitest"
@@ -359,7 +359,7 @@ export const STORAGE_KEYS = {
 - [ ] **Step 2: Write the failing test `src/context/ThemeContext.test.tsx`**
 
 ```tsx
-import { act, render, renderHook, screen } from '@testing-library/react'
+import { act, render, renderHook } from '@testing-library/react'
 import { ThemeProvider, useTheme } from './ThemeContext'
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -388,16 +388,17 @@ test('toggleTheme flips theme and html class and persists', () => {
 })
 
 test('useTheme throws when used outside provider', () => {
+  // React logs the thrown render error to console.error; silence it for this
+  // assertion so suite output stays pristine. The throw itself is still asserted.
+  const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
   expect(() => render(<BareConsumer />)).toThrow(/ThemeProvider/)
+  errorSpy.mockRestore()
 })
 
 function BareConsumer() {
   useTheme()
   return <div>x</div>
 }
-
-// guard against unused-import lint in this test file
-void screen
 ```
 
 - [ ] **Step 3: Run the test to verify it fails**
@@ -630,7 +631,7 @@ Intermediate/Advanced pathways. Pure frontend, no backend.
 - `npm run dev` — dev server
 - `npm run build` — type-check + bundle
 - `npm test` — run Vitest once
-- `npm run lint` — ESLint
+- `npm run lint` — oxlint (ships with the current Vite template)
 
 ## Spec & plans
 - Design: `docs/superpowers/specs/2026-06-27-claude-code-craft-design.md`
