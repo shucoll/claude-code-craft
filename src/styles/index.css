@@ -101,7 +101,9 @@
   --input: var(--ccc-slate-700);
   --ring: var(--ccc-coral-500);
 
-  --ink: var(--ccc-slate-950);
+  /* Light ink in dark mode: the chunky border + offset shadow stay legible
+     against the near-black page background (slate-950 would vanish on slate-900). */
+  --ink: var(--ccc-slate-200);
 
   --primary: var(--ccc-coral-500);
   --primary-hover: var(--ccc-coral-400);

@@ -30,7 +30,7 @@ precedence over this file for that page.
 | `muted` / `muted-foreground` | slate-100 / slate-600 | slate-800 / slate-400 |
 | `border` / `input` | slate-200 / slate-300 | slate-700 / slate-700 |
 | `ring` | coral-500 | coral-500 |
-| `ink` (border + hard shadow) | slate-900 | slate-950 |
+| `ink` (border + hard shadow) | slate-900 | slate-200 (light ink — reads on the near-black dark bg) |
 | `primary` / `primary-foreground` | coral-600 / white | coral-500 / slate-900 |
 | `primary-hover` | coral-700 | coral-400 |
 | `accent` / `accent-soft` / `accent-foreground` | coral-500 / coral-100 / coral-700 | coral-500 / coral-500@18% / coral-300 |
