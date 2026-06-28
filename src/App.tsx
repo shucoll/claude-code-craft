@@ -19,9 +19,9 @@ export default function App() {
       <LanguageProvider>
         <ProgressProvider>
           <BrowserRouter>
-            <div className="min-h-screen bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
-              <header className="flex items-center justify-between border-b border-slate-200 p-4 dark:border-slate-800">
-                <span className="font-bold">Claude Code Craft</span>
+            <div className="min-h-screen bg-background text-foreground">
+              <header className="flex items-center justify-between border-b border-border p-4">
+                <span className="font-mono font-bold">Claude Code Craft</span>
                 <ThemeToggle />
               </header>
               <Routes>
