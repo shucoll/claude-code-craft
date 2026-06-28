@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, type ReactNode } from 'react'
+import { createContext, useContext, useLayoutEffect, type ReactNode } from 'react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { STORAGE_KEYS } from '../lib/storageKeys'
 
@@ -19,7 +19,9 @@ function getSystemTheme(): Theme {
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setStoredTheme] = useLocalStorage<Theme>(STORAGE_KEYS.theme, getSystemTheme())
 
-  useEffect(() => {
+  // Layout effect (not useEffect) so the `dark` class is applied before the
+  // browser paints, avoiding a flash of the wrong theme on first render.
+  useLayoutEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
   }, [theme])
 

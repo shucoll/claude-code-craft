@@ -7,7 +7,7 @@ afterEach(() => {
   localStorage.clear()
 })
 
-// jsdom lacks matchMedia; provide a controllable mock (defaults to light).
+// jsdom lacks matchMedia; provide a stub that reports light (matches: false).
 if (!window.matchMedia) {
   window.matchMedia = (query: string): MediaQueryList =>
     ({
