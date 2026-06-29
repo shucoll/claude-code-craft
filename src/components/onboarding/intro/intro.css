@@ -25,22 +25,29 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
-  perspective: 320px;
-  -webkit-mask-image: linear-gradient(to top, transparent 0%, black 20%, black 68%, transparent 96%);
-  mask-image: linear-gradient(to top, transparent 0%, black 20%, black 68%, transparent 96%);
+  perspective: 380px;
+  -webkit-mask-image: linear-gradient(to top, transparent 0%, black 22%, black 70%, transparent 94%);
+  mask-image: linear-gradient(to top, transparent 0%, black 22%, black 70%, transparent 94%);
 }
 
 .intro-crawl {
   position: absolute;
-  top: 100%;
+  top: 0;
   left: 50%;
-  width: min(92vw, 48rem);
+  width: min(84vw, 32rem);
   transform-origin: 50% 0%;
-  transform: translateX(-50%) rotateX(28deg);
-  animation: intro-crawl-scroll var(--intro-crawl-duration, 24s) linear forwards;
+  /* Base = the animation's start (off-screen below), so during the start delay
+     the block stays hidden instead of flashing upright at top:0. */
+  transform: translateX(-50%) translateY(100vh) rotateX(20deg);
+  /* Starts after the opening line (4s delay), then scrolls up. Travel is tied to
+     the block's OWN height: translateY(-100%) is exactly one content-block tall,
+     so the animation ends right as the last line clears the top — no empty tail
+     before the `done` phase, regardless of how much copy there is.
+     `both` fill keeps the start state applied through the delay. */
+  animation: intro-crawl-scroll var(--intro-crawl-duration, 40s) linear 2s both;
 }
 
 @keyframes intro-crawl-scroll {
-  from { top: 100%; }
-  to { top: -180%; }
+  from { transform: translateX(-50%) translateY(100vh) rotateX(20deg); }
+  to { transform: translateX(-50%) translateY(calc(-100% - 8vh)) rotateX(20deg); }
 }

@@ -46,7 +46,13 @@ export function IntroScene() {
         {phase === 'playing' ? (
           <Crawl content={INTRO_CONTENT} onComplete={() => setPhase('done')} />
         ) : (
-          <StaticIntro content={INTRO_CONTENT} />
+          <motion.div
+            initial={{ opacity: reduce ? 1 : 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: reduce ? 0 : 0.3, ease: 'easeOut' }}
+          >
+            <StaticIntro content={INTRO_CONTENT} />
+          </motion.div>
         )}
       </div>
 
