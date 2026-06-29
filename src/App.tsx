@@ -1,5 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import { IntroPlaceholder } from './components/onboarding/IntroPlaceholder'
+import { IntroScene } from './components/onboarding/intro/IntroScene'
 import { LanguageScreen } from './components/onboarding/LanguageScreen'
 import { LevelScreen } from './components/onboarding/LevelScreen'
 import { RequireOnboarded } from './components/onboarding/RequireOnboarded'
@@ -22,7 +22,7 @@ export default function App() {
                 <Route path="/" element={<RootRedirect />} />
                 <Route path="/onboarding" element={<LevelScreen />} />
                 <Route path="/onboarding/language" element={<LanguageScreen />} />
-                <Route path="/onboarding/intro" element={<IntroPlaceholder />} />
+                <Route path="/onboarding/intro" element={<IntroScene />} />
                 <Route
                   path="/learn/:levelId/:moduleId/:lessonId"
                   element={
