@@ -1,4 +1,4 @@
-import { createContext, useContext, useLayoutEffect, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useLayoutEffect, useMemo, type ReactNode } from 'react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { STORAGE_KEYS } from '../lib/storageKeys'
 
@@ -25,11 +25,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     document.documentElement.classList.toggle('dark', theme === 'dark')
   }, [theme])
 
-  const value: ThemeContextValue = {
-    theme,
-    setTheme: setStoredTheme,
-    toggleTheme: () => setStoredTheme((prev) => (prev === 'dark' ? 'light' : 'dark')),
-  }
+  const toggleTheme = useCallback(
+    () => setStoredTheme((prev) => (prev === 'dark' ? 'light' : 'dark')),
+    [setStoredTheme],
+  )
+
+  const value = useMemo<ThemeContextValue>(
+    () => ({ theme, setTheme: setStoredTheme, toggleTheme }),
+    [theme, setStoredTheme, toggleTheme],
+  )
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
 }

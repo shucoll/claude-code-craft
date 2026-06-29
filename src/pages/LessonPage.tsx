@@ -1,14 +1,26 @@
 import { MDXProvider } from '@mdx-js/react'
+import { motion, useReducedMotion } from 'framer-motion'
 import { Suspense, lazy, useEffect, useMemo } from 'react'
-import { Navigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { mdxComponents } from '../components/mdx/mdxComponents'
+import { Button } from '../components/ui/Button'
 import { curriculum } from '../content/curriculum'
 import { useProgress } from '../context/ProgressContext'
-import { findLesson } from '../lib/curriculumNav'
+import { findLesson, nextLesson } from '../lib/curriculumNav'
+
+function ArrowRightIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 8h10M9 4l4 4-4 4" />
+    </svg>
+  )
+}
 
 export function LessonPage() {
   const { levelId, moduleId, lessonId } = useParams()
-  const { markVisited } = useProgress()
+  const { markCompleted, markVisited } = useProgress()
+  const navigate = useNavigate()
+  const reduce = useReducedMotion()
 
   const location = useMemo(
     () =>
@@ -23,16 +35,34 @@ export function LessonPage() {
   }, [location, markVisited])
 
   const LessonContent = useMemo(() => (location ? lazy(location.lesson.content) : null), [location])
+  const next = useMemo(() => (location ? nextLesson(curriculum, location.lesson.id) : undefined), [location])
 
   if (!location || !LessonContent) return <Navigate to="/" replace />
 
+  const handleComplete = () => {
+    markCompleted(location.lesson.id)
+    if (next) navigate(`/learn/${next.levelId}/${next.moduleId}/${next.lesson.id}`)
+  }
+
   return (
-    <article className="mx-auto max-w-2xl p-8">
+    <motion.article
+      key={location.lesson.id}
+      initial={{ opacity: 0, y: reduce ? 0 : 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: reduce ? 0 : 0.22, ease: [0.16, 1, 0.3, 1] }}
+      className="mx-auto max-w-2xl px-6 py-10"
+    >
       <MDXProvider components={mdxComponents}>
-        <Suspense fallback={<p>Loading…</p>}>
+        <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
           <LessonContent />
         </Suspense>
       </MDXProvider>
-    </article>
+
+      <footer className="mt-12 flex justify-end border-t-2 border-border pt-6">
+        <Button onClick={handleComplete} trailingIcon={next ? <ArrowRightIcon /> : undefined}>
+          {next ? 'Mark complete & continue' : 'Mark complete'}
+        </Button>
+      </footer>
+    </motion.article>
   )
 }

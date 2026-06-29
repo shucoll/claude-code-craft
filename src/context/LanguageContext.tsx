@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from 'react'
+import { createContext, useContext, useMemo, type ReactNode } from 'react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { STORAGE_KEYS } from '../lib/storageKeys'
 import { DEFAULT_LANGUAGE } from '../content/snippets'
@@ -13,11 +13,12 @@ const LanguageContext = createContext<LanguageContextValue | null>(null)
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useLocalStorage<LanguageId>(STORAGE_KEYS.lang, DEFAULT_LANGUAGE)
-  return (
-    <LanguageContext.Provider value={{ language, setLanguage }}>
-      {children}
-    </LanguageContext.Provider>
+  const value = useMemo<LanguageContextValue>(
+    () => ({ language, setLanguage }),
+    [language, setLanguage],
   )
+
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>
 }
 
 export function useLanguage(): LanguageContextValue {

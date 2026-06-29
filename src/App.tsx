@@ -1,5 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import { ThemeToggle } from './components/shell/ThemeToggle'
+import { AppShell } from './components/shell/AppShell'
 import { curriculum } from './content/curriculum'
 import { LanguageProvider } from './context/LanguageContext'
 import { ProgressProvider } from './context/ProgressContext'
@@ -19,17 +19,13 @@ export default function App() {
       <LanguageProvider>
         <ProgressProvider>
           <BrowserRouter>
-            <div className="min-h-screen bg-background text-foreground">
-              <header className="flex items-center justify-between border-b border-border p-4">
-                <span className="font-mono font-bold">Claude Code Craft</span>
-                <ThemeToggle />
-              </header>
+            <AppShell>
               <Routes>
                 <Route path="/" element={<RootRedirect />} />
                 <Route path="/learn/:levelId/:moduleId/:lessonId" element={<LessonPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
-            </div>
+            </AppShell>
           </BrowserRouter>
         </ProgressProvider>
       </LanguageProvider>
