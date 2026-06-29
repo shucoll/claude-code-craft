@@ -26,3 +26,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Personal macOS notification hook (local only)
+.claude/hooks/notify-mac.sh
