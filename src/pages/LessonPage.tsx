@@ -51,8 +51,30 @@ export function LessonPage() {
 
   useEffect(() => {
     if (!hash) return
-    const el = document.querySelector(hash)
-    el?.scrollIntoView?.({ behavior: reduce ? 'auto' : 'smooth', block: 'center' })
+    let frame = 0
+    let cancelled = false
+    const deadline = Date.now() + 2000
+    const tryScroll = () => {
+      if (cancelled) return
+      let el: Element | null = null
+      try {
+        el = document.querySelector(hash)
+      } catch {
+        el = null // hash is not a valid CSS selector; nothing to scroll to
+      }
+      if (el) {
+        el.scrollIntoView?.({ behavior: reduce ? 'auto' : 'smooth', block: 'center' })
+        return
+      }
+      if (Date.now() < deadline) {
+        frame = requestAnimationFrame(tryScroll)
+      }
+    }
+    frame = requestAnimationFrame(tryScroll)
+    return () => {
+      cancelled = true
+      cancelAnimationFrame(frame)
+    }
   }, [hash, location, reduce])
 
   const LessonContent = useMemo(() => (location ? lazy(location.lesson.content) : null), [location])
