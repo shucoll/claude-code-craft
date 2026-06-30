@@ -1,33 +1,43 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { IntroScene } from './components/onboarding/intro/IntroScene'
+import { LanguageScreen } from './components/onboarding/LanguageScreen'
+import { LevelScreen } from './components/onboarding/LevelScreen'
+import { RequireOnboarded } from './components/onboarding/RequireOnboarded'
+import { RootRedirect } from './components/onboarding/RootRedirect'
 import { AppShell } from './components/shell/AppShell'
-import { curriculum } from './content/curriculum'
 import { LanguageProvider } from './context/LanguageContext'
+import { LevelProvider } from './context/LevelContext'
 import { ProgressProvider } from './context/ProgressContext'
 import { ThemeProvider } from './context/ThemeContext'
-import { firstLesson } from './lib/curriculumNav'
 import { LessonPage } from './pages/LessonPage'
-
-function RootRedirect() {
-  const first = firstLesson(curriculum)
-  if (!first) return <p className="p-8">No lessons yet.</p>
-  return <Navigate to={`/learn/${first.levelId}/${first.moduleId}/${first.lesson.id}`} replace />
-}
 
 export default function App() {
   return (
     <ThemeProvider>
       <LanguageProvider>
-        <ProgressProvider>
-          <BrowserRouter>
-            <AppShell>
+        <LevelProvider>
+          <ProgressProvider>
+            <BrowserRouter>
               <Routes>
                 <Route path="/" element={<RootRedirect />} />
-                <Route path="/learn/:levelId/:moduleId/:lessonId" element={<LessonPage />} />
+                <Route path="/onboarding" element={<LevelScreen />} />
+                <Route path="/onboarding/language" element={<LanguageScreen />} />
+                <Route path="/onboarding/intro" element={<IntroScene />} />
+                <Route
+                  path="/learn/:levelId/:moduleId/:lessonId"
+                  element={
+                    <RequireOnboarded>
+                      <AppShell>
+                        <LessonPage />
+                      </AppShell>
+                    </RequireOnboarded>
+                  }
+                />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
-            </AppShell>
-          </BrowserRouter>
-        </ProgressProvider>
+            </BrowserRouter>
+          </ProgressProvider>
+        </LevelProvider>
       </LanguageProvider>
     </ThemeProvider>
   )

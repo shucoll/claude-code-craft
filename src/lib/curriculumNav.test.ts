@@ -1,5 +1,5 @@
 import type { Level } from '../content/curriculum'
-import { findLesson, firstLesson, flattenLessons, nextLesson } from './curriculumNav'
+import { findLesson, firstLesson, flattenLessons, lessonPath, nextLesson } from './curriculumNav'
 
 const noop = () => Promise.resolve({ default: () => null })
 const levels: Level[] = [
@@ -31,4 +31,8 @@ test('findLesson locates a lesson by its full path', () => {
 test('nextLesson returns the following lesson across module/level boundaries', () => {
   expect(nextLesson(levels, 'b')?.lesson.id).toBe('c')
   expect(nextLesson(levels, 'c')).toBeUndefined()
+})
+
+test('lessonPath builds the /learn route for a location', () => {
+  expect(lessonPath(flattenLessons(levels)[0])).toBe('/learn/l1/m1/a')
 })

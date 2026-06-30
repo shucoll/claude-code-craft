@@ -44,3 +44,9 @@ test('Mark complete records completion and advances to the next lesson', async (
   // next lesson in the stub curriculum is "Your First Edit"
   expect(await screen.findByRole('heading', { name: /your first edit/i })).toBeInTheDocument()
 })
+
+test('records the lesson path to ccc:lastLesson on visit', async () => {
+  renderAt('/learn/beginner/basics/first-edit')
+  await screen.findByRole('heading', { name: /your first edit/i })
+  expect(JSON.parse(localStorage.getItem('ccc:lastLesson')!)).toBe('/learn/beginner/basics/first-edit')
+})

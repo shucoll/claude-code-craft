@@ -1,0 +1,53 @@
+/* Intro scene stylesheet — scoped to the IntroScene subtree.
+   Decorative cinematic styles: named colors (white/transparent) are an
+   intentional documented exception to the semantic-tokens-only rule. */
+
+.intro-starfield {
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, white, transparent),
+    radial-gradient(1px 1px at 70% 60%, white, transparent),
+    radial-gradient(1.5px 1.5px at 40% 80%, white, transparent),
+    radial-gradient(1px 1px at 85% 25%, white, transparent),
+    radial-gradient(1px 1px at 55% 15%, white, transparent),
+    radial-gradient(1.5px 1.5px at 10% 70%, white, transparent),
+    radial-gradient(1px 1px at 90% 90%, white, transparent),
+    radial-gradient(1px 1px at 33% 50%, white, transparent);
+  opacity: 0.85;
+  animation: intro-twinkle 4s ease-in-out infinite alternate;
+}
+
+@keyframes intro-twinkle {
+  from { opacity: 0.6; }
+  to { opacity: 0.95; }
+}
+
+.intro-crawl-viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  perspective: 380px;
+  -webkit-mask-image: linear-gradient(to top, transparent 0%, black 22%, black 70%, transparent 94%);
+  mask-image: linear-gradient(to top, transparent 0%, black 22%, black 70%, transparent 94%);
+}
+
+.intro-crawl {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: min(84vw, 32rem);
+  transform-origin: 50% 0%;
+  /* Base = the animation's start (off-screen below), so during the start delay
+     the block stays hidden instead of flashing upright at top:0. */
+  transform: translateX(-50%) translateY(100vh) rotateX(20deg);
+  /* Starts after the opening line (4s delay), then scrolls up. Travel is tied to
+     the block's OWN height: translateY(-100%) is exactly one content-block tall,
+     so the animation ends right as the last line clears the top — no empty tail
+     before the `done` phase, regardless of how much copy there is.
+     `both` fill keeps the start state applied through the delay. */
+  animation: intro-crawl-scroll var(--intro-crawl-duration, 40s) linear 2s both;
+}
+
+@keyframes intro-crawl-scroll {
+  from { transform: translateX(-50%) translateY(100vh) rotateX(20deg); }
+  to { transform: translateX(-50%) translateY(calc(-100% - 8vh)) rotateX(20deg); }
+}

@@ -18,6 +18,10 @@ export function flattenLessons(levels: Level[]): LessonLocation[] {
   return out
 }
 
+export function lessonPath(loc: LessonLocation): string {
+  return `/learn/${loc.levelId}/${loc.moduleId}/${loc.lesson.id}`
+}
+
 export function firstLesson(levels: Level[]): LessonLocation | undefined {
   return flattenLessons(levels)[0]
 }

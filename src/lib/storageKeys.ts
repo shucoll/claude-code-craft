@@ -4,4 +4,5 @@ export const STORAGE_KEYS = {
   progress: 'ccc:progress',
   onboarded: 'ccc:onboarded',
   lastLesson: 'ccc:lastLesson',
+  level: 'ccc:level',
 } as const

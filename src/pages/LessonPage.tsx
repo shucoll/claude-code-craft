@@ -6,7 +6,8 @@ import { mdxComponents } from '../components/mdx/mdxComponents'
 import { Button } from '../components/ui/Button'
 import { curriculum } from '../content/curriculum'
 import { useProgress } from '../context/ProgressContext'
-import { findLesson, nextLesson } from '../lib/curriculumNav'
+import { findLesson, lessonPath, nextLesson } from '../lib/curriculumNav'
+import { setLastLesson } from '../lib/onboarding'
 
 function ArrowRightIcon() {
   return (
@@ -31,7 +32,10 @@ export function LessonPage() {
   )
 
   useEffect(() => {
-    if (location) markVisited(location.lesson.id)
+    if (location) {
+      markVisited(location.lesson.id)
+      setLastLesson(lessonPath(location))
+    }
   }, [location, markVisited])
 
   const LessonContent = useMemo(() => (location ? lazy(location.lesson.content) : null), [location])
