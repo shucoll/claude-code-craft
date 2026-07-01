@@ -1,78 +1,71 @@
-# Interactive Charts Implementation Plan
+# Interactive Charts (Card-Flow) Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Embed clickable node-graph charts in lessons; clicking a node navigates to an existing lesson, opens an inline MDX popup, or does nothing — and every lesson gets a Back button that returns the user where they came from.
+**Goal:** Replace the SVG node-graph chart with a responsive HTML **card-flow** renderer — a vertical stack of tone-tinted content cards + connector pills + auto arrows — while keeping the existing click→lesson/popup and lesson Back-button behavior.
 
-**Architecture:** A pure-data `ChartDef` (hand-positioned nodes + edges, optional per-node target) drives a presentational SVG `<Chart>` primitive. A `ChartEmbed` MDX wrapper resolves node activation to either router navigation (lesson) or a `ChartPopup` modal (built on a generic `Popup` primitive). A `useBackTarget` hook resolves `state.from` → previous curriculum lesson → none for the lesson Back button. No new routes; no new dependencies.
+**Architecture:** A rows-based `ChartDef` (rows of `ChartCard`s or `connector` pills; each card has a tone + optional target) drives a presentational `<Chart>` that renders `<ChartCardView>`s in a responsive grid with centered arrows between rows. `ChartEmbed` (already wired) resolves card activation to routing or a `ChartPopup`. Chart-scoped tone tokens are added to the design system.
 
-**Tech Stack:** Vite + React + TypeScript (strict), react-router-dom v7, Framer Motion, Tailwind v4 (CSS-first, semantic tokens), MDX (`@mdx-js/react` `MDXProvider` + shared `mdxComponents`), Vitest + React Testing Library (jsdom).
+**Tech Stack:** Vite + React + TS (strict), react-router-dom v7, Framer Motion, Tailwind v4 (CSS-first `@theme`), MDX, Vitest + React Testing Library (jsdom).
 
 ## Global Constraints
 
-- TypeScript strict; **no `any`** in committed code.
-- Consume **semantic tokens only** (`bg-card`, `text-foreground`, `border-ink`, `border-border`, `text-accent`, `bg-accent-soft`, `shadow-hard`, `rounded-control`); never raw hex or `--ccc-*` primitives. Brand = coral; green reserved for success.
-- Chunky primitives use `border-2 border-ink shadow-hard`.
-- Modal z-index uses the token: `z-[var(--z-modal)]` (= 100).
-- All animation honors `useReducedMotion()` (no motion → instant, interaction unchanged).
-- `curriculum.ts` is the single source of truth for the sidebar and for validating lesson targets; charts add **no** sidebar entries.
-- Tests render router-dependent components inside `MemoryRouter`; lesson/MDX rendering needs `ThemeProvider` + `LanguageProvider` + `ProgressProvider` (see `src/pages/LessonPage.test.tsx` for the wrapper pattern).
-- Commands: `npm test` (Vitest once), `npm run build` (tsc + bundle), `npm run lint` (oxlint).
+- TypeScript strict; **no `any`**.
+- **Semantic tokens only**, plus the new **chart tone palette** (documented, chart-scoped exception). Success-green is **excluded** from the palette (use `teal`); coral stays brand.
+- Cards use the chunky style: `border-2 border-ink shadow-hard rounded-card`, tone tint via `bg-chart-<tone>-bg` / `border-chart-<tone>-border` / heading `text-chart-<tone>-text`.
+- All animation honors `useReducedMotion()`.
+- 2–3-card rows split on `sm+` and **stack to one column on mobile**.
+- `curriculum.ts` is the single source of truth; charts add **no** sidebar entries; **no new routes; no new dependencies**.
+- Reuse the existing `Popup`, `ChartPopup`, `useBackTarget`, Back button, and Sidebar `state.from` **unchanged**.
+- `cn` helper at `src/lib/cn`. Tests render router-dependent components in `MemoryRouter`; MDX needs `LanguageProvider` (+ `ThemeProvider`/`ProgressProvider` for `LessonPage`).
+- Commands: `npm test`, `npm run build`, `npm run lint`.
 
 ---
 
-### Task 1: Chart data model + registry + demo chart
+### Task 1: Card-flow data model + registry + demo chart
 
 **Files:**
-- Create: `src/content/charts/types.ts`
-- Create: `src/content/charts/loop.ts`
-- Create: `src/content/charts/index.ts`
-- Test: `src/content/charts/index.test.ts`
+- Modify (rewrite): `src/content/charts/types.ts`
+- Create: `src/content/charts/demo.ts`
+- Modify: `src/content/charts/index.ts`
+- Delete: `src/content/charts/loop.ts`, `src/content/charts/popups/prompt.mdx`
+- Modify: `src/content/charts/index.test.ts`
 
 **Interfaces:**
-- Produces:
-  - `LessonRef { level: string; module: string; lesson: string }`
-  - `ChartTarget = { kind: 'lesson'; ref: LessonRef } | { kind: 'popup'; title?: string; content: () => Promise<{ default: ComponentType }> }`
-  - `PopupTarget = Extract<ChartTarget, { kind: 'popup' }>`
-  - `ChartNode { id: string; label: string; x: number; y: number; target?: ChartTarget }`
-  - `ChartEdge { from: string; to: string }`
-  - `ChartDef { id: string; title?: string; nodes: ChartNode[]; edges: ChartEdge[] }`
-  - `getChart(id: string): ChartDef | undefined`
-  - `loop: ChartDef`
+- Produces: `ChartTone`, `ChartCard`, `ChartRow`, `ChartDef` (rows-based), plus unchanged `ChartTarget`/`PopupTarget`/`LessonRef`; `getChart(id): ChartDef | undefined`; `demo: ChartDef` (id `"demo"`).
 
-- [ ] **Step 1: Write the failing test**
+- [ ] **Step 1: Rewrite the failing registry test**
 
 ```ts
 // src/content/charts/index.test.ts
 import { getChart } from './index'
 
-test('getChart returns the demo loop chart by id', () => {
-  const chart = getChart('loop')
-  expect(chart?.id).toBe('loop')
-  expect(chart?.nodes).toHaveLength(4)
-  expect(chart?.edges).toHaveLength(3)
+test('getChart returns the demo chart by id', () => {
+  const chart = getChart('demo')
+  expect(chart?.id).toBe('demo')
+  expect(chart?.rows.length).toBeGreaterThanOrEqual(3)
 })
 
 test('getChart returns undefined for an unknown id', () => {
   expect(getChart('nope')).toBeUndefined()
 })
 
-test('loop chart exercises all three node kinds', () => {
-  const nodes = getChart('loop')!.nodes
-  const byId = Object.fromEntries(nodes.map((n) => [n.id, n]))
-  expect(byId.prompt.target?.kind).toBe('popup')
-  expect(byId.bash.target?.kind).toBe('popup')
-  expect(byId.edit.target?.kind).toBe('lesson')
-  expect(byId.agent.target).toBeUndefined() // targetless hub
+test('demo exercises all three card kinds and a connector', () => {
+  const rows = getChart('demo')!.rows
+  const cards = rows.flatMap((r) => (r.kind === 'cards' ? r.cards : []))
+  expect(cards.some((c) => c.target?.kind === 'lesson')).toBe(true)
+  expect(cards.some((c) => c.target?.kind === 'popup')).toBe(true)
+  expect(cards.some((c) => c.target === undefined)).toBe(true)
+  expect(rows.some((r) => r.kind === 'connector')).toBe(true)
 })
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npm test -- src/content/charts/index.test.ts`
-Expected: FAIL — cannot find module `./index`.
+Expected: FAIL — `rows` does not exist on the old `ChartDef` / `demo` not found.
 
-- [ ] **Step 3: Write the types**
+- [ ] **Step 3: Rewrite the types**
 
 ```ts
 // src/content/charts/types.ts
@@ -91,624 +84,433 @@ export type ChartTarget =
 
 export type PopupTarget = Extract<ChartTarget, { kind: 'popup' }>
 
-export interface ChartNode {
+export type ChartTone = 'neutral' | 'blue' | 'violet' | 'amber' | 'rose' | 'teal'
+
+export interface ChartCard {
   id: string
-  label: string
-  /** Position in a normalized 0–100 viewBox space. */
-  x: number
-  y: number
-  /** Omitted => a plain, non-interactive node. */
+  title: string
+  /** Muted description lines, e.g. "operator · the turn". */
+  lines?: string[]
+  /** Defaults to 'neutral'. */
+  tone?: ChartTone
+  /** Omitted => a plain, non-interactive card. */
   target?: ChartTarget
 }
 
-export interface ChartEdge {
-  from: string
-  to: string
-}
+export type ChartRow =
+  | { kind: 'cards'; cards: ChartCard[] }
+  | { kind: 'connector'; label: string }
 
 export interface ChartDef {
   id: string
   title?: string
-  nodes: ChartNode[]
-  edges: ChartEdge[]
+  subtitle?: string
+  rows: ChartRow[]
 }
 ```
 
 - [ ] **Step 4: Write the demo chart**
 
 ```ts
-// src/content/charts/loop.ts
+// src/content/charts/demo.ts
 import type { ChartDef } from './types'
 
 /**
- * Demo chart for the interactive-charts machinery. Exercises all three node
- * kinds: popup (prompt, bash), lesson target (edit), and targetless hub (agent).
- * Positions are hand-authored in the 0–100 viewBox space.
+ * Demo card-flow chart. Exercises all three card kinds (targetless, lesson,
+ * popup), a two-card split row, a connector pill, and several tones.
  */
-export const loop: ChartDef = {
-  id: 'loop',
-  title: 'The Claude Code loop',
-  nodes: [
+export const demo: ChartDef = {
+  id: 'demo',
+  title: 'Claude Code: levels',
+  subtitle: 'Click a layer to go deeper →',
+  rows: [
     {
-      id: 'prompt',
-      label: 'Prompt',
-      x: 50,
-      y: 12,
-      target: { kind: 'popup', title: 'Prompt', content: () => import('./popups/prompt.mdx') },
-    },
-    { id: 'agent', label: 'Agent', x: 50, y: 45 },
-    {
-      id: 'edit',
-      label: 'Edit',
-      x: 26,
-      y: 80,
-      target: { kind: 'lesson', ref: { level: 'beginner', module: 'basics', lesson: 'first-edit' } },
+      kind: 'cards',
+      cards: [{ id: 'start', title: 'Start here', lines: ['Pick a path and go deeper'], tone: 'neutral' }],
     },
     {
-      id: 'bash',
-      label: 'Bash',
-      x: 74,
-      y: 80,
-      target: { kind: 'popup', title: 'Bash', content: () => import('./popups/bash.mdx') },
+      kind: 'cards',
+      cards: [
+        {
+          id: 'beginner',
+          title: 'Beginner',
+          lines: ['operator · the turn', 'approve diffs · /init'],
+          tone: 'blue',
+          target: { kind: 'lesson', ref: { level: 'beginner', module: 'basics', lesson: 'first-edit' } },
+        },
+        {
+          id: 'bash',
+          title: 'Bash',
+          lines: ['run shell commands'],
+          tone: 'amber',
+          target: { kind: 'popup', title: 'Bash', content: () => import('./popups/bash.mdx') },
+        },
+      ],
     },
-  ],
-  edges: [
-    { from: 'prompt', to: 'agent' },
-    { from: 'agent', to: 'edit' },
-    { from: 'agent', to: 'bash' },
+    { kind: 'connector', label: 'unlock: configure the agent’s environment' },
+    {
+      kind: 'cards',
+      cards: [{ id: 'advanced', title: 'Advanced', lines: ['orchestrator · the fleet', 'parallel agents · CI'], tone: 'violet' }],
+    },
   ],
 }
 ```
 
-- [ ] **Step 5: Write the registry**
+- [ ] **Step 5: Update the registry, delete the old SVG demo + unused popup**
 
 ```ts
 // src/content/charts/index.ts
-import { loop } from './loop'
+import { demo } from './demo'
 import type { ChartDef } from './types'
 
 const charts: Record<string, ChartDef> = {
-  [loop.id]: loop,
+  [demo.id]: demo,
 }
 
 export function getChart(id: string): ChartDef | undefined {
   return charts[id]
 }
 
-export type { ChartDef, ChartNode, ChartEdge, ChartTarget, PopupTarget, LessonRef } from './types'
+export type { ChartDef, ChartCard, ChartRow, ChartTone, ChartTarget, PopupTarget, LessonRef } from './types'
 ```
 
-- [ ] **Step 6: Create the popup MDX stubs** (needed for `loop.ts` imports to resolve at build time)
+Then delete the superseded files:
 
-```mdx
-{/* src/content/charts/popups/prompt.mdx */}
-# Prompt
-
-A prompt is a plain-English instruction. You describe the outcome you want and
-Claude Code figures out which tools to use to get there.
+```bash
+git rm src/content/charts/loop.ts src/content/charts/popups/prompt.mdx
 ```
 
-```mdx
-{/* src/content/charts/popups/bash.mdx */}
-# Bash
-
-Claude Code can run shell commands on your behalf. The example below is rendered
-through the same language-aware engine the lessons use:
-
-<Snippet id="hello-world" />
-```
-
-- [ ] **Step 7: Run tests and the build to verify they pass**
+- [ ] **Step 6: Run tests + build**
 
 Run: `npm test -- src/content/charts/index.test.ts`
 Expected: PASS (3 tests).
 Run: `npm run build`
-Expected: clean (confirms the `.mdx` imports resolve and types compile).
+Expected: clean (confirms `./popups/bash.mdx` import resolves and no dangling `loop`/`prompt` references).
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add src/content/charts
-git commit -m "feat: chart data model, registry, and demo loop chart"
+git commit -m "feat: card-flow chart data model, registry, and demo chart"
 ```
 
 ---
 
-### Task 2: `prevLesson` curriculum helper
+### Task 2: Chart tone tokens + ChartCardView
 
 **Files:**
-- Modify: `src/lib/curriculumNav.ts` (append after `nextLesson`)
-- Test: `src/lib/curriculumNav.test.ts` (create if absent; otherwise append)
+- Modify: `src/styles/index.css` (add tone tokens in the light `:root`, the `.dark` block, and the `@theme inline` map)
+- Create: `src/components/charts/ChartCardView.tsx`
+- Test: `src/components/charts/ChartCardView.test.tsx`
 
 **Interfaces:**
-- Consumes: `flattenLessons`, `LessonLocation` (existing).
-- Produces: `prevLesson(levels: Level[], lessonId: string): LessonLocation | undefined`
+- Consumes: `ChartCard`, `ChartTone` (Task 1); `cn`; `motion`/`useReducedMotion`.
+- Produces: `ChartCardView(props: { card: ChartCard; onActivate: (card: ChartCard) => void }): JSX.Element`
+- Produces (CSS): utilities `bg-chart-<tone>-bg`, `border-chart-<tone>-border`, `text-chart-<tone>-text` for each tone.
 
-- [ ] **Step 1: Write the failing test**
+- [ ] **Step 1: Add the tone tokens to `index.css`**
 
-```ts
-// src/lib/curriculumNav.test.ts  (append, or create with this import block)
-import { curriculum } from '../content/curriculum'
-import { prevLesson } from './curriculumNav'
+In the **light** `:root` semantic block, after the `--destructive-foreground` line (~line 84), add:
 
-test('prevLesson returns the preceding lesson in curriculum order', () => {
-  // stub order: what-is-cc -> first-edit -> slash-commands -> subagents
-  expect(prevLesson(curriculum, 'first-edit')?.lesson.id).toBe('what-is-cc')
-  expect(prevLesson(curriculum, 'slash-commands')?.lesson.id).toBe('first-edit')
-})
-
-test('prevLesson returns undefined for the first lesson and unknown ids', () => {
-  expect(prevLesson(curriculum, 'what-is-cc')).toBeUndefined()
-  expect(prevLesson(curriculum, 'nope')).toBeUndefined()
-})
+```css
+  /* Chart tone palette — chart-scoped exception (documented). Not for general UI.
+     Success-green is intentionally excluded; charts use `teal`. */
+  --chart-neutral-bg: #f1f5f9; --chart-neutral-border: #cbd5e1; --chart-neutral-text: #334155;
+  --chart-blue-bg:    #dbeafe; --chart-blue-border:    #93c5fd; --chart-blue-text:    #1d4ed8;
+  --chart-violet-bg:  #ede9fe; --chart-violet-border:  #c4b5fd; --chart-violet-text:  #6d28d9;
+  --chart-amber-bg:   #fef3c7; --chart-amber-border:   #fcd34d; --chart-amber-text:   #b45309;
+  --chart-rose-bg:    #ffe4e6; --chart-rose-border:    #fda4af; --chart-rose-text:    #be123c;
+  --chart-teal-bg:    #ccfbf1; --chart-teal-border:    #5eead4; --chart-teal-text:    #0f766e;
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+In the **`.dark`** block, after its `--destructive-foreground` line (~line 124), add:
 
-Run: `npm test -- src/lib/curriculumNav.test.ts`
-Expected: FAIL — `prevLesson` is not exported.
-
-- [ ] **Step 3: Implement `prevLesson`**
-
-```ts
-// src/lib/curriculumNav.ts  (append at end of file)
-export function prevLesson(levels: Level[], lessonId: string): LessonLocation | undefined {
-  const all = flattenLessons(levels)
-  const idx = all.findIndex((l) => l.lesson.id === lessonId)
-  return idx > 0 ? all[idx - 1] : undefined
-}
+```css
+  /* Chart tone palette — dark. Deep muted fills with lighter heading text. */
+  --chart-neutral-bg: #1e293b; --chart-neutral-border: #334155; --chart-neutral-text: #e2e8f0;
+  --chart-blue-bg:    #172554; --chart-blue-border:    #1e40af; --chart-blue-text:    #93c5fd;
+  --chart-violet-bg:  #2e1065; --chart-violet-border:  #5b21b6; --chart-violet-text:  #c4b5fd;
+  --chart-amber-bg:   #451a03; --chart-amber-border:   #92400e; --chart-amber-text:   #fcd34d;
+  --chart-rose-bg:    #4c0519; --chart-rose-border:    #9f1239; --chart-rose-text:    #fda4af;
+  --chart-teal-bg:    #042f2e; --chart-teal-border:    #115e59; --chart-teal-text:    #5eead4;
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+In the **`@theme inline`** map, after `--color-destructive-foreground` (~line 151), add:
 
-Run: `npm test -- src/lib/curriculumNav.test.ts`
-Expected: PASS.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add src/lib/curriculumNav.ts src/lib/curriculumNav.test.ts
-git commit -m "feat: add prevLesson curriculum helper"
+```css
+  --color-chart-neutral-bg: var(--chart-neutral-bg);
+  --color-chart-neutral-border: var(--chart-neutral-border);
+  --color-chart-neutral-text: var(--chart-neutral-text);
+  --color-chart-blue-bg: var(--chart-blue-bg);
+  --color-chart-blue-border: var(--chart-blue-border);
+  --color-chart-blue-text: var(--chart-blue-text);
+  --color-chart-violet-bg: var(--chart-violet-bg);
+  --color-chart-violet-border: var(--chart-violet-border);
+  --color-chart-violet-text: var(--chart-violet-text);
+  --color-chart-amber-bg: var(--chart-amber-bg);
+  --color-chart-amber-border: var(--chart-amber-border);
+  --color-chart-amber-text: var(--chart-amber-text);
+  --color-chart-rose-bg: var(--chart-rose-bg);
+  --color-chart-rose-border: var(--chart-rose-border);
+  --color-chart-rose-text: var(--chart-rose-text);
+  --color-chart-teal-bg: var(--chart-teal-bg);
+  --color-chart-teal-border: var(--chart-teal-border);
+  --color-chart-teal-text: var(--chart-teal-text);
 ```
 
----
-
-### Task 3: Generic `Popup` modal primitive
-
-**Files:**
-- Create: `src/components/ui/Popup.tsx`
-- Test: `src/components/ui/Popup.test.tsx`
-
-**Interfaces:**
-- Produces: `Popup(props: { open: boolean; onClose: () => void; title?: ReactNode; children: ReactNode }): JSX.Element | null`
-
-Behavior: renders `null` when closed. When open: a fixed backdrop + a centered dialog (chunky surface, `max-w`, `max-h`, internally scrollable body), `role="dialog"`, `aria-modal="true"`, labelled by the title. Closes on Esc, backdrop click, and an X button. Moves focus into the dialog on open and restores focus to the previously-focused element on close. Tab is kept within the dialog.
-
-- [ ] **Step 1: Write the failing test**
+- [ ] **Step 2: Write the failing test**
 
 ```tsx
-// src/components/ui/Popup.test.tsx
+// src/components/charts/ChartCardView.test.tsx
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { useState } from 'react'
-import { Popup } from './Popup'
+import { ChartCardView } from './ChartCardView'
+import type { ChartCard } from '../../content/charts/types'
 
-function Harness() {
-  const [open, setOpen] = useState(false)
-  return (
+const lessonCard: ChartCard = {
+  id: 'c1',
+  title: 'Beginner',
+  lines: ['operator · the turn'],
+  tone: 'blue',
+  target: { kind: 'popup', content: () => Promise.resolve({ default: () => null }) },
+}
+const inertCard: ChartCard = { id: 'c2', title: 'Just a label', tone: 'neutral' }
+
+test('interactive card is a button showing title + lines and fires onActivate on click and keyboard', async () => {
+  const user = userEvent.setup()
+  const onActivate = vi.fn()
+  render(<ChartCardView card={lessonCard} onActivate={onActivate} />)
+  const btn = screen.getByRole('button', { name: 'Beginner' })
+  expect(screen.getByText('operator · the turn')).toBeInTheDocument()
+
+  await user.click(btn)
+  btn.focus()
+  await user.keyboard('{Enter}')
+  await user.keyboard(' ')
+  expect(onActivate).toHaveBeenCalledTimes(3)
+  expect(onActivate).toHaveBeenCalledWith(expect.objectContaining({ id: 'c1' }))
+})
+
+test('targetless card is inert and applies its tone surface class', () => {
+  render(<ChartCardView card={inertCard} onActivate={() => {}} />)
+  expect(screen.queryByRole('button')).toBeNull()
+  const el = screen.getByText('Just a label').closest('div')
+  expect(el?.className).toContain('bg-chart-neutral-bg')
+})
+```
+
+- [ ] **Step 3: Run test to verify it fails**
+
+Run: `npm test -- src/components/charts/ChartCardView.test.tsx`
+Expected: FAIL — cannot find module `./ChartCardView`.
+
+- [ ] **Step 4: Implement `ChartCardView`**
+
+```tsx
+// src/components/charts/ChartCardView.tsx
+import { motion, useReducedMotion } from 'framer-motion'
+import { cn } from '../../lib/cn'
+import type { ChartCard, ChartTone } from '../../content/charts/types'
+
+const TONE: Record<ChartTone, { surface: string; heading: string }> = {
+  neutral: { surface: 'bg-chart-neutral-bg border-chart-neutral-border', heading: 'text-chart-neutral-text' },
+  blue: { surface: 'bg-chart-blue-bg border-chart-blue-border', heading: 'text-chart-blue-text' },
+  violet: { surface: 'bg-chart-violet-bg border-chart-violet-border', heading: 'text-chart-violet-text' },
+  amber: { surface: 'bg-chart-amber-bg border-chart-amber-border', heading: 'text-chart-amber-text' },
+  rose: { surface: 'bg-chart-rose-bg border-chart-rose-border', heading: 'text-chart-rose-text' },
+  teal: { surface: 'bg-chart-teal-bg border-chart-teal-border', heading: 'text-chart-teal-text' },
+}
+
+interface ChartCardViewProps {
+  card: ChartCard
+  onActivate: (card: ChartCard) => void
+}
+
+export function ChartCardView({ card, onActivate }: ChartCardViewProps) {
+  const reduce = useReducedMotion()
+  const tone = TONE[card.tone ?? 'neutral']
+  const interactive = card.target !== undefined
+
+  const body = (
     <>
-      <button onClick={() => setOpen(true)}>open</button>
-      <Popup open={open} onClose={() => setOpen(false)} title="Hello">
-        <p>Body content</p>
-      </Popup>
+      <h3 className={cn('font-mono text-lg font-bold', tone.heading)}>{card.title}</h3>
+      {card.lines?.map((line, i) => (
+        <p key={i} className="mt-1 text-sm text-muted-foreground">
+          {line}
+        </p>
+      ))}
     </>
   )
-}
 
-test('renders nothing when closed', () => {
-  render(<Popup open={false} onClose={() => {}} title="X">hi</Popup>)
-  expect(screen.queryByRole('dialog')).toBeNull()
-})
+  const surface = cn('block w-full rounded-card border-2 border-ink p-4 text-left shadow-hard', tone.surface)
+  const entrance = {
+    initial: reduce ? false : { opacity: 0 },
+    animate: { opacity: 1 },
+    transition: { duration: reduce ? 0 : 0.28, ease: [0.16, 1, 0.3, 1] as const },
+  }
 
-test('shows title and children when open', () => {
-  render(<Popup open onClose={() => {}} title="Hello"><p>Body content</p></Popup>)
-  const dialog = screen.getByRole('dialog')
-  expect(dialog).toHaveAccessibleName('Hello')
-  expect(screen.getByText('Body content')).toBeInTheDocument()
-})
-
-test('closes on Escape, backdrop click, and the close button', async () => {
-  const user = userEvent.setup()
-  const onClose = vi.fn()
-  render(<Popup open onClose={onClose} title="Hello">body</Popup>)
-
-  await user.keyboard('{Escape}')
-  expect(onClose).toHaveBeenCalledTimes(1)
-
-  await user.click(screen.getByTestId('popup-backdrop'))
-  expect(onClose).toHaveBeenCalledTimes(2)
-
-  await user.click(screen.getByRole('button', { name: /close/i }))
-  expect(onClose).toHaveBeenCalledTimes(3)
-})
-
-test('restores focus to the trigger on close', async () => {
-  const user = userEvent.setup()
-  render(<Harness />)
-  const trigger = screen.getByRole('button', { name: 'open' })
-  await user.click(trigger)
-  expect(screen.getByRole('dialog')).toBeInTheDocument()
-  await user.keyboard('{Escape}')
-  expect(trigger).toHaveFocus()
-})
-```
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `npm test -- src/components/ui/Popup.test.tsx`
-Expected: FAIL — cannot find module `./Popup`.
-
-- [ ] **Step 3: Implement `Popup`**
-
-```tsx
-// src/components/ui/Popup.tsx
-import { useEffect, useId, useRef, type ReactNode } from 'react'
-
-interface PopupProps {
-  open: boolean
-  onClose: () => void
-  title?: ReactNode
-  children: ReactNode
-}
-
-function CloseIcon() {
-  return (
-    <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden="true">
-      <path d="M4 4l8 8M12 4l-8 8" />
-    </svg>
-  )
-}
-
-export function Popup({ open, onClose, title, children }: PopupProps) {
-  const dialogRef = useRef<HTMLDivElement>(null)
-  const titleId = useId()
-
-  useEffect(() => {
-    if (!open) return
-    const previouslyFocused = document.activeElement as HTMLElement | null
-    dialogRef.current?.focus()
-
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        onClose()
-        return
-      }
-      if (e.key !== 'Tab') return
-      const focusables = dialogRef.current?.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])',
-      )
-      if (!focusables || focusables.length === 0) return
-      const first = focusables[0]
-      const last = focusables[focusables.length - 1]
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault()
-        last.focus()
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault()
-        first.focus()
-      }
-    }
-
-    document.addEventListener('keydown', onKeyDown)
-    return () => {
-      document.removeEventListener('keydown', onKeyDown)
-      previouslyFocused?.focus()
-    }
-  }, [open, onClose])
-
-  if (!open) return null
+  if (!interactive) {
+    return (
+      <motion.div aria-hidden="true" className={surface} {...entrance}>
+        {body}
+      </motion.div>
+    )
+  }
 
   return (
-    <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center p-4">
-      <div
-        data-testid="popup-backdrop"
-        className="absolute inset-0 bg-ink/50"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={title ? titleId : undefined}
-        tabIndex={-1}
-        className="relative flex max-h-[85vh] w-full max-w-lg flex-col rounded-card border-2 border-ink bg-card text-card-foreground shadow-hard-lg outline-none"
-      >
-        <div className="flex items-start justify-between gap-4 border-b-2 border-border p-4">
-          {title ? <h2 id={titleId} className="font-mono text-xl font-bold">{title}</h2> : <span />}
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control hover:bg-muted"
-          >
-            <CloseIcon />
-          </button>
-        </div>
-        <div className="overflow-y-auto p-5">{children}</div>
-      </div>
-    </div>
-  )
-}
-```
-
-- [ ] **Step 4: Run test to verify it passes**
-
-Run: `npm test -- src/components/ui/Popup.test.tsx`
-Expected: PASS (4 tests).
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add src/components/ui/Popup.tsx src/components/ui/Popup.test.tsx
-git commit -m "feat: generic scrollable focus-trapped Popup primitive"
-```
-
----
-
-### Task 4: `ChartPopup` wrapper (lazy MDX in a Popup)
-
-**Files:**
-- Create: `src/components/charts/ChartPopup.tsx`
-- Test: `src/components/charts/ChartPopup.test.tsx`
-
-**Interfaces:**
-- Consumes: `Popup` (Task 3); `PopupTarget` (Task 1); `mdxComponents`, `MDXProvider`.
-- Produces: `ChartPopup(props: { target: PopupTarget | null; onClose: () => void }): JSX.Element`
-
-Behavior: open iff `target !== null`. Lazy-loads `target.content` and renders it inside `<Suspense>` + `<MDXProvider components={mdxComponents}>`, within `<Popup>` titled by `target.title`.
-
-- [ ] **Step 1: Write the failing test**
-
-```tsx
-// src/components/charts/ChartPopup.test.tsx
-import { render, screen } from '@testing-library/react'
-import { LanguageProvider } from '../../context/LanguageContext'
-import { ChartPopup } from './ChartPopup'
-import type { PopupTarget } from '../../content/charts/types'
-
-const target: PopupTarget = {
-  kind: 'popup',
-  title: 'Bash',
-  content: () => import('../../content/charts/popups/bash.mdx'),
-}
-
-test('renders nothing when target is null', () => {
-  render(<ChartPopup target={null} onClose={() => {}} />)
-  expect(screen.queryByRole('dialog')).toBeNull()
-})
-
-test('renders the node MDX (including a Snippet) inside the popup', async () => {
-  render(
-    <LanguageProvider>
-      <ChartPopup target={target} onClose={() => {}} />
-    </LanguageProvider>,
-  )
-  expect(await screen.findByRole('heading', { name: 'Bash' })).toBeInTheDocument()
-  // the bash popup embeds <Snippet id="hello-world" />, whose JS pack contains `export function add`
-  expect(await screen.findByText(/export function add/)).toBeInTheDocument()
-})
-```
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `npm test -- src/components/charts/ChartPopup.test.tsx`
-Expected: FAIL — cannot find module `./ChartPopup`.
-
-- [ ] **Step 3: Implement `ChartPopup`**
-
-```tsx
-// src/components/charts/ChartPopup.tsx
-import { MDXProvider } from '@mdx-js/react'
-import { Suspense, lazy, useMemo } from 'react'
-import { mdxComponents } from '../mdx/mdxComponents'
-import { Popup } from '../ui/Popup'
-import type { PopupTarget } from '../../content/charts/types'
-
-interface ChartPopupProps {
-  target: PopupTarget | null
-  onClose: () => void
-}
-
-export function ChartPopup({ target, onClose }: ChartPopupProps) {
-  const Content = useMemo(() => (target ? lazy(target.content) : null), [target])
-
-  return (
-    <Popup open={target !== null} onClose={onClose} title={target?.title}>
-      {Content && (
-        <MDXProvider components={mdxComponents}>
-          <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
-            <Content />
-          </Suspense>
-        </MDXProvider>
+    <motion.button
+      type="button"
+      aria-label={card.title}
+      onClick={() => onActivate(card)}
+      className={cn(
+        surface,
+        'cursor-pointer transition-shadow hover:shadow-hard-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
       )}
-    </Popup>
+      whileHover={reduce ? undefined : { x: -1, y: -1 }}
+      {...entrance}
+    >
+      {body}
+    </motion.button>
   )
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [ ] **Step 5: Run test to verify it passes + build**
 
-Run: `npm test -- src/components/charts/ChartPopup.test.tsx`
+Run: `npm test -- src/components/charts/ChartCardView.test.tsx`
 Expected: PASS (2 tests).
+Run: `npm run build`
+Expected: clean.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add src/components/charts/ChartPopup.tsx src/components/charts/ChartPopup.test.tsx
-git commit -m "feat: ChartPopup renders node MDX inside the Popup primitive"
+git add src/styles/index.css src/components/charts/ChartCardView.tsx src/components/charts/ChartCardView.test.tsx
+git commit -m "feat: chart tone palette tokens + ChartCardView"
 ```
 
 ---
 
-### Task 5: `<Chart>` presentational SVG primitive
+### Task 3: `<Chart>` card-flow renderer
 
 **Files:**
-- Create: `src/components/charts/Chart.tsx`
-- Test: `src/components/charts/Chart.test.tsx`
+- Modify (rewrite): `src/components/charts/Chart.tsx`
+- Modify (rewrite): `src/components/charts/Chart.test.tsx`
 
 **Interfaces:**
-- Consumes: `ChartDef`, `ChartNode` (Task 1); `useReducedMotion`, `motion`.
-- Produces: `Chart(props: { def: ChartDef; onActivate: (node: ChartNode) => void }): JSX.Element`
+- Consumes: `ChartDef`, `ChartCard` (Task 1); `ChartCardView` (Task 2); `cn`.
+- Produces: `Chart(props: { def: ChartDef; onActivate: (card: ChartCard) => void }): JSX.Element`
 
-Behavior: renders an SVG (`viewBox="0 0 100 92"`). Edges drawn first as `<line>` between node centers; nodes drawn as chunky `<rect>` + centered `<text>`. A node **with** a target is a focusable control (`role="button"`, `tabIndex={0}`, `aria-label`, click + Enter/Space fire `onActivate(node)`). A node **without** a target is inert (no role, not focusable, `aria-hidden`). Entrance/hover animation gated by `useReducedMotion`.
-
-- [ ] **Step 1: Write the failing test**
+- [ ] **Step 1: Rewrite the failing test**
 
 ```tsx
 // src/components/charts/Chart.test.tsx
 import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { Chart } from './Chart'
 import type { ChartDef } from '../../content/charts/types'
 
 const def: ChartDef = {
   id: 't',
-  nodes: [
-    { id: 'a', label: 'A', x: 30, y: 20, target: { kind: 'popup', content: () => Promise.resolve({ default: () => null }) } },
-    { id: 'b', label: 'B', x: 70, y: 80 }, // targetless
+  title: 'Demo',
+  rows: [
+    { kind: 'cards', cards: [{ id: 'a', title: 'Solo' }] },
+    { kind: 'cards', cards: [
+      { id: 'b', title: 'Left', target: { kind: 'popup', content: () => Promise.resolve({ default: () => null }) } },
+      { id: 'c', title: 'Right' },
+    ] },
+    { kind: 'connector', label: 'unlock: next' },
   ],
-  edges: [{ from: 'a', to: 'b' }],
 }
 
-test('renders one control per interactive node and one line per edge', () => {
-  const { container } = render(<Chart def={def} onActivate={() => {}} />)
-  expect(screen.getByRole('button', { name: 'A' })).toBeInTheDocument()
-  expect(container.querySelectorAll('line')).toHaveLength(1)
-})
-
-test('a targetless node is inert (no button, not focusable)', () => {
+test('renders the header and every card + connector', () => {
   render(<Chart def={def} onActivate={() => {}} />)
-  expect(screen.queryByRole('button', { name: 'B' })).toBeNull()
-  expect(screen.getByText('B').closest('[tabindex]')).toBeNull()
+  expect(screen.getByRole('heading', { name: 'Demo' })).toBeInTheDocument()
+  expect(screen.getByText('Solo')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Left' })).toBeInTheDocument()
+  expect(screen.getByText('Right')).toBeInTheDocument()
+  expect(screen.getByText('unlock: next')).toBeInTheDocument()
 })
 
-test('fires onActivate on click and on Enter/Space', async () => {
-  const user = userEvent.setup()
-  const onActivate = vi.fn()
-  render(<Chart def={def} onActivate={onActivate} />)
-  const node = screen.getByRole('button', { name: 'A' })
+test('a 1-card row is full-width and a 2-card row splits on sm+', () => {
+  const { container } = render(<Chart def={def} onActivate={() => {}} />)
+  const grids = container.querySelectorAll('[data-testid="chart-cards-row"]')
+  expect(grids[0].className).toContain('sm:grid-cols-1')
+  expect(grids[1].className).toContain('sm:grid-cols-2')
+})
 
-  await user.click(node)
-  expect(onActivate).toHaveBeenCalledWith(expect.objectContaining({ id: 'a' }))
-
-  node.focus()
-  await user.keyboard('{Enter}')
-  await user.keyboard(' ')
-  expect(onActivate).toHaveBeenCalledTimes(3)
+test('renders one arrow between each pair of consecutive rows', () => {
+  const { container } = render(<Chart def={def} onActivate={() => {}} />)
+  // 3 rows => 2 gaps => 2 arrows
+  expect(container.querySelectorAll('[data-testid="chart-arrow"]')).toHaveLength(2)
 })
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npm test -- src/components/charts/Chart.test.tsx`
-Expected: FAIL — cannot find module `./Chart`.
+Expected: FAIL — the new assertions don't match the old SVG renderer (no `chart-cards-row`/`chart-arrow`).
 
-- [ ] **Step 3: Implement `Chart`**
+- [ ] **Step 3: Rewrite `Chart`**
 
 ```tsx
 // src/components/charts/Chart.tsx
-import { motion, useReducedMotion } from 'framer-motion'
-import type { KeyboardEvent } from 'react'
-import type { ChartDef, ChartNode } from '../../content/charts/types'
+import { cn } from '../../lib/cn'
+import type { ChartCard, ChartDef } from '../../content/charts/types'
+import { ChartCardView } from './ChartCardView'
 
-const NODE_W = 26
-const NODE_H = 14
+const COLS: Record<number, string> = {
+  1: 'sm:grid-cols-1',
+  2: 'sm:grid-cols-2',
+  3: 'sm:grid-cols-3',
+}
+
+function DownArrow() {
+  return (
+    <div data-testid="chart-arrow" className="flex justify-center py-2" aria-hidden="true">
+      <svg viewBox="0 0 16 16" className="h-5 w-5 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M8 3v10M4 9l4 4 4-4" />
+      </svg>
+    </div>
+  )
+}
 
 interface ChartProps {
   def: ChartDef
-  onActivate: (node: ChartNode) => void
+  onActivate: (card: ChartCard) => void
 }
 
 export function Chart({ def, onActivate }: ChartProps) {
-  const reduce = useReducedMotion()
-  const byId = Object.fromEntries(def.nodes.map((n) => [n.id, n]))
-
-  function handleKeyDown(e: KeyboardEvent<SVGGElement>, node: ChartNode) {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()
-      onActivate(node)
-    }
-  }
-
   return (
-    <svg
-      viewBox="0 0 100 92"
-      role="group"
-      aria-label={def.title ?? 'Diagram'}
-      className="h-auto w-full max-w-xl"
-    >
-      {def.edges.map((edge, i) => {
-        const from = byId[edge.from]
-        const to = byId[edge.to]
-        if (!from || !to) return null
-        return (
-          <line
-            key={i}
-            x1={from.x}
-            y1={from.y}
-            x2={to.x}
-            y2={to.y}
-            className="stroke-border"
-            strokeWidth={0.8}
-          />
-        )
-      })}
+    <div role="group" aria-label={def.title ?? 'Diagram'} className="w-full max-w-2xl">
+      {(def.title || def.subtitle) && (
+        <header className="mb-6 text-center">
+          {def.title && <h2 className="font-mono text-xl font-bold text-foreground">{def.title}</h2>}
+          {def.subtitle && <p className="mt-1 text-sm text-muted-foreground">{def.subtitle}</p>}
+        </header>
+      )}
 
-      {def.nodes.map((node, i) => {
-        const interactive = node.target !== undefined
-        const x = node.x - NODE_W / 2
-        const y = node.y - NODE_H / 2
-        return (
-          <motion.g
-            key={node.id}
-            initial={reduce ? false : { opacity: 0, scale: 0.85 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: reduce ? 0 : 0.3, delay: reduce ? 0 : i * 0.08, ease: [0.16, 1, 0.3, 1] }}
-            {...(interactive
-              ? {
-                  role: 'button',
-                  tabIndex: 0,
-                  'aria-label': node.label,
-                  onClick: () => onActivate(node),
-                  onKeyDown: (e: KeyboardEvent<SVGGElement>) => handleKeyDown(e, node),
-                  className: 'cursor-pointer outline-none [&:hover_rect]:fill-accent-soft [&:focus-visible_rect]:fill-accent-soft',
-                }
-              : { 'aria-hidden': true })}
-          >
-            <rect
-              x={x}
-              y={y}
-              width={NODE_W}
-              height={NODE_H}
-              rx={2}
-              className={interactive ? 'fill-card stroke-ink' : 'fill-muted stroke-border'}
-              strokeWidth={1}
-            />
-            <text
-              x={node.x}
-              y={node.y}
-              textAnchor="middle"
-              dominantBaseline="central"
-              className="fill-foreground font-mono"
-              fontSize={5}
+      {def.rows.map((row, i) => (
+        <div key={i}>
+          {i > 0 && <DownArrow />}
+          {row.kind === 'connector' ? (
+            <div className="flex justify-center">
+              <div className="rounded-pill border-2 border-border bg-muted px-4 py-1.5 text-sm text-muted-foreground">
+                {row.label}
+              </div>
+            </div>
+          ) : (
+            <div
+              data-testid="chart-cards-row"
+              className={cn('grid grid-cols-1 gap-4', COLS[row.cards.length] ?? 'sm:grid-cols-1')}
             >
-              {node.label}
-            </text>
-          </motion.g>
-        )
-      })}
-    </svg>
+              {row.cards.map((card) => (
+                <ChartCardView key={card.id} card={card} onActivate={onActivate} />
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
   )
 }
 ```
@@ -722,26 +524,49 @@ Expected: PASS (3 tests).
 
 ```bash
 git add src/components/charts/Chart.tsx src/components/charts/Chart.test.tsx
-git commit -m "feat: presentational SVG Chart primitive with interactive/inert nodes"
+git commit -m "feat: HTML card-flow Chart renderer with responsive rows, connectors, arrows"
 ```
 
 ---
 
-### Task 6: `ChartEmbed` wrapper + MDX registration + lesson embed
+### Task 4: Adapt `ChartEmbed`, demo embed, and dependent tests
 
 **Files:**
-- Create: `src/components/charts/ChartEmbed.tsx`
-- Modify: `src/components/mdx/mdxComponents.tsx` (register `ChartEmbed`)
-- Modify: `src/content/lessons/advanced/subagents.mdx` (add `<ChartEmbed id="loop" />`)
-- Test: `src/components/charts/ChartEmbed.test.tsx`
+- Modify: `src/components/charts/ChartEmbed.tsx`
+- Modify (rewrite): `src/components/charts/ChartEmbed.test.tsx`
+- Modify: `src/content/lessons/advanced/subagents.mdx`
+- Modify: `src/pages/LessonPage.test.tsx` (the scroll-anchor test references a chart button name)
 
 **Interfaces:**
-- Consumes: `getChart` (Task 1); `Chart` (Task 5); `ChartPopup` (Task 4); `findLesson`, `lessonPath` (existing); `useNavigate`, `useLocation`.
-- Produces: `ChartEmbed(props: { id: string }): JSX.Element | null`
+- Consumes: `getChart`, `ChartCard`, `PopupTarget` (Task 1); `Chart` (Task 3); `ChartPopup`; `findLesson`/`lessonPath`.
+- Produces: `ChartEmbed({ id }: { id: string })` — unchanged behavior; `onActivate` now takes a `ChartCard`.
 
-Behavior: looks up the chart; renders `null` for an unknown id. Wraps `<Chart>` in `<div id={`chart-${id}`}>`. On node activation: `lesson` → resolve ref via `findLesson` and `navigate(lessonPath(loc), { state: { from: `${pathname}#chart-${id}` } })`; `popup` → open `<ChartPopup>`; otherwise no-op.
+- [ ] **Step 1: Update `ChartEmbed` to the card model**
 
-- [ ] **Step 1: Write the failing test**
+Change the type import and the handler signature in `src/components/charts/ChartEmbed.tsx`:
+
+```tsx
+import type { ChartCard, PopupTarget } from '../../content/charts/types'
+```
+
+```tsx
+  function handleActivate(card: ChartCard) {
+    const target = card.target
+    if (!target) return
+    if (target.kind === 'popup') {
+      setPopup(target)
+      return
+    }
+    const { level, module, lesson } = target.ref
+    const loc = findLesson(curriculum, level, module, lesson)
+    if (!loc) return
+    navigate(lessonPath(loc), { state: { from: `${pathname}#chart-${id}` } })
+  }
+```
+
+(Everything else in the file — the `getChart`/null guard, the `<div id={`chart-${id}`}>` anchor, `<Chart>` + `<ChartPopup>` — stays identical.)
+
+- [ ] **Step 2: Rewrite `ChartEmbed.test.tsx` for the demo card model**
 
 ```tsx
 // src/components/charts/ChartEmbed.test.tsx
@@ -775,322 +600,106 @@ test('renders nothing for an unknown chart id', () => {
 })
 
 test('exposes the scroll anchor id', () => {
-  const { container } = renderEmbed('loop')
-  expect(container.querySelector('#chart-loop')).not.toBeNull()
+  const { container } = renderEmbed('demo')
+  expect(container.querySelector('#chart-demo')).not.toBeNull()
 })
 
-test('a lesson node navigates with state.from set to the anchor', async () => {
+test('a lesson card navigates with state.from set to the anchor', async () => {
   const user = userEvent.setup()
-  renderEmbed('loop')
-  await user.click(screen.getByRole('button', { name: 'Edit' }))
+  renderEmbed('demo')
+  await user.click(screen.getByRole('button', { name: 'Beginner' }))
   const loc = screen.getByTestId('loc').textContent ?? ''
   expect(loc).toContain('/learn/beginner/basics/first-edit')
-  expect(loc).toContain('/learn/advanced/power/subagents#chart-loop')
+  expect(loc).toContain('/learn/advanced/power/subagents#chart-demo')
 })
 
-test('a popup node opens the modal instead of navigating', async () => {
+test('a popup card opens the modal instead of navigating', async () => {
   const user = userEvent.setup()
-  renderEmbed('loop')
-  await user.click(screen.getByRole('button', { name: 'Prompt' }))
-  expect(await screen.findByRole('dialog')).toHaveAccessibleName('Prompt')
+  renderEmbed('demo')
+  await user.click(screen.getByRole('button', { name: 'Bash' }))
+  expect(await screen.findByRole('dialog')).toHaveAccessibleName('Bash')
   expect(screen.getByTestId('loc').textContent).toContain('/learn/advanced/power/subagents')
 })
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [ ] **Step 3: Update the lesson embed id**
 
-Run: `npm test -- src/components/charts/ChartEmbed.test.tsx`
-Expected: FAIL — cannot find module `./ChartEmbed`.
-
-- [ ] **Step 3: Implement `ChartEmbed`**
-
-```tsx
-// src/components/charts/ChartEmbed.tsx
-import { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
-import { curriculum } from '../../content/curriculum'
-import { getChart } from '../../content/charts'
-import type { ChartNode, PopupTarget } from '../../content/charts/types'
-import { findLesson, lessonPath } from '../../lib/curriculumNav'
-import { Chart } from './Chart'
-import { ChartPopup } from './ChartPopup'
-
-interface ChartEmbedProps {
-  id: string
-}
-
-export function ChartEmbed({ id }: ChartEmbedProps) {
-  const def = getChart(id)
-  const navigate = useNavigate()
-  const { pathname } = useLocation()
-  const [popup, setPopup] = useState<PopupTarget | null>(null)
-
-  if (!def) return null
-
-  function handleActivate(node: ChartNode) {
-    const target = node.target
-    if (!target) return
-    if (target.kind === 'popup') {
-      setPopup(target)
-      return
-    }
-    const { level, module, lesson } = target.ref
-    const loc = findLesson(curriculum, level, module, lesson)
-    if (!loc) return
-    navigate(lessonPath(loc), { state: { from: `${pathname}#chart-${id}` } })
-  }
-
-  return (
-    <div id={`chart-${id}`} className="my-8 flex justify-center">
-      <Chart def={def} onActivate={handleActivate} />
-      <ChartPopup target={popup} onClose={() => setPopup(null)} />
-    </div>
-  )
-}
-```
-
-- [ ] **Step 4: Register in the shared MDX map**
-
-```tsx
-// src/components/mdx/mdxComponents.tsx  — add the import and map entry
-import { ChartEmbed } from '../charts/ChartEmbed'
-// ...inside the components object, alongside Snippet/TryPrompt/WhenLang:
-  ChartEmbed,
-```
-
-- [ ] **Step 5: Embed the demo chart in the advanced lesson**
+In `src/content/lessons/advanced/subagents.mdx`, change the embedded chart section to:
 
 ```mdx
-{/* src/content/lessons/advanced/subagents.mdx — append */}
+## Levels
 
-## The loop
-
-<ChartEmbed id="loop" />
+<ChartEmbed id="demo" />
 ```
 
-- [ ] **Step 6: Run tests and build to verify they pass**
+- [ ] **Step 4: Fix the LessonPage scroll-anchor test's card name**
 
-Run: `npm test -- src/components/charts/ChartEmbed.test.tsx`
-Expected: PASS (4 tests).
+The scroll-restore test in `src/pages/LessonPage.test.tsx` waits for a chart button that used to be named `Edit`. The demo's lesson-target card is now titled **Beginner**. Update that test's `findByRole` to:
+
+```tsx
+  expect(await screen.findByRole('button', { name: 'Beginner' })).toBeInTheDocument()
+```
+
+(Only that button-name string changes; the rest of the test — the `#chart-...` hash entry and the `scrollSpy` assertion — stays. Note the hash in that test's initial entry must target the demo anchor: ensure it is `/learn/advanced/power/subagents#chart-demo`.)
+
+- [ ] **Step 5: Run focused tests, full suite, and build**
+
+Run: `npm test -- src/components/charts/ChartEmbed.test.tsx src/pages/LessonPage.test.tsx`
+Expected: PASS.
+Run: `npm test`
+Expected: PASS (all files — confirms no other test referenced the old chart).
 Run: `npm run build`
 Expected: clean.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add src/components/charts/ChartEmbed.tsx src/components/charts/ChartEmbed.test.tsx src/components/mdx/mdxComponents.tsx src/content/lessons/advanced/subagents.mdx
-git commit -m "feat: ChartEmbed wires node activation to routing/popup and embeds the demo chart"
+git add src/components/charts/ChartEmbed.tsx src/components/charts/ChartEmbed.test.tsx src/content/lessons/advanced/subagents.mdx src/pages/LessonPage.test.tsx
+git commit -m "feat: wire ChartEmbed to card activation; embed demo chart in lesson"
 ```
 
 ---
 
-### Task 7: Lesson Back button + `useBackTarget` + origin-passing nav
+### Task 5: Authoring guide + CLAUDE.md pointer
 
 **Files:**
-- Create: `src/lib/useBackTarget.ts`
-- Test: `src/lib/useBackTarget.test.tsx`
-- Modify: `src/pages/LessonPage.tsx` (Back button, scroll-to-anchor, pass `state.from` on advance)
-- Modify: `src/components/shell/Sidebar.tsx` (NavLink passes `state.from`)
-- Test: `src/pages/LessonPage.test.tsx` (append Back-button cases)
+- Create: `src/content/charts/README.md`
+- Modify: `CLAUDE.md`
 
-**Interfaces:**
-- Consumes: `prevLesson`, `lessonPath` (Tasks 2 / existing); `useLocation`, `useParams`.
-- Produces: `useBackTarget(): string | null`
+**Interfaces:** none (documentation).
 
-Resolution order: `location.state.from` → `prevLesson(curriculum, lessonId)` path → `null`.
+- [ ] **Step 1: Write the authoring guide**
 
-- [ ] **Step 1: Write the failing test for the hook**
+Create `src/content/charts/README.md` documenting the **shipped** API. It MUST include, accurately reflecting the final code:
+- One-paragraph overview (charts are card-flow stacks embedded in lessons; click a card → lesson or popup).
+- The data model: `ChartDef` (`id`, `title?`, `subtitle?`, `rows`), `ChartRow` (`cards` | `connector`), `ChartCard` (`id`, `title`, `lines?`, `tone?`, `target?`), and the `ChartTone` list (`neutral`, `blue`, `violet`, `amber`, `rose`, `teal` — note success-green is intentionally excluded).
+- The three target kinds: `{ kind: 'lesson', ref: { level, module, lesson } }` (must match a real `curriculum.ts` lesson), `{ kind: 'popup', title?, content: () => import('./popups/x.mdx') }`, or omit `target` for an inert card.
+- Step-by-step "Add a chart": (1) create `src/content/charts/<id>.ts` exporting a `ChartDef`; (2) register it in `src/content/charts/index.ts`; (3) add any popup MDX under `src/content/charts/popups/`; (4) embed in a lesson MDX with `<ChartEmbed id="<id>" />`.
+- Layout notes: a `cards` row with 1 card is full-width; 2–3 split and stack on mobile; a `connector` row is a labeled pill; arrows are automatic between rows.
+- A copy-paste example (adapt from `demo.ts`).
+- A one-line note that genuinely graph-shaped charts (loops, multi-edges, edge labels) are a future React Flow renderer behind the same contract — not supported by this card-flow renderer.
 
-```tsx
-// src/lib/useBackTarget.test.tsx
-import { render, screen } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { useBackTarget } from './useBackTarget'
+- [ ] **Step 2: Add the CLAUDE.md pointer**
 
-function Probe() {
-  return <div data-testid="back">{String(useBackTarget())}</div>
-}
+In `CLAUDE.md`, under the "Load-bearing invariants (later phases)" or "Conventions" area, add a short entry:
 
-function renderAt(entry: { pathname: string; state?: unknown }) {
-  return render(
-    <MemoryRouter initialEntries={[entry]}>
-      <Routes>
-        <Route path="/learn/:levelId/:moduleId/:lessonId" element={<Probe />} />
-      </Routes>
-    </MemoryRouter>,
-  )
-}
-
-test('prefers state.from when present', () => {
-  renderAt({ pathname: '/learn/beginner/basics/first-edit', state: { from: '/learn/advanced/power/subagents#chart-loop' } })
-  expect(screen.getByTestId('back')).toHaveTextContent('/learn/advanced/power/subagents#chart-loop')
-})
-
-test('falls back to the previous curriculum lesson', () => {
-  renderAt({ pathname: '/learn/beginner/basics/first-edit' })
-  expect(screen.getByTestId('back')).toHaveTextContent('/learn/beginner/basics/what-is-cc')
-})
-
-test('returns null on the first lesson with no origin', () => {
-  renderAt({ pathname: '/learn/beginner/basics/what-is-cc' })
-  expect(screen.getByTestId('back')).toHaveTextContent('null')
-})
+```markdown
+## Adding a chart
+Charts are card-flow stacks (`src/content/charts/`), embedded in lessons via
+`<ChartEmbed id="…" />`. To add one: define a `ChartDef`, register it in
+`index.ts`, and embed it. Full guide: `src/content/charts/README.md`.
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [ ] **Step 3: Verify build/lint unaffected**
 
-Run: `npm test -- src/lib/useBackTarget.test.tsx`
-Expected: FAIL — cannot find module `./useBackTarget`.
-
-- [ ] **Step 3: Implement `useBackTarget`**
-
-```ts
-// src/lib/useBackTarget.ts
-import { useLocation, useParams } from 'react-router-dom'
-import { curriculum } from '../content/curriculum'
-import { lessonPath, prevLesson } from './curriculumNav'
-
-export function useBackTarget(): string | null {
-  const location = useLocation()
-  const { lessonId } = useParams()
-  const from = (location.state as { from?: string } | null)?.from
-  if (from) return from
-  const prev = lessonId ? prevLesson(curriculum, lessonId) : undefined
-  return prev ? lessonPath(prev) : null
-}
-```
-
-- [ ] **Step 4: Run test to verify it passes**
-
-Run: `npm test -- src/lib/useBackTarget.test.tsx`
-Expected: PASS (3 tests).
-
-- [ ] **Step 5: Write the failing LessonPage Back-button tests**
-
-```tsx
-// src/pages/LessonPage.test.tsx — append
-import { Navigate } from 'react-router-dom'
-
-test('shows a Back button that returns to state.from', async () => {
-  const user = userEvent.setup()
-  render(
-    <ThemeProvider><LanguageProvider><ProgressProvider>
-      <MemoryRouter initialEntries={[{ pathname: '/learn/beginner/basics/first-edit', state: { from: '/learn/advanced/power/subagents' } }]}>
-        <Routes>
-          <Route path="/learn/:levelId/:moduleId/:lessonId" element={<LessonPage />} />
-        </Routes>
-      </MemoryRouter>
-    </ProgressProvider></LanguageProvider></ThemeProvider>,
-  )
-  await screen.findByRole('heading', { name: /your first edit/i })
-  expect(screen.getByRole('button', { name: /back/i })).toBeInTheDocument()
-})
-
-test('hides the Back button on the first lesson with no origin', async () => {
-  renderAt('/learn/beginner/basics/what-is-cc')
-  await screen.findByRole('heading', { name: /what is claude code/i })
-  expect(screen.queryByRole('button', { name: /back/i })).toBeNull()
-})
-```
-
-- [ ] **Step 6: Run to verify the new LessonPage tests fail**
-
-Run: `npm test -- src/pages/LessonPage.test.tsx`
-Expected: FAIL — no Back button rendered yet.
-
-- [ ] **Step 7: Add the Back button + scroll-to-anchor to `LessonPage`**
-
-In `src/pages/LessonPage.tsx`:
-
-1. Update imports:
-
-```tsx
-import { Suspense, lazy, useEffect, useMemo } from 'react'
-import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { useBackTarget } from '../lib/useBackTarget'
-```
-
-2. Add a back-arrow icon next to `ArrowRightIcon`:
-
-```tsx
-function ArrowLeftIcon() {
-  return (
-    <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M13 8H3M7 4L3 8l4 4" />
-    </svg>
-  )
-}
-```
-
-3. Inside the component, after `const reduce = useReducedMotion()`:
-
-```tsx
-  const back = useBackTarget()
-  const { hash } = useLocation()
-```
-
-4. Add a scroll-to-anchor effect (after the existing visit effect):
-
-```tsx
-  useEffect(() => {
-    if (!hash) return
-    const el = document.querySelector(hash)
-    el?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' })
-  }, [hash, location, reduce])
-```
-
-5. Pass `state.from` when advancing in `handleComplete`:
-
-```tsx
-  const handleComplete = () => {
-    markCompleted(location.lesson.id)
-    if (next) {
-      navigate(`/learn/${next.levelId}/${next.moduleId}/${next.lesson.id}`, {
-        state: { from: lessonPath(location) },
-      })
-    }
-  }
-```
-
-6. Render the Back button at the top of the article (before `<MDXProvider>`):
-
-```tsx
-      {back && (
-        <div className="mb-6">
-          <Button variant="secondary" size="sm" leadingIcon={<ArrowLeftIcon />} onClick={() => navigate(back)}>
-            Back
-          </Button>
-        </div>
-      )}
-```
-
-- [ ] **Step 8: Pass `state.from` from the Sidebar NavLinks**
-
-In `src/components/shell/Sidebar.tsx`:
-
-1. Add to imports: `import { NavLink, useLocation } from 'react-router-dom'`
-2. Inside `Sidebar`, after `const reduce = useReducedMotion()`: `const { pathname } = useLocation()`
-3. On the `<NavLink>`, add the `state` prop:
-
-```tsx
-                                <NavLink
-                                  to={`/learn/${level.id}/${mod.id}/${lesson.id}`}
-                                  state={{ from: pathname }}
-                                  className={({ isActive }) =>
-```
-
-- [ ] **Step 9: Run the full suite and build**
-
-Run: `npm test`
-Expected: PASS (all files, including the new Back-button and hook tests).
 Run: `npm run build`
-Expected: clean.
+Expected: clean (docs-only change; sanity check nothing else broke).
 
-- [ ] **Step 10: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
-git add src/lib/useBackTarget.ts src/lib/useBackTarget.test.tsx src/pages/LessonPage.tsx src/pages/LessonPage.test.tsx src/components/shell/Sidebar.tsx
-git commit -m "feat: lesson Back button resolving where-you-came-from + scroll-to-chart anchor"
+git add src/content/charts/README.md CLAUDE.md
+git commit -m "docs: chart authoring guide + CLAUDE.md pointer"
 ```
 
 ---
@@ -1098,18 +707,18 @@ git commit -m "feat: lesson Back button resolving where-you-came-from + scroll-t
 ## Self-Review
 
 **Spec coverage:**
-- Data model (nodes/edges/optional target, LessonRef, registry) → Task 1. ✓
-- Targetless node = inert → Task 1 (data) + Task 5 (rendering/tests). ✓
-- Custom SVG + Framer Motion `<Chart>`, reduced-motion → Task 5. ✓
-- Generic `Popup` primitive → Task 3; `ChartPopup` wrapper rendering MDX via shared engine → Task 4. ✓
-- `ChartEmbed` MDX-facing: lesson nav vs popup vs no-op, anchor id, registered in `mdxComponents`, embedded in `subagents.mdx` → Task 6. ✓
-- Lesson Back button (`state.from` → prev lesson → hidden), scroll-restore to `#chart-<id>`, origin-passing from Next/advance + Sidebar → Tasks 2 + 7. ✓
-- No new routes; no new deps → honored throughout. ✓
-- Demo chart exercises all three node kinds → Task 1 `loop` + assertions. ✓
-- Language-aware popup (a `<Snippet>`) → Task 1 bash.mdx + Task 4 assertion. ✓
+- Card-flow data model (rows/cards/tones, kept target model) → Task 1. ✓
+- Chart tone palette tokens (documented exception, green excluded) → Task 2. ✓
+- `ChartCardView` (tone tint, interactive/inert, chunky) → Task 2. ✓
+- `<Chart>` HTML renderer (responsive rows, connector pills, auto arrows, reduced-motion) → Task 3. ✓
+- `ChartEmbed` card activation (lesson nav / popup / no-op, anchor) + demo embed → Task 4. ✓
+- Reused unchanged: `Popup`/`ChartPopup`/`useBackTarget`/Back/Sidebar — not re-touched (Task 4 only updates a LessonPage **test** string). ✓
+- Demo exercises all card kinds + split + connector + tones → Task 1 `demo`. ✓
+- Authoring guide + CLAUDE.md pointer → Task 5. ✓
+- No new routes/deps; responsive; jsdom-testable → honored throughout. ✓
 
-**Placeholder scan:** No TBD/TODO; every code step shows full code; commands have expected output. ✓
+**Placeholder scan:** No TBD/TODO; every code step shows full code; Task 5's doc content is enumerated as required sections (a doc, not code). ✓
 
-**Type consistency:** `getChart`, `ChartDef`, `ChartNode`, `PopupTarget`, `ChartTarget`, `LessonRef`, `prevLesson`, `useBackTarget`, `findLesson`/`lessonPath` signatures used identically across tasks; `onActivate(node)` and `ChartPopup({ target, onClose })` consistent between definition (Tasks 4/5) and use (Task 6). ✓
+**Type consistency:** `ChartCard`/`ChartRow`/`ChartTone`/`ChartDef` defined in Task 1 and used identically in Tasks 2–4; `onActivate: (card: ChartCard) => void` consistent between `ChartCardView` (T2), `Chart` (T3), and `ChartEmbed` (T4); tone utility names `bg-chart-<tone>-bg`/`border-chart-<tone>-border`/`text-chart-<tone>-text` match between the `@theme` map (T2 CSS) and `TONE` lookup (T2 component). ✓
 
-**Note for executor:** `rounded-card` / `bg-ink/50` / `shadow-hard-lg` / `fill-accent-soft` / `stroke-ink` are used in Tasks 3 & 5. These map to existing tokens (`--radius-card`, `--ink`, `--shadow-hard-lg`, `accent-soft`, `ink`). If any utility doesn't resolve under the Tailwind v4 token setup, substitute the nearest existing semantic utility (e.g. `rounded-control`, `border-ink`) rather than introducing raw values — keep it tokenized.
+**Note for executor:** the tone `@theme` mappings must exist for the `bg-chart-*`/`text-chart-*` utilities to generate; if a card renders unstyled in the browser, re-check Task 2 Step 1's three insertion points. Keep everything tokenized — do not fall back to raw hex in components.
