@@ -5,8 +5,11 @@ import path from 'node:path'
 import { lessonTemplate } from './lessonTemplate.ts'
 import { scaffoldLesson, scaffoldOutline } from './scaffold.ts'
 
+const tmpDirs: string[] = []
+
 function seedContent(): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ccc-'))
+  tmpDirs.push(dir)
   fs.mkdirSync(path.join(dir, 'lessons/beginner'), { recursive: true })
   fs.mkdirSync(path.join(dir, 'snippets'), { recursive: true })
   fs.writeFileSync(
@@ -33,6 +36,10 @@ export default ${name}
   return dir
 }
 
+afterEach(() => {
+  for (const d of tmpDirs.splice(0)) fs.rmSync(d, { recursive: true, force: true })
+})
+
 test('lessonTemplate renders heading, prose stub, Snippet and TryPrompt', () => {
   const out = lessonTemplate('Your First Edit', 'first-edit-example', 'first-edit')
   expect(out).toContain('# Your First Edit')
@@ -56,7 +63,7 @@ test('scaffoldLesson writes mdx, registers in curriculum, stubs the DEFAULT pack
   expect(fs.readFileSync(path.join(dir, 'snippets/python.ts'), 'utf8')).not.toContain('first-edit-example')
 })
 
-test('scaffoldOutline creates a brand-new level, module and lessons atomically', () => {
+test('scaffoldOutline creates a brand-new level, module and lessons', () => {
   const dir = seedContent()
   scaffoldOutline(
     {
@@ -75,4 +82,14 @@ test('scaffoldOutline creates a brand-new level, module and lessons atomically',
   expect(curriculum).toContain("id: 'power'")
   expect(curriculum).toContain("id: 'subagents'")
   expect(fs.existsSync(path.join(dir, 'lessons/advanced/subagents.mdx'))).toBe(true)
+})
+
+test('re-scaffolding an existing lesson preserves authored .mdx content', () => {
+  const dir = seedContent()
+  const spec = { level: { id: 'beginner', title: 'Beginner' }, module: { id: 'basics', title: 'The Basics' }, id: 'first-edit', title: 'Your First Edit' }
+  scaffoldLesson(spec, dir)
+  const file = path.join(dir, 'lessons/beginner/first-edit.mdx')
+  fs.writeFileSync(file, '# Hand-authored\n\nCustom prose.\n')
+  scaffoldLesson(spec, dir)
+  expect(fs.readFileSync(file, 'utf8')).toBe('# Hand-authored\n\nCustom prose.\n')
 })
