@@ -33,7 +33,9 @@ function glyphFor(isActive: boolean, completed: boolean): GlyphStatus {
 export function Sidebar() {
   const { progress, getStatus } = useProgress()
   const reduce = useReducedMotion()
-  const { pathname } = useLocation()
+  const location = useLocation()
+  // Preserve any hash/search (e.g. a `#chart-…` anchor) so Back can scroll-restore.
+  const from = `${location.pathname}${location.search}${location.hash}`
   const [open, setOpen] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(curriculum.map((level) => [level.id, true])),
   )
@@ -81,7 +83,7 @@ export function Sidebar() {
                               <li key={lesson.id}>
                                 <NavLink
                                   to={`/learn/${level.id}/${mod.id}/${lesson.id}`}
-                                  state={{ from: pathname }}
+                                  state={{ from }}
                                   className={({ isActive }) =>
                                     cn(
                                       'flex items-center gap-2 rounded-control px-2 py-1.5 text-sm',

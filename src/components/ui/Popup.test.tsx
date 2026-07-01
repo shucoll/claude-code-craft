@@ -27,6 +27,11 @@ test('shows title and children when open', () => {
   expect(screen.getByText('Body content')).toBeInTheDocument()
 })
 
+test('uses ariaLabel as the accessible name when no title is given', () => {
+  render(<Popup open onClose={() => {}} ariaLabel="Details"><p>Body</p></Popup>)
+  expect(screen.getByRole('dialog')).toHaveAccessibleName('Details')
+})
+
 test('closes on Escape, backdrop click, and the close button', async () => {
   const user = userEvent.setup()
   const onClose = vi.fn()

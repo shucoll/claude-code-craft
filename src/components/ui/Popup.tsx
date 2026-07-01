@@ -4,6 +4,8 @@ interface PopupProps {
   open: boolean
   onClose: () => void
   title?: ReactNode
+  /** Accessible name when `title` is absent, so the dialog is never unnamed. */
+  ariaLabel?: string
   children: ReactNode
 }
 
@@ -15,7 +17,7 @@ function CloseIcon() {
   )
 }
 
-export function Popup({ open, onClose, title, children }: PopupProps) {
+export function Popup({ open, onClose, title, ariaLabel, children }: PopupProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
   const onCloseRef = useRef(onClose)
   const titleId = useId()
@@ -72,6 +74,7 @@ export function Popup({ open, onClose, title, children }: PopupProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
+        aria-label={title ? undefined : ariaLabel}
         tabIndex={-1}
         className="relative flex max-h-[85vh] w-full max-w-lg flex-col rounded-card border-2 border-ink bg-card text-card-foreground shadow-hard-lg outline-none"
       >
