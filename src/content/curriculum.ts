@@ -29,6 +29,7 @@ export const curriculum: Level[] = [
         lessons: [
           { id: 'what-is-cc', title: 'What is Claude Code?', content: () => import('./lessons/beginner/what-is-cc.mdx') },
           { id: 'first-edit', title: 'Your First Edit', content: () => import('./lessons/beginner/first-edit.mdx') },
+          { id: 'review-changes', title: 'Reviewing Changes', content: () => import('./lessons/beginner/review-changes.mdx') },
         ],
       },
     ],
