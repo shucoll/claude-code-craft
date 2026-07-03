@@ -760,11 +760,13 @@ git commit -m "feat(authoring): emit curriculum.ts source from frontmatter"
 - Create: `scripts/authoring/generateCurriculum.ts`
 - Modify: `src/content/charts/index.ts` (export `chartIds`)
 - Modify: `package.json` (scripts)
-- Test: `scripts/authoring/generate/emit.integration.test.ts`
+- Test: `scripts/authoring/generateCurriculum.test.ts`
 
 **Interfaces:**
 - Consumes: `readAllLessonMeta` (Task 3), `validateContent` (Task 4), `emitCurriculum` (Task 5), `structure` (Task 2), existing `tsutil` helpers `newProject`/`formatAndSave`, existing `paths` helpers `curriculumFile`/`lessonsDir`/`DEFAULT_CONTENT_DIR`.
-- Produces: `chartIds: ReadonlySet<string>` from `charts/index.ts`; a runnable `tsx scripts/authoring/generateCurriculum.ts` that writes `src/content/curriculum.ts`.
+- Produces: `chartIds: ReadonlySet<string>` from `charts/index.ts`; an exported `generate(contentDir?): void`; a runnable `tsx scripts/authoring/generateCurriculum.ts` that writes `src/content/curriculum.ts`.
+
+**Note:** this task does NOT touch the real `src/content/curriculum.ts` — the real content is still un-migrated (it has no frontmatter), so running the generator against it would (correctly) throw. The orchestrator is proven here against a **temporary** content dir; the real regeneration happens in Task 7. Every commit in this task leaves the suite green.
 
 - [ ] **Step 1: Export chart ids**
 
@@ -773,37 +775,54 @@ Edit `src/content/charts/index.ts` — after the `charts` const, add:
 export const chartIds: ReadonlySet<string> = new Set(Object.keys(charts))
 ```
 
-- [ ] **Step 2: Write the failing integration test**
+- [ ] **Step 2: Write the failing orchestrator test**
 
-Create `scripts/authoring/generate/emit.integration.test.ts`:
+Create `scripts/authoring/generateCurriculum.test.ts`. It builds a throwaway content dir whose module code (`B1`) exists in the real `structure.ts`, so it exercises the real manifest + chart registry without depending on the (un-migrated) real lessons:
 ```ts
-import { readAllLessonMeta } from './frontmatter.ts'
-import { validateContent } from './validate.ts'
-import { emitCurriculum } from './emit.ts'
-import { structure } from '../../../src/content/structure.ts'
-import { chartIds } from '../../../src/content/charts/index.ts'
-import { lessonsDir, DEFAULT_CONTENT_DIR } from '../paths.ts'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+import { generate } from './generateCurriculum.ts'
 
-test('real content generates a valid curriculum with literal imports', () => {
-  const metas = readAllLessonMeta(lessonsDir(DEFAULT_CONTENT_DIR))
-  expect(validateContent({ structure, metas, knownChartIds: new Set(chartIds) })).toEqual([])
-  const src = emitCurriculum(structure, metas)
-  // Every lesson must be a literal, statically-analyzable import (code-splitting).
-  const importCount = (src.match(/content: \(\) => import\('\.\/lessons\/[^']+\.mdx'\)/g) ?? []).length
-  expect(importCount).toBe(metas.length)
-  expect(src).not.toMatch(/import\([^'"]/) // no computed imports
+function tmpContentDir(write: (lessonsBeginnerDir: string) => void): string {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ccc-gen-'))
+  const beginner = path.join(dir, 'lessons', 'beginner')
+  fs.mkdirSync(beginner, { recursive: true })
+  write(beginner)
+  return dir
+}
+
+test('generate writes a curriculum.ts with a literal import for valid content', () => {
+  const dir = tmpContentDir((beginner) => {
+    fs.writeFileSync(
+      path.join(beginner, 'what-is-cc.mdx'),
+      `---\nid: "B1.1"\nslug: "what-is-cc"\ntitle: "What is Claude Code?"\ntype: "core"\norder: 1\nvolatility: "stable"\n---\n\n# What is Claude Code?\n`,
+    )
+  })
+  generate(dir)
+  const out = fs.readFileSync(path.join(dir, 'curriculum.ts'), 'utf8')
+  expect(out).toContain('export const curriculum')
+  expect(out).toContain("content: () => import('./lessons/beginner/what-is-cc.mdx')")
+})
+
+test('generate throws when a lesson is missing required frontmatter', () => {
+  const dir = tmpContentDir((beginner) => {
+    fs.writeFileSync(path.join(beginner, 'broken.mdx'), `# no frontmatter\n`)
+  })
+  expect(() => generate(dir)).toThrow(/generation failed/)
 })
 ```
 
 - [ ] **Step 3: Run test to verify it fails**
 
-Run: `npx vitest run scripts/authoring/generate/emit.integration.test.ts`
-Expected: FAIL — the existing lessons have no frontmatter yet, so `validateContent` returns "missing required field" errors and the `toEqual([])` assertion fails. (This test goes green in Task 7 after migration; leave it failing for now — it is the migration's acceptance test.)
+Run: `npx vitest run scripts/authoring/generateCurriculum.test.ts`
+Expected: FAIL — `Cannot find module './generateCurriculum.ts'`.
 
 - [ ] **Step 4: Implement the CLI orchestrator**
 
-Create `scripts/authoring/generateCurriculum.ts`:
+Create `scripts/authoring/generateCurriculum.ts`. The auto-run is **guarded** so importing `generate` in the test has no side effects (it only runs when invoked directly as a CLI):
 ```ts
+import { pathToFileURL } from 'node:url'
 import { readAllLessonMeta } from './generate/frontmatter.ts'
 import { validateContent } from './generate/validate.ts'
 import { emitCurriculum } from './generate/emit.ts'
@@ -826,12 +845,20 @@ export function generate(contentDir: string = DEFAULT_CONTENT_DIR): void {
   console.log(`generated ${curriculumFile(contentDir)} (${metas.length} lessons)`)
 }
 
-generate()
+// Run only when invoked as a CLI (`tsx generateCurriculum.ts`), not when imported by tests.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  generate()
+}
 ```
 
-Note: if `formatAndSave` is async in `tsutil.ts`, make `generate` `async` and `await` it, and change the final call to `generate()` accordingly — check the signature in `scripts/authoring/tsutil.ts` before implementing.
+Note: if `formatAndSave` is async in `tsutil.ts`, make `generate` `async`, `await` it, and `await generate()` in the guard — check the signature in `scripts/authoring/tsutil.ts` before implementing.
 
-- [ ] **Step 5: Add npm scripts**
+- [ ] **Step 5: Run test to verify it passes**
+
+Run: `npx vitest run scripts/authoring/generateCurriculum.test.ts`
+Expected: PASS (both cases).
+
+- [ ] **Step 6: Add npm scripts**
 
 Edit `package.json` `scripts`:
 ```json
@@ -840,15 +867,15 @@ Edit `package.json` `scripts`:
     "prebuild": "npm run gen:curriculum",
 ```
 
-- [ ] **Step 6: Verify the orchestrator runs and reports validation errors**
+- [ ] **Step 7: Sanity-check the gate against real content (do NOT commit the result)**
 
 Run: `npm run gen:curriculum`
-Expected: FAILS with `ERROR …: missing required field "id"` lines (lessons not migrated yet). This confirms the validation gate fires. Do **not** commit a broken `curriculum.ts` — if the run partially wrote the file, `git checkout src/content/curriculum.ts` to restore it.
+Expected: FAILS with `ERROR …: missing required field "id"` lines (real lessons not migrated yet) — this confirms the validation gate fires. If the run left the real `curriculum.ts` modified, restore it: `git checkout src/content/curriculum.ts`. Confirm `git status` shows `curriculum.ts` unchanged before committing.
 
-- [ ] **Step 7: Commit (generator + wiring only; curriculum.ts unchanged)**
+- [ ] **Step 8: Commit (generator + wiring only; real curriculum.ts unchanged)**
 
 ```bash
-git add scripts/authoring/generateCurriculum.ts scripts/authoring/generate/emit.integration.test.ts src/content/charts/index.ts package.json
+git add scripts/authoring/generateCurriculum.ts scripts/authoring/generateCurriculum.test.ts src/content/charts/index.ts package.json
 git commit -m "feat(authoring): curriculum generator CLI + chart-id registry + scripts"
 ```
 
@@ -866,7 +893,7 @@ git commit -m "feat(authoring): curriculum generator CLI + chart-id registry + s
 
 **Interfaces:**
 - Consumes: everything from Tasks 1–6.
-- Produces: a generated `curriculum.ts` with the 5 migrated lessons; a green `emit.integration.test.ts`; a CI stale-check.
+- Produces: a generated `curriculum.ts` with the 5 migrated lessons; runtime tests over the generated tree incl. the code-splitting guard; a CI stale-check.
 
 - [ ] **Step 1: Add frontmatter to each lesson**
 
@@ -937,15 +964,12 @@ verifiedAgainstDocsAt: "2026-07-03"
 Run: `npm run gen:curriculum`
 Expected: `generated …/curriculum.ts (5 lessons)`, no ERROR lines.
 
-- [ ] **Step 3: Make the integration test pass**
+- [ ] **Step 3: Write the generated-tree + code-splitting guard test**
 
-Run: `npx vitest run scripts/authoring/generate/emit.integration.test.ts`
-Expected: PASS (validation clean; 5 literal imports).
-
-- [ ] **Step 4: Write the generated-freshness guard test**
-
-Create `src/content/__generated.test.ts`:
+Create `src/content/__generated.test.ts`. The last case reads the generated file's source text and enforces the loading-model invariant (one literal `import()` per lesson, no computed imports):
 ```ts
+import fs from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { curriculum, lessonPathById } from './curriculum'
 
 test('generated curriculum exposes the migrated lessons', () => {
@@ -962,14 +986,22 @@ test('every lesson carries a dotted id', () => {
   const all = curriculum.flatMap((l) => l.modules.flatMap((m) => m.lessons))
   expect(all.every((l) => l.dottedId != null && /^[BIA]\d+\.\d+$/.test(l.dottedId))).toBe(true)
 })
+
+test('every lesson is a literal import (code-splitting guard)', () => {
+  const src = fs.readFileSync(fileURLToPath(new URL('./curriculum.ts', import.meta.url)), 'utf8')
+  const all = curriculum.flatMap((l) => l.modules.flatMap((m) => m.lessons))
+  const literalImports = src.match(/content: \(\) => import\('\.\/lessons\/[^']+\.mdx'\)/g) ?? []
+  expect(literalImports).toHaveLength(all.length)
+  expect(src).not.toMatch(/import\([^'"]/) // no computed imports
+})
 ```
 
-- [ ] **Step 5: Run the full suite + lint + build**
+- [ ] **Step 4: Run the full suite + lint + build**
 
 Run: `npm test && npm run lint && npm run build`
-Expected: all PASS. (`npm run build` triggers `prebuild` → regenerates; the committed `curriculum.ts` must be byte-identical afterwards — see Step 7.)
+Expected: all PASS. (`npm run build` triggers `prebuild` → regenerates; the committed `curriculum.ts` must be byte-identical afterwards — see Step 6.)
 
-- [ ] **Step 6: Add the CI stale-check**
+- [ ] **Step 5: Add the CI stale-check**
 
 Edit `.github/workflows/ci.yml` — add after the "Check snippets" step:
 ```yaml
@@ -979,12 +1011,12 @@ Edit `.github/workflows/ci.yml` — add after the "Check snippets" step:
           git diff --exit-code src/content/curriculum.ts
 ```
 
-- [ ] **Step 7: Verify determinism (no drift)**
+- [ ] **Step 6: Verify determinism (no drift)**
 
 Run: `npm run gen:curriculum && git diff --exit-code src/content/curriculum.ts`
 Expected: exit 0, no diff (second generation is identical to the committed file).
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add src/content/lessons src/content/curriculum.ts src/content/__generated.test.ts .github/workflows/ci.yml
