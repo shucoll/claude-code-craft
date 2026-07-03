@@ -38,3 +38,31 @@ test('re-exports types and includes the generated header', () => {
   expect(src).toContain('DO NOT EDIT')
   expect(src).toContain("from './curriculum.types'")
 })
+
+test('emits array and interactive fields as single-quoted, not JSON.stringify', () => {
+  const metasWithArrays: LessonMeta[] = [
+    {
+      dottedId: 'B1.1',
+      slug: 'what-is-cc',
+      title: 'What is Claude Code?',
+      type: 'core',
+      order: 1,
+      volatility: 'stable',
+      levelDir: 'beginner',
+      file: 'x',
+      prerequisites: ['B1.1'],
+      teaches: ['x'],
+      references: ['B1.2'],
+      docsSources: ['https://d'],
+      interactive: [{ kind: 'diagram', spec: 'agentic-loop-diagram' }],
+    },
+  ]
+  const src = emitCurriculum(structure, metasWithArrays)
+  expect(src).toContain("prerequisites: ['B1.1']")
+  expect(src).toContain("teaches: ['x']")
+  expect(src).toContain("references: ['B1.2']")
+  expect(src).toContain("docsSources: ['https://d']")
+  expect(src).toContain("interactive: [{ kind: 'diagram', spec: 'agentic-loop-diagram' }]")
+  expect(src).not.toMatch(/"kind"/)
+  expect(src).not.toMatch(/prerequisites: \["/)
+})

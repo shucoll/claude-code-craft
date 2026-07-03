@@ -5,6 +5,9 @@ import type { LevelDef } from '../../../src/content/structure.ts'
 // Single-quoted string literal, matching the codebase's quote style.
 const q = (s: string): string => `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
 
+// Single-quoted string array literal.
+const arr = (xs: string[]): string => `[${xs.map(q).join(', ')}]`
+
 export function emitCurriculum(structure: LevelDef[], metas: LessonMeta[]): string {
   const byModule = new Map<string, LessonMeta[]>()
   for (const m of metas) {
@@ -49,11 +52,12 @@ function emitLesson(m: LessonMeta, importPath: string): string {
   if (typeof m.estimatedMinutes === 'number') fields.push(`        estimatedMinutes: ${m.estimatedMinutes}`)
   if (m.volatility) fields.push(`        volatility: ${q(m.volatility)}`)
   if (m.verifiedAgainstDocsAt) fields.push(`        verifiedAgainstDocsAt: ${q(m.verifiedAgainstDocsAt)}`)
-  if (m.prerequisites?.length) fields.push(`        prerequisites: ${JSON.stringify(m.prerequisites)}`)
-  if (m.teaches?.length) fields.push(`        teaches: ${JSON.stringify(m.teaches)}`)
-  if (m.references?.length) fields.push(`        references: ${JSON.stringify(m.references)}`)
-  if (m.docsSources?.length) fields.push(`        docsSources: ${JSON.stringify(m.docsSources)}`)
-  if (m.interactive?.length) fields.push(`        interactive: ${JSON.stringify(m.interactive)}`)
+  if (m.prerequisites?.length) fields.push(`        prerequisites: ${arr(m.prerequisites)}`)
+  if (m.teaches?.length) fields.push(`        teaches: ${arr(m.teaches)}`)
+  if (m.references?.length) fields.push(`        references: ${arr(m.references)}`)
+  if (m.docsSources?.length) fields.push(`        docsSources: ${arr(m.docsSources)}`)
+  if (m.interactive?.length)
+    fields.push(`        interactive: [${m.interactive.map((it) => `{ kind: ${q(it.kind)}, spec: ${q(it.spec)} }`).join(', ')}]`)
   fields.push(`        content: () => import(${q(importPath)})`)
   return `      {\n${fields.join(',\n')},\n      }`
 }
