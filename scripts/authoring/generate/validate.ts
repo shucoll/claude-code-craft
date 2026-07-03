@@ -28,6 +28,7 @@ export function validateContent({ structure, metas, knownChartIds }: ValidateInp
     if (!m.dottedId) errors.push(`${at}: missing required field "id"`)
     if (!m.slug) errors.push(`${at}: missing required field "slug"`)
     if (!m.title) errors.push(`${at}: missing required field "title"`)
+    if (typeof m.order !== 'number') errors.push(`${at}: missing required field "order"`)
     if (m.type && !LESSON_TYPES.has(m.type)) errors.push(`${at}: invalid type "${m.type}"`)
     if (m.volatility && !VOLATILITIES.has(m.volatility)) errors.push(`${at}: invalid volatility "${m.volatility}"`)
     if (m.verifiedAgainstDocsAt && Number.isNaN(Date.parse(m.verifiedAgainstDocsAt)))
@@ -59,21 +60,23 @@ export function validateContent({ structure, metas, knownChartIds }: ValidateInp
       errors.push(`${at}: volatility "${m.volatility}" requires docsSources`)
   }
 
-  const ordersByModule = new Map<string, number[]>()
+  const ordersByModule = new Map<string, { order: number; file: string }[]>()
   for (const m of metas) {
     if (!m.dottedId || typeof m.order !== 'number') continue
     const code = moduleCodeOf(m.dottedId)
-    ordersByModule.set(code, [...(ordersByModule.get(code) ?? []), m.order])
+    ordersByModule.set(code, [...(ordersByModule.get(code) ?? []), { order: m.order, file: m.file }])
   }
-  for (const [code, orders] of ordersByModule) {
-    const sorted = [...orders].sort((a, b) => a - b)
-    if (sorted.length !== new Set(sorted).size) {
-      errors.push(`module ${code}: duplicate order values`)
+  for (const [code, entries] of ordersByModule) {
+    const sorted = [...entries].sort((a, b) => a.order - b.order)
+    const files = sorted.map((e) => e.file)
+    const orders = sorted.map((e) => e.order)
+    if (orders.length !== new Set(orders).size) {
+      errors.push(`module ${code}: duplicate order values (files: ${files.join(', ')})`)
       continue
     }
-    const expected = sorted.map((_, i) => i + 1)
-    if (JSON.stringify(sorted) !== JSON.stringify(expected))
-      errors.push(`module ${code}: order values must be contiguous from 1, got [${sorted.join(', ')}]`)
+    const expected = orders.map((_, i) => i + 1)
+    if (JSON.stringify(orders) !== JSON.stringify(expected))
+      errors.push(`module ${code}: order values must be contiguous from 1, got [${orders.join(', ')}] (files: ${files.join(', ')})`)
   }
 
   return errors

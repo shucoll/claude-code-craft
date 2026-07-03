@@ -56,6 +56,11 @@ test('requires docsSources when volatility is not stable', () => {
   expect(errors.some((e) => e.includes('requires docsSources'))).toBe(true)
 })
 
+test('flags a missing order field', () => {
+  const errors = validateContent({ structure, metas: [meta({ order: undefined })], knownChartIds: charts })
+  expect(errors.some((e) => e.includes('missing required field "order"'))).toBe(true)
+})
+
 test('requires contiguous order within a module', () => {
   const errors = validateContent({
     structure,
