@@ -32,3 +32,8 @@ jobs:
 
       - name: Check snippets
         run: npm run check-snippets
+
+      - name: Check curriculum is generated & fresh
+        run: |
+          npm run gen:curriculum
+          git diff --exit-code src/content/curriculum.ts
