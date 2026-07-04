@@ -19,7 +19,7 @@ interface ChartDef {
 
 ### Rows
 
-Each row is one of two kinds:
+Each row is one of three kinds:
 
 **Cards row:**
 ```typescript
@@ -32,6 +32,12 @@ Displays one or more cards. A single card spans full width; two or three cards s
 { kind: 'connector', label: string }
 ```
 Displays a labeled pill (e.g., "unlock: unlock advanced features"). Arrows auto-connect above and below.
+
+**Flow row:**
+```typescript
+{ kind: 'flow', nodes: FlowNode[]; edges: FlowEdge[]; direction?: 'TB' | 'LR' }
+```
+Renders a branching flowchart with nodes and labeled edges — see "Flowcharts (branching)" below.
 
 ### Cards
 
@@ -294,7 +300,7 @@ dynamically imported (code-split) in `src/content/charts/flowLayout.ts` so the
 dependency isn't in the main bundle unless a lesson actually embeds a flow
 chart. The positioned graph is rendered by `FlowView`
 (`src/components/charts/FlowView.tsx`), which reuses `ChartCardView` for each
-node and draws the edges as SVG paths with label pills. Cycles/loops and
+node and draws the edges as SVG polylines with label pills. Cycles/loops and
 multiple labeled edges between nodes are fully supported — unlike the linear
 stack above.
 
