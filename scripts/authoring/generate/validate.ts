@@ -32,8 +32,11 @@ export function validateContent({ structure, metas, knownChartIds }: ValidateInp
     if (typeof m.order !== 'number') errors.push(`${at}: missing required field "order"`)
     if (m.type && !LESSON_TYPES.has(m.type)) errors.push(`${at}: invalid type "${m.type}"`)
     if (m.volatility && !VOLATILITIES.has(m.volatility)) errors.push(`${at}: invalid volatility "${m.volatility}"`)
-    if (m.verifiedAgainstDocsAt && Number.isNaN(Date.parse(m.verifiedAgainstDocsAt)))
-      errors.push(`${at}: invalid verifiedAgainstDocsAt "${m.verifiedAgainstDocsAt}"`)
+    if (
+      m.verifiedAgainstDocsAt &&
+      (!/^\d{4}-\d{2}-\d{2}$/.test(m.verifiedAgainstDocsAt) || Number.isNaN(Date.parse(m.verifiedAgainstDocsAt)))
+    )
+      errors.push(`${at}: verifiedAgainstDocsAt "${m.verifiedAgainstDocsAt}" must be an ISO date (YYYY-MM-DD)`)
 
     if (m.dottedId) {
       if (seenDotted.has(m.dottedId)) errors.push(`${at}: duplicate id "${m.dottedId}"`)
@@ -56,10 +59,20 @@ export function validateContent({ structure, metas, knownChartIds }: ValidateInp
         errors.push(`${at}: slug "${m.slug}" must match the file name "${path.basename(m.file)}"`)
     }
 
-    for (const ref of m.prerequisites ?? []) if (!dottedIds.has(ref)) errors.push(`${at}: prerequisite "${ref}" does not resolve`)
-    for (const ref of m.references ?? []) if (!dottedIds.has(ref)) errors.push(`${at}: reference "${ref}" does not resolve`)
-    for (const it of m.interactive ?? []) if (!knownChartIds.has(it.spec)) errors.push(`${at}: interactive spec "${it.spec}" not in chart registry`)
-    if (m.volatility && m.volatility !== 'stable' && (m.docsSources ?? []).length === 0)
+    // Guard list-shaped fields: a YAML scalar/object instead of a list must be a
+    // friendly validation error, not a crash inside the loops below (or in emit).
+    for (const field of ['prerequisites', 'references', 'teaches', 'docsSources', 'interactive'] as const) {
+      const value = m[field]
+      if (value != null && !Array.isArray(value)) errors.push(`${at}: "${field}" must be a list`)
+    }
+
+    if (Array.isArray(m.prerequisites))
+      for (const ref of m.prerequisites) if (!dottedIds.has(ref)) errors.push(`${at}: prerequisite "${ref}" does not resolve`)
+    if (Array.isArray(m.references))
+      for (const ref of m.references) if (!dottedIds.has(ref)) errors.push(`${at}: reference "${ref}" does not resolve`)
+    if (Array.isArray(m.interactive))
+      for (const it of m.interactive) if (!knownChartIds.has(it.spec)) errors.push(`${at}: interactive spec "${it.spec}" not in chart registry`)
+    if (m.volatility && m.volatility !== 'stable' && (!Array.isArray(m.docsSources) || m.docsSources.length === 0))
       errors.push(`${at}: volatility "${m.volatility}" requires docsSources`)
   }
 

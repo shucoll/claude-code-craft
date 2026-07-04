@@ -7,6 +7,13 @@ export interface InteractiveMeta {
   spec: string
 }
 
+/**
+ * Raw, pre-validation view of a lesson's frontmatter. Values come straight from
+ * gray-matter's untyped `data`, so at runtime `dottedId`/`slug`/`title` may be
+ * absent or the wrong shape despite their declared types — that is `validateContent`'s
+ * job to catch. Downstream consumers (emit) only ever run on metas that have passed
+ * validation. (Phase 2 follow-up: split into a validated/normalized type after the gate.)
+ */
 export interface LessonMeta {
   dottedId: string
   slug: string

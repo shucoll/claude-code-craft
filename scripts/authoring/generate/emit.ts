@@ -3,7 +3,8 @@ import type { LessonMeta } from './frontmatter.ts'
 import type { LevelDef } from '../../../src/content/structure.ts'
 
 // Single-quoted string literal, matching the codebase's quote style.
-const q = (s: string): string => `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n')}'`
+const q = (s: string): string =>
+  `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n').replace(/\r/g, '\\r')}'`
 
 // Single-quoted string array literal.
 const arr = (xs: string[]): string => `[${xs.map(q).join(', ')}]`

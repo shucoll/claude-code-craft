@@ -74,3 +74,19 @@ test('flags a slug that does not match the file name', () => {
   const errors = validateContent({ structure, metas: [meta({ slug: 'bar', file: '/x/foo.mdx' })], knownChartIds: charts })
   expect(errors.some((e) => e.includes('must match the file name'))).toBe(true)
 })
+
+test('requires verifiedAgainstDocsAt to be an ISO YYYY-MM-DD date', () => {
+  const bad = validateContent({ structure, metas: [meta({ verifiedAgainstDocsAt: '2026/07/03' })], knownChartIds: charts })
+  expect(bad.some((e) => e.includes('must be an ISO date'))).toBe(true)
+  const good = validateContent({ structure, metas: [meta({ verifiedAgainstDocsAt: '2026-07-03' })], knownChartIds: charts })
+  expect(good.some((e) => e.includes('must be an ISO date'))).toBe(false)
+})
+
+test('flags a list-shaped field given a non-list value (does not crash)', () => {
+  const errors = validateContent({
+    structure,
+    metas: [meta({ prerequisites: 'B1.1' as unknown as string[] })],
+    knownChartIds: charts,
+  })
+  expect(errors.some((e) => e.includes('"prerequisites" must be a list'))).toBe(true)
+})
