@@ -1,7 +1,9 @@
 import fs from 'node:fs'
 import { scaffoldLesson, scaffoldOutline, type Outline, type ScaffoldReport } from './scaffold.ts'
 import { scaffoldLanguage } from './language.ts'
-import { checkSnippets } from './check.ts'
+import { checkContent } from './check.ts'
+import { generate } from './generateCurriculum.ts'
+import type { LessonType } from './lessonTemplate.ts'
 
 function parseFlags(argv: string[]): Record<string, string> {
   const out: Record<string, string> = {}
@@ -35,29 +37,81 @@ function requireFlags(flags: Record<string, string>, names: string[], command: s
   }
 }
 
+function list(v: string | undefined): string[] | undefined {
+  return v ? v.split(',').map((x) => x.trim()).filter(Boolean) : undefined
+}
+
+function parseInteractive(v: string | undefined): { kind: string; spec: string }[] | undefined {
+  // format: "diagram:spec-id,decision-tree:other-id"
+  if (!v) return undefined
+  return v
+    .split(',')
+    .map((x) => x.trim())
+    .filter(Boolean)
+    .map((pair) => {
+      const [kind, spec] = pair.split(':')
+      if (!kind || !spec) throw new Error(`lesson: --interactive entry "${pair}" must be "kind:spec"`)
+      return { kind, spec }
+    })
+}
+
+const VALID_TYPES = new Set(['core', 'resolver', 'workflow', 'checkpoint', 'milestone'])
+const VALID_VOLATILITIES = new Set(['stable', 'evolving', 'volatile'])
+
+function today(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function runGenerator(): void {
+  if (process.env.CCC_SKIP_GEN) return
+  generate()
+}
+
 export function run(argv: string[]): number {
   const [command, ...rest] = argv
   const flags = parseFlags(rest)
   try {
     switch (command) {
       case 'lesson': {
-        requireFlags(flags, ['level', 'module', 'id', 'title'], 'lesson')
-        report(
-          scaffoldLesson({
-            level: { id: flags.level, title: flags['level-title'] || titleCase(flags.level) },
-            module: { id: flags.module, title: flags['module-title'] || titleCase(flags.module) },
-            id: flags.id,
-            title: flags.title,
-            snippets: flags.snippets ? flags.snippets.split(',') : undefined,
-            prompts: flags.prompts ? flags.prompts.split(',') : undefined,
-          }),
-        )
+        requireFlags(flags, ['level', 'module', 'slug', 'title', 'type'], 'lesson')
+        if (!VALID_TYPES.has(flags.type)) throw new Error(`lesson: invalid --type "${flags.type}"`)
+        if (flags.volatility && !VALID_VOLATILITIES.has(flags.volatility)) throw new Error(`lesson: invalid --volatility "${flags.volatility}"`)
+        let estimatedMinutes: number | undefined
+        if (flags['estimated-minutes']) {
+          estimatedMinutes = Number(flags['estimated-minutes'])
+          if (!Number.isFinite(estimatedMinutes)) throw new Error('lesson: --estimated-minutes must be a number')
+        }
+        const r = scaffoldLesson({
+          level: { id: flags.level, title: flags['level-title'] || titleCase(flags.level) },
+          module: {
+            code: flags.module,
+            slug: flags['module-slug'] || flags.module.toLowerCase(),
+            title: flags['module-title'] || titleCase(flags.module),
+          },
+          slug: flags.slug,
+          title: flags.title,
+          type: flags.type as LessonType,
+          estimatedMinutes,
+          volatility: flags.volatility || undefined,
+          verifiedAgainstDocsAt: flags['verified-at'] || today(),
+          prerequisites: list(flags.prerequisites),
+          teaches: list(flags.teaches),
+          references: list(flags.references),
+          docsSources: list(flags['docs-sources']),
+          interactive: parseInteractive(flags.interactive),
+          snippets: list(flags.snippets),
+          prompts: list(flags.prompts),
+        })
+        report(r)
+        console.log(`assigned id ${r.dottedId}`)
+        runGenerator()
         return 0
       }
       case 'outline': {
         requireFlags(flags, ['file'], 'outline')
         const outline = JSON.parse(fs.readFileSync(flags.file, 'utf8')) as Outline
         report(scaffoldOutline(outline))
+        runGenerator()
         return 0
       }
       case 'language': {
@@ -66,7 +120,7 @@ export function run(argv: string[]): number {
         return 0
       }
       case 'check': {
-        const { errors, warnings } = checkSnippets()
+        const { errors, warnings } = checkContent()
         for (const w of warnings) console.log(`warn  ${w}`)
         for (const e of errors) console.error(`ERROR ${e}`)
         console.log(`\n${errors.length} error(s), ${warnings.length} warning(s)`)

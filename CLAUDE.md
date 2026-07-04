@@ -37,21 +37,32 @@ Charts are card-flow stacks (`src/content/charts/`), embedded in lessons via
 `index.ts`, and embed it. Full guide: `src/content/charts/README.md`.
 
 ## Adding lessons & languages
-Authoring is script-backed (`scripts/authoring/`, run via `tsx`) and wrapped by skills:
+Authoring is **frontmatter-first** and script-backed (`scripts/authoring/`, run via `tsx`),
+wrapped by skills:
 - **Add a lesson / module / level:** use the `new-lesson` skill (`cli.ts lesson` or
-  `cli.ts outline`). Stubs new snippet/prompt keys in the default pack only; other packs
-  fall back.
+  `cli.ts outline`). Lesson frontmatter (id, order, prerequisites, volatility, etc.) is the
+  single source of truth; the dotted `id` is **auto-assigned** from the module's next free
+  order — never pass or hand-edit it. `src/content/curriculum.ts` is **generated** from that
+  frontmatter (`npm run gen:curriculum`, run automatically by the CLI) — never hand-edit it.
+  New levels/modules are edited by hand in `src/content/structure.ts` (or introduced via
+  `--level-title`/`--module-title`/`--module-slug` on first use). Inline fenced code is the
+  default; `<Snippet>`/`<TryPrompt>` stubs in the default pack are **opt-in**
+  (`--snippets`/`--prompts`) for genuinely language-specific spots — other packs fall back.
 - **Add a language:** use the `new-language` skill (`cli.ts language`) — creates an empty
   pack; existing lessons fall back to the default until translated.
-- **Check coverage:** `npm run check-snippets` (also a CI gate and the `/check-snippets`
-  command). Tiered: a reference missing from the default pack fails; non-default gaps and
-  leftover `@@TODO@@` stubs warn.
+- **Check coverage:** `npm run check-snippets` — now the full **content check** (also a CI
+  gate and the `/check-snippets` command): frontmatter validation (type/volatility,
+  unresolved prerequisites/references, non-contiguous order, missing `docsSources` for
+  non-stable lessons, slug/filename mismatch, etc.) plus snippet/prompt coverage. Tiered: any
+  frontmatter or coverage error fails; non-default pack gaps and leftover `@@TODO@@` stubs warn.
 
 ## Commands
 - `npm run dev` — dev server
 - `npm run build` — type-check + bundle
 - `npm test` — run Vitest once
 - `npm run lint` — oxlint (ships with the current Vite template)
+- `npm run check-snippets` — content check (frontmatter validation + snippet/prompt
+  coverage); also runs in CI
 
 ## Spec & plans
 - Design: `docs/superpowers/specs/2026-06-27-claude-code-craft-design.md`

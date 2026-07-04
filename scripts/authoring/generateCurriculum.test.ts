@@ -8,6 +8,15 @@ function tmpContentDir(write: (lessonsBeginnerDir: string) => void): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ccc-gen-'))
   const beginner = path.join(dir, 'lessons', 'beginner')
   fs.mkdirSync(beginner, { recursive: true })
+  fs.writeFileSync(
+    path.join(dir, 'structure.ts'),
+    `export const structure = [
+  { id: 'beginner', title: 'Beginner', order: 1, modules: [
+    { code: 'B1', slug: 'basics', title: 'The Basics', order: 1 },
+  ] },
+]
+`,
+  )
   write(beginner)
   return dir
 }
@@ -30,4 +39,26 @@ test('generate throws when a lesson is missing required frontmatter', () => {
     fs.writeFileSync(path.join(beginner, 'broken.mdx'), `# no frontmatter\n`)
   })
   expect(() => generate(dir)).toThrow(/generation failed/)
+})
+
+test('generate reads structure.ts from the passed contentDir, not a stale in-memory import', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ccc-gen-'))
+  fs.mkdirSync(path.join(dir, 'lessons', 'beginner'), { recursive: true })
+  fs.writeFileSync(
+    path.join(dir, 'structure.ts'),
+    `export const structure = [
+  { id: 'beginner', title: 'Beginner', order: 1, modules: [
+    { code: 'B1', slug: 'temp-basics', title: 'Temp', order: 1 },
+  ] },
+]
+`,
+  )
+  fs.writeFileSync(
+    path.join(dir, 'lessons', 'beginner', 'probe.mdx'),
+    `---\nid: "B1.1"\nslug: "probe"\ntitle: "Probe"\ntype: "core"\norder: 1\nvolatility: "stable"\nverifiedAgainstDocsAt: "2026-07-03"\n---\n\n# Probe\n`,
+  )
+
+  expect(() => generate(dir)).not.toThrow()
+  const out = fs.readFileSync(path.join(dir, 'curriculum.ts'), 'utf8')
+  expect(out).toContain('/learn/beginner/temp-basics/probe')
 })

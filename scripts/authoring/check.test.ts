@@ -2,12 +2,21 @@
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { checkSnippets } from './check.ts'
+import { checkContent } from './check.ts'
 
 function seedContent(): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ccc-'))
   fs.mkdirSync(path.join(dir, 'lessons/beginner'), { recursive: true })
   fs.mkdirSync(path.join(dir, 'snippets'), { recursive: true })
+  fs.writeFileSync(
+    path.join(dir, 'structure.ts'),
+    `export const structure = [
+  { id: 'beginner', title: 'Beginner', order: 1, modules: [
+    { code: 'B1', slug: 'basics', title: 'The Basics', order: 1 },
+  ] },
+]
+`,
+  )
   const pack = (name: string, label: string, body: string) => `import type { LanguagePack } from '../types'
 
 const ${name}: LanguagePack = {
@@ -41,8 +50,11 @@ const python: LanguagePack = {
 export default python
 `,
   )
-  fs.writeFileSync(path.join(dir, 'lessons/beginner/e.mdx'), '# E\n\n<Snippet id="edit-function" />\n\n<TryPrompt id="refactor" />\n')
-  const { errors, warnings } = checkSnippets(dir)
+  fs.writeFileSync(
+    path.join(dir, 'lessons/beginner/e.mdx'),
+    '---\nid: "B1.1"\nslug: "e"\ntitle: "E"\norder: 1\n---\n\n# E\n\n<Snippet id="edit-function" />\n\n<TryPrompt id="refactor" />\n',
+  )
+  const { errors, warnings } = checkContent(dir)
   expect(errors).toEqual([])
   expect(warnings).toEqual([])
 })
@@ -50,14 +62,17 @@ export default python
 test('a reference missing from the default pack is an ERROR', () => {
   const dir = seedContent()
   fs.writeFileSync(path.join(dir, 'lessons/beginner/e.mdx'), '# E\n\n<Snippet id="does-not-exist" />\n')
-  const { errors } = checkSnippets(dir)
+  const { errors } = checkContent(dir)
   expect(errors.some((e) => e.includes('does-not-exist'))).toBe(true)
 })
 
 test('a key missing from a non-default pack is a warning, not an error', () => {
   const dir = seedContent() // python has neither edit-function nor refactor
-  fs.writeFileSync(path.join(dir, 'lessons/beginner/e.mdx'), '# E\n\n<Snippet id="edit-function" />\n\n<TryPrompt id="refactor" />\n')
-  const { errors, warnings } = checkSnippets(dir)
+  fs.writeFileSync(
+    path.join(dir, 'lessons/beginner/e.mdx'),
+    '---\nid: "B1.1"\nslug: "e"\ntitle: "E"\norder: 1\n---\n\n# E\n\n<Snippet id="edit-function" />\n\n<TryPrompt id="refactor" />\n',
+  )
+  const { errors, warnings } = checkContent(dir)
   expect(errors).toEqual([])
   expect(warnings.some((w) => w.includes('python') && w.includes('edit-function'))).toBe(true)
 })
@@ -66,9 +81,9 @@ test('references inside code fences or inline code are ignored (no false-positiv
   const dir = seedContent()
   fs.writeFileSync(
     path.join(dir, 'lessons/beginner/e.mdx'),
-    '# E\n\nInline `<Snippet id="doc-only" />` and:\n\n```mdx\n<Snippet id="fenced-only" />\n<TryPrompt id="fenced-prompt" />\n```\n',
+    '---\nid: "B1.1"\nslug: "e"\ntitle: "E"\norder: 1\n---\n\n# E\n\nInline `<Snippet id="doc-only" />` and:\n\n```mdx\n<Snippet id="fenced-only" />\n<TryPrompt id="fenced-prompt" />\n```\n',
   )
-  const { errors } = checkSnippets(dir)
+  const { errors } = checkContent(dir)
   expect(errors).toEqual([])
 })
 
@@ -88,7 +103,7 @@ const aardvark: LanguagePack = {
 export default aardvark
 `,
   )
-  const { warnings } = checkSnippets(dir)
+  const { warnings } = checkContent(dir)
   const firstAardvark = warnings.findIndex((w) => w.startsWith('aardvark:'))
   const firstPython = warnings.findIndex((w) => w.startsWith('python:'))
   expect(firstAardvark).toBeGreaterThanOrEqual(0)
@@ -111,6 +126,17 @@ export default javascript
 `,
   )
   fs.writeFileSync(path.join(dir, 'lessons/beginner/e.mdx'), '# E\n\n<Snippet id="edit-function" />\n')
-  const { warnings } = checkSnippets(dir)
+  const { warnings } = checkContent(dir)
   expect(warnings.some((w) => w.includes('edit-function') && w.toLowerCase().includes('stub'))).toBe(true)
+})
+
+test('checkContent reports a frontmatter validation error', () => {
+  const dir = seedContent()
+  fs.mkdirSync(path.join(dir, 'lessons/beginner'), { recursive: true })
+  fs.writeFileSync(
+    path.join(dir, 'lessons/beginner/bad.mdx'),
+    '---\nid: "B1.1"\nslug: "bad"\ntitle: "Bad"\ntype: "nonsense"\norder: 1\n---\n\n# Bad\n',
+  )
+  const { errors } = checkContent(dir)
+  expect(errors.some((e) => e.includes('invalid type'))).toBe(true)
 })
