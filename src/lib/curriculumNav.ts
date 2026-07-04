@@ -48,3 +48,7 @@ export function prevLesson(levels: Level[], lessonId: string): LessonLocation | 
   const idx = all.findIndex((l) => l.lesson.id === lessonId)
   return idx > 0 ? all[idx - 1] : undefined
 }
+
+export function findByDottedId(levels: Level[], dottedId: string): LessonLocation | undefined {
+  return flattenLessons(levels).find((l) => l.lesson.dottedId === dottedId)
+}

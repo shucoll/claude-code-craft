@@ -140,3 +140,33 @@ test('checkContent reports a frontmatter validation error', () => {
   const { errors } = checkContent(dir)
   expect(errors.some((e) => e.includes('invalid type'))).toBe(true)
 })
+
+test('an unknown inline <LessonLink> id is an ERROR', () => {
+  const dir = seedContent()
+  fs.writeFileSync(
+    path.join(dir, 'lessons/beginner/e.mdx'),
+    '---\nid: "B1.1"\nslug: "e"\ntitle: "E"\norder: 1\n---\n\n# E\n\nSee <LessonLink id="Z9.9" />.\n',
+  )
+  const { errors } = checkContent(dir)
+  expect(errors.some((e) => e.includes('LessonLink') && e.includes('Z9.9'))).toBe(true)
+})
+
+test('an inline <LessonLink> id that resolves is not an error', () => {
+  const dir = seedContent()
+  fs.writeFileSync(
+    path.join(dir, 'lessons/beginner/e.mdx'),
+    '---\nid: "B1.1"\nslug: "e"\ntitle: "E"\norder: 1\n---\n\n# E\n\nSee <LessonLink id="B1.1">this</LessonLink>.\n',
+  )
+  const { errors } = checkContent(dir)
+  expect(errors.some((e) => e.includes('LessonLink'))).toBe(false)
+})
+
+test('a <LessonLink> inside a code fence is ignored (no false-positive ERROR)', () => {
+  const dir = seedContent()
+  fs.writeFileSync(
+    path.join(dir, 'lessons/beginner/e.mdx'),
+    '---\nid: "B1.1"\nslug: "e"\ntitle: "E"\norder: 1\n---\n\n# E\n\n```mdx\n<LessonLink id="Z9.9" />\n```\n',
+  )
+  const { errors } = checkContent(dir)
+  expect(errors.some((e) => e.includes('LessonLink'))).toBe(false)
+})

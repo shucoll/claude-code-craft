@@ -48,6 +48,7 @@ wrapped by skills:
   `--level-title`/`--module-title`/`--module-slug` on first use). Inline fenced code is the
   default; `<Snippet>`/`<TryPrompt>` stubs in the default pack are **opt-in**
   (`--snippets`/`--prompts`) for genuinely language-specific spots — other packs fall back.
+  Cross-link lessons inline with `<LessonLink id="B2.3" />`.
 - **Add a language:** use the `new-language` skill (`cli.ts language`) — creates an empty
   pack; existing lessons fall back to the default until translated.
 - **Check coverage:** `npm run check-snippets` — now the full **content check** (also a CI

@@ -1,6 +1,7 @@
 import type { MDXComponents } from 'mdx/types'
 import { cn } from '../../lib/cn'
 import { ChartEmbed } from '../charts/ChartEmbed'
+import { LessonLink } from './LessonLink'
 import { Snippet } from './Snippet'
 import { TryPrompt } from './TryPrompt'
 import { WhenLang } from './WhenLang'
@@ -10,6 +11,7 @@ export const mdxComponents = {
   TryPrompt,
   WhenLang,
   ChartEmbed,
+  LessonLink,
   h1: (props) => <h1 className="mt-0 mb-4 font-mono text-3xl font-bold" {...props} />,
   h2: (props) => <h2 className="mt-8 mb-3 font-mono text-2xl font-semibold" {...props} />,
   h3: (props) => <h3 className="mt-6 mb-2 font-mono text-xl font-semibold" {...props} />,

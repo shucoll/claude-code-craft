@@ -85,3 +85,28 @@ test('scroll-restore fires on #chart-demo anchor after lazy MDX mounts', async (
     Element.prototype.scrollIntoView = original
   }
 })
+
+test('renders the Prerequisites strip linking to prerequisite lessons', async () => {
+  renderAt('/learn/beginner/basics/first-edit')
+  await screen.findByRole('heading', { name: /your first edit/i })
+  expect(screen.getByText('Prerequisites:')).toBeInTheDocument()
+  const link = screen.getAllByRole('link', { name: /what is claude code/i })[0]
+  expect(link).toHaveAttribute('href', '/learn/beginner/basics/what-is-cc')
+})
+
+test('renders the Where next footer from references', async () => {
+  renderAt('/learn/beginner/basics/first-edit')
+  await screen.findByRole('heading', { name: /your first edit/i })
+  const nav = screen.getByRole('navigation', { name: 'Where next' })
+  expect(nav).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: /reviewing changes/i })).toHaveAttribute(
+    'href',
+    '/learn/beginner/basics/review-changes',
+  )
+})
+
+test('omits the Prerequisites strip when the lesson has none', async () => {
+  renderAt('/learn/beginner/basics/what-is-cc')
+  await screen.findByRole('heading', { name: /what is claude code/i })
+  expect(screen.queryByText('Prerequisites:')).toBeNull()
+})

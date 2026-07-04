@@ -22,6 +22,7 @@ export const curriculum: Level[] = [
             order: 1,
             volatility: 'stable',
             verifiedAgainstDocsAt: '2026-07-03',
+            references: ['B1.2'],
             content: () => import('./lessons/beginner/what-is-cc.mdx'),
           },
           {
@@ -32,6 +33,8 @@ export const curriculum: Level[] = [
             order: 2,
             volatility: 'stable',
             verifiedAgainstDocsAt: '2026-07-03',
+            prerequisites: ['B1.1'],
+            references: ['B1.3'],
             content: () => import('./lessons/beginner/first-edit.mdx'),
           },
           {
@@ -42,6 +45,7 @@ export const curriculum: Level[] = [
             order: 3,
             volatility: 'stable',
             verifiedAgainstDocsAt: '2026-07-03',
+            prerequisites: ['B1.2'],
             content: () => import('./lessons/beginner/review-changes.mdx'),
           },
         ],

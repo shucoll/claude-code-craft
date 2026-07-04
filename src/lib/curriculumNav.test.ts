@@ -1,5 +1,5 @@
 import type { Level } from '../content/curriculum'
-import { findLesson, firstLesson, flattenLessons, lessonPath, nextLesson, prevLesson } from './curriculumNav'
+import { findByDottedId, findLesson, firstLesson, flattenLessons, lessonPath, nextLesson, prevLesson } from './curriculumNav'
 
 const noop = () => Promise.resolve({ default: () => null })
 const levels: Level[] = [
@@ -45,4 +45,17 @@ test('prevLesson returns the preceding lesson across module/level boundaries', (
 test('prevLesson returns undefined for the first lesson and unknown ids', () => {
   expect(prevLesson(levels, 'a')).toBeUndefined()
   expect(prevLesson(levels, 'nope')).toBeUndefined()
+})
+
+test('findByDottedId locates a lesson by its dottedId and returns undefined for unknown ids', () => {
+  const withDotted: Level[] = [
+    { id: 'beginner', title: 'Beginner', modules: [
+      { id: 'basics', title: 'Basics', lessons: [
+        { id: 'what-is-cc', dottedId: 'B1.1', title: 'What is Claude Code?', content: noop },
+      ] },
+    ] },
+  ]
+  expect(findByDottedId(withDotted, 'B1.1')?.lesson.id).toBe('what-is-cc')
+  expect(findByDottedId(withDotted, 'B1.1')?.moduleId).toBe('basics')
+  expect(findByDottedId(withDotted, 'ZZ9.9')).toBeUndefined()
 })

@@ -54,9 +54,12 @@ not as of training data.
    - `--estimated-minutes <n>`
    - `--volatility stable|evolving|volatile`
    - `--verified-at YYYY-MM-DD` (defaults to today)
-   - `--prerequisites B2.2` — comma-separated dotted ids that must resolve
+   - `--prerequisites B2.2` — comma-separated dotted ids that must resolve;
+     rendered as a "Prerequisites" strip at the top of the lesson, so set them
+     intentionally (user-facing navigation, not just validator metadata)
    - `--teaches diff-review` — comma-separated concept tags
-   - `--references B2.1` — comma-separated dotted ids that must resolve
+   - `--references B2.1` — comma-separated dotted ids that must resolve;
+     rendered as the "Where next" footer at the bottom of the lesson
    - `--docs-sources <url>` — comma-separated; required when volatility isn't
      `stable`
    - `--interactive diagram:spec-id` — comma-separated `kind:spec` pairs; each
@@ -81,6 +84,10 @@ not as of training data.
      language pack). Pass `--snippets`/`--prompts` at scaffold time to stub
      those ids in the default pack, then write the real code there and add
      idiomatic versions to the other packs (e.g. `python.ts`).
+   - **Cross-reference other lessons inline** with
+     `<LessonLink id="B2.3" />` (renders the target lesson's title as a link;
+     wrap custom text as `<LessonLink id="B2.3">as we saw earlier</LessonLink>`).
+     The id must resolve — `check-snippets` fails on unknown ids.
 4. Verify: `npm run check-snippets` — this is now the full content check
    (frontmatter validation + snippet/prompt coverage). Resolve every `ERROR`
    before finishing; warnings (fallback gaps, leftover `@@TODO@@` stubs) are
