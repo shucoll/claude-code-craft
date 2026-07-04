@@ -43,9 +43,15 @@ interface DagreGraph {
   height?: number
 }
 
-const NODE_WIDTH = 208
+/** Fixed node width; also the width the renderer measures node height at. */
+export const NODE_WIDTH = 208
 
-function nodeHeight(node: FlowNode): number {
+export interface NodeSize {
+  width: number
+  height: number
+}
+
+function estimatedHeight(node: FlowNode): number {
   const lineCount = node.lines?.length ?? 0
   return 64 + lineCount * 20
 }
@@ -53,13 +59,18 @@ function nodeHeight(node: FlowNode): number {
 /**
  * Compute a directed-graph layout for a flow chart. dagre is dynamically
  * imported so it is code-split out of the main bundle (see the bundle-guard
- * test). Node sizes are estimated deterministically from content — no DOM
- * measurement — so the layout is pure and unit-testable.
+ * test).
+ *
+ * `sizeById` supplies real measured node sizes (from the renderer's measuring
+ * pass); any node without a positive measured size falls back to a
+ * deterministic content estimate, which keeps the function pure and
+ * unit-testable in environments without layout (e.g. jsdom).
  */
 export async function layoutFlow(
   nodes: FlowNode[],
   edges: FlowEdge[],
   direction: FlowDirection = 'TB',
+  sizeById?: ReadonlyMap<string, NodeSize>,
 ): Promise<FlowLayout> {
   const dagre = (await import('@dagrejs/dagre')).default
   const g = new dagre.graphlib.Graph({ multigraph: true })
@@ -67,7 +78,10 @@ export async function layoutFlow(
   g.setDefaultEdgeLabel(() => ({}))
 
   for (const node of nodes) {
-    g.setNode(node.id, { width: NODE_WIDTH, height: nodeHeight(node) })
+    const measured = sizeById?.get(node.id)
+    const width = measured && measured.width > 0 ? measured.width : NODE_WIDTH
+    const height = measured && measured.height > 0 ? measured.height : estimatedHeight(node)
+    g.setNode(node.id, { width, height })
   }
   edges.forEach((edge, i) => {
     g.setEdge(edge.from, edge.to, {}, `e${i}`)

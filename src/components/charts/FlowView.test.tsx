@@ -51,6 +51,5 @@ test('activating a node calls onActivate with the mapped card', async () => {
 
 test('exposes a screen-reader edge summary', async () => {
   render(<FlowView row={row} onActivate={() => {}} />)
-  await screen.findByText('Question')
-  expect(screen.getByText('Question → Yes leaf (affirmative)')).toBeInTheDocument()
+  expect(await screen.findByText('Question → Yes leaf (affirmative)')).toBeInTheDocument()
 })
