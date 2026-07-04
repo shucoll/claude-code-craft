@@ -3,6 +3,10 @@ import path from 'node:path'
 import { Project } from 'ts-morph'
 import { DEFAULT_CONTENT_DIR, DEFAULT_LANGUAGE, STUB, lessonsDir, packFile, snippetsDir } from './paths.ts'
 import { readPack } from './packs.ts'
+import { readAllLessonMeta } from './generate/frontmatter.ts'
+import { validateContent } from './generate/validate.ts'
+import { readStructure } from './readStructure.ts'
+import { chartIds } from '../../src/content/charts/chartIds.ts'
 
 export interface CheckResult {
   errors: string[]
@@ -42,11 +46,17 @@ function scanLessonRefs(dir: string): { snippets: Set<string>; prompts: Set<stri
   return { snippets, prompts }
 }
 
-export function checkSnippets(contentDir: string = DEFAULT_CONTENT_DIR): CheckResult {
+export function checkContent(contentDir: string = DEFAULT_CONTENT_DIR): CheckResult {
   const errors: string[] = []
   const warnings: string[] = []
   const project = new Project({ skipAddingFilesFromTsConfig: true })
 
+  // 1. Frontmatter validation (Phase 1 rules)
+  const structure = readStructure(project, contentDir)
+  const metas = readAllLessonMeta(lessonsDir(contentDir))
+  errors.push(...validateContent({ structure, metas, knownChartIds: new Set(chartIds) }))
+
+  // 2. Snippet/prompt coverage (unchanged from checkSnippets)
   const packs: Record<string, { snippets: Record<string, string>; prompts: Record<string, string> }> = {}
   for (const id of listPackIds(contentDir)) packs[id] = readPack(project.addSourceFileAtPath(packFile(contentDir, id)))
   const def = packs[DEFAULT_LANGUAGE]
