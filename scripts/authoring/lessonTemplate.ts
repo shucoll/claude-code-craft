@@ -175,8 +175,3 @@ export function renderLesson(fm: LessonFrontmatter, opts?: TemplateOptions): str
   }
   return `${frontmatter(fm)}\n\n# ${fm.title}\n\n${body}\n`
 }
-
-// Deprecated: kept for backward compatibility with scaffold.ts (removed in later task)
-export function lessonTemplate(_title: string, _snippetId: string, _promptId: string): string {
-  throw new Error('lessonTemplate() is deprecated; use renderLesson() with LessonFrontmatter instead')
-}
