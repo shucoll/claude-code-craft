@@ -1,6 +1,7 @@
 import { cn } from '../../lib/cn'
 import type { ChartCard, ChartDef } from '../../content/charts/types'
 import { ChartCardView } from './ChartCardView'
+import { FlowView } from './FlowView'
 
 const COLS: Record<number, string> = {
   1: 'sm:grid-cols-1',
@@ -42,16 +43,18 @@ export function Chart({ def, onActivate }: ChartProps) {
                 {row.label}
               </div>
             </div>
-          ) : row.kind === 'cards' ? (
+          ) : row.kind === 'flow' ? (
+            <FlowView row={row} onActivate={onActivate} />
+          ) : (
             <div
               data-testid="chart-cards-row"
               className={cn('grid grid-cols-1 gap-4', COLS[row.cards.length] ?? 'sm:grid-cols-1')}
             >
-              {row.cards.map((card: ChartCard) => (
+              {row.cards.map((card) => (
                 <ChartCardView key={card.id} card={card} onActivate={onActivate} />
               ))}
             </div>
-          ) : null}
+          )}
         </div>
       ))}
     </div>

@@ -36,3 +36,23 @@ test('renders one arrow between each pair of consecutive rows', () => {
   // 3 rows => 2 gaps => 2 arrows
   expect(container.querySelectorAll('[data-testid="chart-arrow"]')).toHaveLength(2)
 })
+
+test('renders a flow row as a FlowView (nodes + edge label)', async () => {
+  const flowDef: ChartDef = {
+    id: 'f',
+    rows: [
+      {
+        kind: 'flow',
+        nodes: [
+          { id: 'x', title: 'Node X' },
+          { id: 'y', title: 'Node Y' },
+        ],
+        edges: [{ from: 'x', to: 'y', label: 'go' }],
+      },
+    ],
+  }
+  render(<Chart def={flowDef} onActivate={() => {}} />)
+  expect(await screen.findByText('Node X')).toBeInTheDocument()
+  expect(screen.getByText('Node Y')).toBeInTheDocument()
+  expect(screen.getByText('go')).toBeInTheDocument()
+})
