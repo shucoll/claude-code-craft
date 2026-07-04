@@ -5,6 +5,7 @@ import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useBackTarget } from '../lib/useBackTarget'
 import { mdxComponents } from '../components/mdx/mdxComponents'
 import { Button } from '../components/ui/Button'
+import { LessonRefLinks } from '../components/mdx/LessonRefLinks'
 import { curriculum } from '../content/curriculum'
 import { useProgress } from '../context/ProgressContext'
 import { findLesson, lessonPath, nextLesson } from '../lib/curriculumNav'
@@ -107,11 +108,19 @@ export function LessonPage() {
         </div>
       )}
 
+      {location.lesson.prerequisites?.length ? (
+        <LessonRefLinks label="Prerequisites" ids={location.lesson.prerequisites} variant="inline" />
+      ) : null}
+
       <MDXProvider components={mdxComponents}>
         <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
           <LessonContent />
         </Suspense>
       </MDXProvider>
+
+      {location.lesson.references?.length ? (
+        <LessonRefLinks label="Where next" ids={location.lesson.references} variant="list" />
+      ) : null}
 
       <footer className="mt-12 flex justify-end border-t-2 border-border pt-6">
         <Button onClick={handleComplete} trailingIcon={next ? <ArrowRightIcon /> : undefined}>
