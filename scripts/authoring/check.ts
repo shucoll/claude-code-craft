@@ -32,9 +32,10 @@ function* walk(dir: string): Generator<string> {
   }
 }
 
-function scanLessonRefs(dir: string): { snippets: Set<string>; prompts: Set<string> } {
+function scanLessonRefs(dir: string): { snippets: Set<string>; prompts: Set<string>; lessonLinks: Set<string> } {
   const snippets = new Set<string>()
   const prompts = new Set<string>()
+  const lessonLinks = new Set<string>()
   for (const file of walk(dir)) {
     if (!file.endsWith('.mdx')) continue
     const text = fs.readFileSync(file, 'utf8')
@@ -42,8 +43,9 @@ function scanLessonRefs(dir: string): { snippets: Set<string>; prompts: Set<stri
       .replace(/`[^`]*`/g, '')        // inline code spans
     for (const m of text.matchAll(/<Snippet\s+id=["']([^"']+)["']/g)) snippets.add(m[1])
     for (const m of text.matchAll(/<TryPrompt\s+id=["']([^"']+)["']/g)) prompts.add(m[1])
+    for (const m of text.matchAll(/<LessonLink\s+id=["']([^"']+)["']/g)) lessonLinks.add(m[1])
   }
-  return { snippets, prompts }
+  return { snippets, prompts, lessonLinks }
 }
 
 export function checkContent(contentDir: string = DEFAULT_CONTENT_DIR): CheckResult {
@@ -68,6 +70,11 @@ export function checkContent(contentDir: string = DEFAULT_CONTENT_DIR): CheckRes
   }
   for (const id of [...refs.prompts].sort()) {
     if (!(id in def.prompts)) errors.push(`Prompt id "${id}" is referenced in a lesson but missing from the default pack (${DEFAULT_LANGUAGE}).`)
+  }
+
+  const knownDottedIds = new Set(metas.map((m) => m.dottedId))
+  for (const id of [...refs.lessonLinks].sort()) {
+    if (!knownDottedIds.has(id)) errors.push(`LessonLink id "${id}" is referenced inline in a lesson but does not resolve to any lesson.`)
   }
 
   for (const [id, pack] of Object.entries(packs)) {
