@@ -1,3 +1,4 @@
+import path from 'node:path'
 import { levelOf, moduleCodeOf } from './ids.ts'
 import type { LessonMeta } from './frontmatter.ts'
 import type { LevelDef } from '../../../src/content/structure.ts'
@@ -51,6 +52,8 @@ export function validateContent({ structure, metas, knownChartIds }: ValidateInp
     if (m.slug) {
       if (seenSlug.has(m.slug)) errors.push(`${at}: duplicate slug "${m.slug}"`)
       seenSlug.add(m.slug)
+      if (path.basename(m.file, '.mdx') !== m.slug)
+        errors.push(`${at}: slug "${m.slug}" must match the file name "${path.basename(m.file)}"`)
     }
 
     for (const ref of m.prerequisites ?? []) if (!dottedIds.has(ref)) errors.push(`${at}: prerequisite "${ref}" does not resolve`)

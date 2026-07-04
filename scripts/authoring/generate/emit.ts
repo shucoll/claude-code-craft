@@ -3,7 +3,7 @@ import type { LessonMeta } from './frontmatter.ts'
 import type { LevelDef } from '../../../src/content/structure.ts'
 
 // Single-quoted string literal, matching the codebase's quote style.
-const q = (s: string): string => `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
+const q = (s: string): string => `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n')}'`
 
 // Single-quoted string array literal.
 const arr = (xs: string[]): string => `[${xs.map(q).join(', ')}]`
@@ -13,7 +13,7 @@ export function emitCurriculum(structure: LevelDef[], metas: LessonMeta[]): stri
   for (const m of metas) {
     byModule.set(moduleCodeOf(m.dottedId), [...(byModule.get(moduleCodeOf(m.dottedId)) ?? []), m])
   }
-  for (const arr of byModule.values()) arr.sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+  for (const group of byModule.values()) group.sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
 
   const lessonPathById: Record<string, string> = {}
   const levels = [...structure].sort((a, b) => a.order - b.order)

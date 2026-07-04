@@ -69,3 +69,8 @@ test('requires contiguous order within a module', () => {
   })
   expect(errors.some((e) => e.includes('contiguous'))).toBe(true)
 })
+
+test('flags a slug that does not match the file name', () => {
+  const errors = validateContent({ structure, metas: [meta({ slug: 'bar', file: '/x/foo.mdx' })], knownChartIds: charts })
+  expect(errors.some((e) => e.includes('must match the file name'))).toBe(true)
+})
