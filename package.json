@@ -5,12 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "predev": "npm run gen:curriculum",
     "build": "tsc -b && vite build",
+    "prebuild": "npm run gen:curriculum",
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check-snippets": "tsx scripts/authoring/cli.ts check"
+    "check-snippets": "tsx scripts/authoring/cli.ts check",
+    "gen:curriculum": "tsx scripts/authoring/generateCurriculum.ts"
   },
   "dependencies": {
     "@mdx-js/react": "^3.1.1",

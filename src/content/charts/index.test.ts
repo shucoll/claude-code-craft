@@ -1,4 +1,9 @@
-import { getChart } from './index'
+import { chartIds } from './chartIds'
+import { getChart, registeredChartIds } from './index'
+
+test('chartIds stays in sync with the real chart registry', () => {
+  expect([...registeredChartIds].sort()).toEqual([...chartIds].sort())
+})
 
 test('getChart returns the demo chart by id', () => {
   const chart = getChart('demo')

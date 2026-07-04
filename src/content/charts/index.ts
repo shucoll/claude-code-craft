@@ -5,6 +5,8 @@ const charts: Record<string, ChartDef> = {
   [demo.id]: demo,
 }
 
+export const registeredChartIds: string[] = Object.keys(charts)
+
 export function getChart(id: string): ChartDef | undefined {
   return charts[id]
 }
