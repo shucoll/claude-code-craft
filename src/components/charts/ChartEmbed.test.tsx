@@ -5,6 +5,8 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { LanguageProvider } from '../../context/LanguageContext'
 import { ChartEmbed } from './ChartEmbed'
 
+vi.mock('../../content/curriculum', async () => await import('../../test/curriculumFixture'))
+
 function LocationProbe() {
   const loc = useLocation()
   return <div data-testid="loc">{loc.pathname}|{JSON.stringify(loc.state)}</div>

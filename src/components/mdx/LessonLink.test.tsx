@@ -3,6 +3,8 @@ import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { LessonLink } from './LessonLink'
 
+vi.mock('../../content/curriculum', async () => await import('../../test/curriculumFixture'))
+
 function renderLink(ui: ReactNode) {
   return render(<MemoryRouter>{ui}</MemoryRouter>)
 }

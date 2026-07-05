@@ -3,6 +3,8 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { LevelProvider } from '../../context/LevelContext'
 import { RootRedirect } from './RootRedirect'
 
+vi.mock('../../content/curriculum', async () => await import('../../test/curriculumFixture'))
+
 function PathProbe() {
   return <div data-testid="path">{useLocation().pathname}</div>
 }

@@ -4,6 +4,8 @@ import type { ReactNode } from 'react'
 import { ProgressProvider } from '../../context/ProgressContext'
 import { Sidebar } from './Sidebar'
 
+vi.mock('../../content/curriculum', async () => await import('../../test/curriculumFixture'))
+
 function wrap(ui: ReactNode, path = '/learn/beginner/basics/first-edit') {
   return render(
     <ProgressProvider>
