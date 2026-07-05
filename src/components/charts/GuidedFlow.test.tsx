@@ -65,7 +65,8 @@ test('Start over returns to the root question', async () => {
 })
 
 test('toggling to Explore renders the FlowView graph (its edge summary)', async () => {
+  const user = userEvent.setup()
   render(<GuidedFlow row={row} onActivate={() => {}} />)
-  screen.getByRole('button', { name: 'Explore' }).click()
+  await user.click(screen.getByRole('button', { name: 'Explore' }))
   expect(await screen.findByText('Root question? → Second question? (go deeper)')).toBeInTheDocument()
 })

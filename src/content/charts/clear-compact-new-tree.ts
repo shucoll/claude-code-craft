@@ -43,7 +43,7 @@ export const clearCompactNewTree: ChartDef = {
       ],
       edges: [
         { from: 'q1', to: 'q2', label: 'yes, still going' },
-        { from: 'q1', to: 'new', label: 'no, something broke' },
+        { from: 'q1', to: 'new', label: 'no, starting fresh' },
         { from: 'q2', to: 'compact', label: 'just getting long' },
         { from: 'q2', to: 'clear', label: 'no longer relevant' },
       ],

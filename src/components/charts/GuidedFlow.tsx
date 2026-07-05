@@ -34,10 +34,11 @@ export function GuidedFlow({ row, onActivate }: GuidedFlowProps) {
   // Move focus to the question heading after the learner advances (never on initial mount,
   // so an embedded diagram doesn't steal focus while scrolling past it).
   const headingRef = useRef<HTMLHeadingElement>(null)
+  const leafRef = useRef<HTMLDivElement>(null)
   const advancedRef = useRef(false)
   useEffect(() => {
     if (advancedRef.current) {
-      headingRef.current?.focus()
+      ;(headingRef.current ?? leafRef.current)?.focus()
       advancedRef.current = false
     }
   }, [currentId])
@@ -81,7 +82,7 @@ export function GuidedFlow({ row, onActivate }: GuidedFlowProps) {
       {mode === 'explore' ? (
         <FlowView row={row} onActivate={onActivate} />
       ) : isLeaf(current, row.edges) ? (
-        <div className="mx-auto max-w-md space-y-4">
+        <div ref={leafRef} tabIndex={-1} className="mx-auto max-w-md space-y-4 focus:outline-none">
           <ChartCardView card={nodeToCard(current)} onActivate={onActivate} />
           {steps.length > 0 && (
             <p className="text-sm text-muted-foreground">
