@@ -295,6 +295,27 @@ interface FlowEdge {
 }
 ```
 
+#### Guided decision trees
+
+A `flow` row that is a decision tree can opt into **guided traversal** by setting
+`guided: true`. The learner then walks it one question at a time (guided mode, the
+default) and can switch to **Explore** to see the whole static graph (the same
+`FlowView` rendering).
+
+Authoring rules (the data *is* the traversal contract):
+
+- Give the entry node `role: 'question'`; it must be the only node with no incoming
+  edge (a single root).
+- Each question node's **outgoing edges are its answer options, in array order** — the
+  edge `label` is the button text. Author them in the order you want them shown.
+- Terminal nodes get `role: 'leaf'`: their `lines` carry the 1–3 sentence
+  justification and their `target` links to the option's home lesson (or a popup).
+- A leaf's path summary ("You said: … → …") is derived from the edge labels along the
+  chosen path, so write labels that read as answers.
+
+Without `guided`, a `flow` row renders as the plain static diagram (e.g. the
+`agentic-loop-diagram` cycle), unchanged.
+
 Layout is computed by [`@dagrejs/dagre`](https://github.com/dagrejs/dagre),
 dynamically imported (code-split) in `src/content/charts/flowLayout.ts` so the
 dependency isn't in the main bundle unless a lesson actually embeds a flow
