@@ -105,6 +105,16 @@ test('renders the Related footer from references', async () => {
   )
 })
 
+test('renders the Official docs footer from docsSources', async () => {
+  renderAt('/learn/beginner/basics/first-edit')
+  await screen.findByRole('heading', { name: /your first edit/i })
+  const nav = screen.getByRole('navigation', { name: 'Official docs' })
+  expect(nav).toBeInTheDocument()
+  const link = screen.getByRole('link', { name: 'quickstart' })
+  expect(link).toHaveAttribute('href', 'https://code.claude.com/docs/en/quickstart')
+  expect(link).toHaveAttribute('target', '_blank')
+})
+
 test('omits the Prerequisites strip when the lesson has none', async () => {
   renderAt('/learn/beginner/basics/what-is-cc')
   await screen.findByRole('heading', { name: /what is claude code/i })
