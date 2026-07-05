@@ -2,6 +2,7 @@ import { cn } from '../../lib/cn'
 import type { ChartCard, ChartDef } from '../../content/charts/types'
 import { ChartCardView } from './ChartCardView'
 import { FlowView } from './FlowView'
+import { GuidedFlow } from './GuidedFlow'
 
 const COLS: Record<number, string> = {
   1: 'sm:grid-cols-1',
@@ -44,7 +45,11 @@ export function Chart({ def, onActivate }: ChartProps) {
               </div>
             </div>
           ) : row.kind === 'flow' ? (
-            <FlowView row={row} onActivate={onActivate} />
+            row.guided ? (
+              <GuidedFlow row={row} onActivate={onActivate} />
+            ) : (
+              <FlowView row={row} onActivate={onActivate} />
+            )
           ) : (
             <div
               data-testid="chart-cards-row"

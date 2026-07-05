@@ -56,3 +56,24 @@ test('renders a flow row as a FlowView (nodes + edge label)', async () => {
   expect(screen.getByText('Node Y')).toBeInTheDocument()
   expect(screen.getByText('go')).toBeInTheDocument()
 })
+
+test('renders a guided flow row as a GuidedFlow (mode toggle present)', () => {
+  const guidedDef: ChartDef = {
+    id: 'g',
+    rows: [
+      {
+        kind: 'flow',
+        guided: true,
+        nodes: [
+          { id: 'q', title: 'Pick one', role: 'question' },
+          { id: 'l', title: 'A leaf', role: 'leaf' },
+        ],
+        edges: [{ from: 'q', to: 'l', label: 'only option' }],
+      },
+    ],
+  }
+  render(<Chart def={guidedDef} onActivate={() => {}} />)
+  expect(screen.getByRole('button', { name: 'Guided' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Explore' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Pick one' })).toBeInTheDocument()
+})
