@@ -46,6 +46,12 @@ test('readAllLessonMeta does not throw when a lesson is missing id frontmatter',
   expect(metas[0].dottedId).toBeUndefined()
 })
 
+test('readAllLessonMeta returns [] when the lessons directory does not exist', () => {
+  // A fresh repo (or one whose last lesson was just removed) has no lessons dir;
+  // the reader must bootstrap from empty rather than throwing ENOENT.
+  expect(readAllLessonMeta(path.join(os.tmpdir(), 'ccc-does-not-exist-xyz'))).toEqual([])
+})
+
 test('readAllLessonMeta sorts multiple lessons by dottedId', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ccc-fm-'))
   const dir = path.join(root, 'beginner')

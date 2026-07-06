@@ -1,0 +1,111 @@
+---
+id: "B1.1"
+slug: "from-chat-to-agent"
+title: "From chat to agent"
+type: "core"
+order: 1
+estimatedMinutes: 10
+volatility: "evolving"
+verifiedAgainstDocsAt: "2026-07-05"
+teaches: ["agentic-loop", "tools", "permissions"]
+docsSources: ["https://code.claude.com/docs/en/overview", "https://code.claude.com/docs/en/how-claude-code-works"]
+interactive:
+  - kind: "diagram"
+    spec: "agentic-loop-diagram"
+---
+
+# From chat to agent
+
+## The problem
+
+You've used AI in a chat window: you paste in some code, describe what you want, read the reply, then copy the suggestion back into your editor and hope it still fits. Every round trip is manual — *you* are the one moving context in and results out. For a quick question that's fine. For real work — finding where a bug lives, changing a few files, running the tests — the copy-paste shuffle falls apart fast.
+
+## The concept
+
+Claude Code is **agentic**: instead of only replying with text, it acts on your project directly. The difference is the loop you're in.
+
+- **Chat loop:** you gather the context, you paste it in, you get text back, you apply it by hand. The tool never touches your files.
+- **Agentic loop:** you describe a goal, and Claude **gathers context, takes action, and verifies results** — reading files, running commands, and editing code on your behalf — repeating until the task is done.
+
+Think of it less like a smarter autocomplete and more like a capable teammate working in your repo while you watch and steer.
+
+## How it works
+
+Under the hood, Claude Code wraps a Claude model in an **agentic harness** — the tools, context, and execution environment that let a language model actually *do* things. When you give it a task, it works through three phases that blend together and repeat:
+
+1. **Gather context** — search the codebase, read the relevant files, check your git state.
+2. **Take action** — edit a file, run a command, run the tests.
+3. **Verify results** — read the output, see whether it worked, and decide the next step.
+
+Each tool result feeds back into the next decision, so Claude chains many steps together and course-corrects as it learns. A quick question might only need step 1; a bug fix cycles through all three several times.
+
+Those actions come from **tools**. Informally, they fall into a few buckets — reading and editing files, searching, running shell commands, and looking things up on the web. Without tools a model can only produce text; tools are what turn "chat" into "agent." (You'll meet the full tool set later — here it's enough to know why they matter.)
+
+Crucially, **you're part of the loop**. Claude works on its own but stays responsive: you can interrupt at any point to redirect it, add context, or ask for a different approach.
+
+## Walkthrough
+
+Say a test is failing. In a chat tool you'd copy the error, paste in files, and relay fixes back and forth. With Claude Code you say:
+
+```bash
+claude "the checkout test is failing — find out why and fix it"
+```
+
+From that one sentence, Claude might:
+
+1. Run the test suite to see what's failing.
+2. Read the error output.
+3. Search for the relevant source files.
+4. Read those files to understand the code.
+5. Edit the files to fix the issue.
+6. Run the tests again to confirm they pass.
+
+You didn't tell it which files to open or which commands to run — that's the agentic loop deciding each step from what the previous one revealed.
+
+## Use-case scenarios
+
+- **You want to understand unfamiliar code → just ask.** "How does auth work here?" only needs context-gathering; Claude reads and explains, no edits.
+- **You want a bug fixed → describe the symptom.** Claude traces it across files, fixes it, and verifies against your tests.
+- **You want tedious work done → hand it over.** "Write tests for the utils module and make them pass" is a full gather → act → verify cycle.
+- **Near-miss:** you want to *learn* a piece of code by writing it yourself. Then agentic editing isn't what you want — ask Claude to explain, or use plan mode so it proposes an approach without changing your files.
+
+## When to use / when not to use
+
+- **Reach for it** when the work touches your actual files and tools: multi-file changes, running builds or tests, tracing a bug, repetitive chores. The whole payoff is that Claude does the mechanical back-and-forth for you.
+- **Slow down** when an action reaches *outside* your files — deleting data, calling a live API, deploying. Those can't be rolled back by a local checkpoint, so Claude asks first and you should read the prompt before approving.
+
+## Pitfalls
+
+- **Running it away from your project.** Claude works *in* a directory; start it from your project so it can read the right files.
+- **Assuming it will run wild.** By default Claude asks before editing files or running commands — nothing destructive happens silently.
+- **Approving prompts on autopilot.** The permission prompt is your safety gate. Read what it's about to do, especially for commands with side effects.
+- **Treating it like one-shot chat.** It's a conversation — if the first attempt is off, correct it and it adjusts, instead of starting over.
+
+## Interactive element
+
+<ChartEmbed id="agentic-loop-diagram" />
+
+## Try It
+
+Install Claude Code and run it in a small project (an empty folder is fine to begin):
+
+```bash
+cd your-project
+claude
+```
+
+Then ask one thing that requires *looking at* your code — for example, "What does this project do?" Watch how it reads files before answering: that's step one of the loop in action. **Success:** you got an answer grounded in your actual files, and you saw Claude gather context to produce it.
+
+## FAQ
+
+**How is this different from pasting code into a chat?** In chat, you do the legwork — gathering files, applying answers. Claude Code closes that loop itself: it reads your files, makes the change, and checks the result, so you steer instead of shuttle.
+
+**What does "agentic" actually mean?** It means the model can take actions through tools (read, edit, run) and react to what those actions return — not just emit text. That feedback-driven loop is the "agent" part.
+
+**Does it act without asking me?** No. In the default mode Claude asks before it edits files or runs shell commands, and it always asks before actions with external side effects. You approve each step until you choose to loosen that.
+
+**Can it break my computer?** It's scoped to the directory you start it in and gated by permission prompts. On top of that, every file edit is checkpointed, so you can rewind changes. Actions that reach outside your files (which a checkpoint can't undo) are exactly the ones it asks about first.
+
+## Where next
+
+You've seen the shape of the agentic loop. From here the curriculum digs into each piece: what Claude can see and touch — and the permission prompts that keep you in control — then how to run productive sessions, manage the context window, and use the full set of tools behind "take action." Next up: getting Claude Code installed and making your first real edit.

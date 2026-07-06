@@ -6,6 +6,8 @@ import { LanguageProvider } from '../context/LanguageContext'
 import { ProgressProvider } from '../context/ProgressContext'
 import { LessonPage } from './LessonPage'
 
+vi.mock('../content/curriculum', async () => await import('../test/curriculumFixture'))
+
 function renderAt(path: string) {
   return render(
     <ThemeProvider>

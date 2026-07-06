@@ -58,6 +58,9 @@ export function readLessonMeta(file: string, lessonsRoot: string): LessonMeta {
 
 function walkMdx(dir: string): string[] {
   const out: string[] = []
+  // Tolerate a missing lessons directory (e.g. authoring the very first lesson
+  // into a fresh repo) so scaffolding/generation/checks bootstrap from empty.
+  if (!fs.existsSync(dir)) return out
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name)
     if (entry.isDirectory()) out.push(...walkMdx(full))

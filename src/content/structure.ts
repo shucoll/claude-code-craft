@@ -19,18 +19,18 @@ export const structure: LevelDef[] = [
     id: 'beginner',
     title: 'Beginner',
     order: 1,
-    modules: [{ code: 'B1', slug: 'basics', title: 'The Basics', order: 1 }],
+    modules: [{ code: 'B1', slug: 'meet-claude-code', title: 'Meet Claude Code', order: 1 }],
   },
   {
     id: 'intermediate',
     title: 'Intermediate',
     order: 2,
-    modules: [{ code: 'I1', slug: 'workflows', title: 'Workflows', order: 1 }],
+    modules: [],
   },
   {
     id: 'advanced',
     title: 'Advanced',
     order: 3,
-    modules: [{ code: 'A1', slug: 'power', title: 'Power User', order: 1 }],
+    modules: [],
   },
 ]

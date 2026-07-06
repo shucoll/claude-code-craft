@@ -9,6 +9,10 @@ const q = (s: string): string =>
 // Single-quoted string array literal.
 const arr = (xs: string[]): string => `[${xs.map(q).join(', ')}]`
 
+// Multi-line array literal body; empty arrays render as `[]` (no elision hole).
+const block = (items: string[], indent: string): string =>
+  items.length ? `[\n${items.join(',\n')},\n${indent}]` : '[]'
+
 export function emitCurriculum(structure: LevelDef[], metas: LessonMeta[]): string {
   const byModule = new Map<string, LessonMeta[]>()
   for (const m of metas) {
@@ -27,9 +31,9 @@ export function emitCurriculum(structure: LevelDef[], metas: LessonMeta[]): stri
         lessonPathById[m.dottedId] = `/learn/${level.id}/${mod.slug}/${m.slug}`
         return emitLesson(m, `./lessons/${level.id}/${m.slug}.mdx`)
       })
-      return `    {\n      id: ${q(mod.slug)},\n      title: ${q(mod.title)},\n      lessons: [\n${lessonSrc.join(',\n')},\n      ],\n    }`
+      return `    {\n      id: ${q(mod.slug)},\n      title: ${q(mod.title)},\n      lessons: ${block(lessonSrc, '      ')},\n    }`
     })
-    return `  {\n    id: ${q(level.id)},\n    title: ${q(level.title)},\n    modules: [\n${moduleSrc.join(',\n')},\n    ],\n  }`
+    return `  {\n    id: ${q(level.id)},\n    title: ${q(level.title)},\n    modules: ${block(moduleSrc, '    ')},\n  }`
   })
 
   const mapSrc = Object.entries(lessonPathById)

@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { useBackTarget } from './useBackTarget'
 
+vi.mock('../content/curriculum', async () => await import('../test/curriculumFixture'))
+
 function Probe() {
   return <div data-testid="back">{String(useBackTarget())}</div>
 }

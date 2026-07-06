@@ -3,6 +3,8 @@ import type { ReactNode } from 'react'
 import { MemoryRouter } from 'react-router-dom'
 import { LessonRefLinks } from './LessonRefLinks'
 
+vi.mock('../../content/curriculum', async () => await import('../../test/curriculumFixture'))
+
 function renderRefs(ui: ReactNode) {
   return render(<MemoryRouter>{ui}</MemoryRouter>)
 }

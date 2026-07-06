@@ -33,6 +33,16 @@ test('carries dottedId and metadata onto the runtime lesson', () => {
   expect(src).toContain("volatility: 'stable'")
 })
 
+test('emits empty containers as [] (no elision hole that types as undefined[])', () => {
+  const partial: LevelDef[] = [
+    { id: 'beginner', title: 'Beginner', order: 1, modules: [{ code: 'B1', slug: 'basics', title: 'The Basics', order: 1 }] },
+    { id: 'intermediate', title: 'Intermediate', order: 2, modules: [] },
+  ]
+  const src = emitCurriculum(partial, metas)
+  expect(src).toContain('modules: [],') // level with no modules
+  expect(src).not.toMatch(/\[\s*,/) // never an array that starts with a hole
+})
+
 test('re-exports types and includes the generated header', () => {
   const src = emitCurriculum(structure, metas)
   expect(src).toContain('DO NOT EDIT')
