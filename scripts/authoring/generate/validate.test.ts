@@ -10,7 +10,7 @@ const structure: LevelDef[] = [
 function meta(over: Partial<LessonMeta>): LessonMeta {
   return {
     dottedId: 'B1.1', slug: 'a', title: 'A', type: 'core', order: 1,
-    volatility: 'stable', levelDir: 'beginner', file: '/x/a.mdx', ...over,
+    volatility: 'stable', docsSources: ['overview.md'], levelDir: 'beginner', file: '/x/a.mdx', ...over,
   }
 }
 
@@ -51,9 +51,21 @@ test('flags an interactive spec missing from the chart registry', () => {
   expect(errors.some((e) => e.includes('interactive spec "nope"'))).toBe(true)
 })
 
-test('requires docsSources when volatility is not stable', () => {
-  const errors = validateContent({ structure, metas: [meta({ volatility: 'evolving' })], knownChartIds: charts })
+test('requires docsSources on a stable lesson', () => {
+  const errors = validateContent({ structure, metas: [meta({ volatility: 'stable', docsSources: undefined })], knownChartIds: charts })
   expect(errors.some((e) => e.includes('requires docsSources'))).toBe(true)
+})
+
+test('requires docsSources regardless of volatility', () => {
+  const errors = validateContent({ structure, metas: [meta({ volatility: 'evolving', docsSources: undefined })], knownChartIds: charts })
+  expect(errors.some((e) => e.includes('requires docsSources'))).toBe(true)
+})
+
+test('exempts checkpoint and milestone lessons from docsSources', () => {
+  const checkpoint = validateContent({ structure, metas: [meta({ type: 'checkpoint', docsSources: undefined })], knownChartIds: charts })
+  expect(checkpoint.some((e) => e.includes('requires docsSources'))).toBe(false)
+  const milestone = validateContent({ structure, metas: [meta({ type: 'milestone', docsSources: undefined })], knownChartIds: charts })
+  expect(milestone.some((e) => e.includes('requires docsSources'))).toBe(false)
 })
 
 test('flags a missing order field', () => {

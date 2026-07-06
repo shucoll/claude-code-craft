@@ -18,19 +18,62 @@ after scaffolding; if you ever change frontmatter by hand afterwards, rerun
 
 ## Part 0 — before writing anything
 
-For each lesson, decide:
-- **`volatility`**: `stable` (fundamentals unlikely to change), `evolving`
-  (config/flags that shift across releases), or `volatile` (fast-moving
-  surface, e.g. a specific model or preview feature).
-- **`docsSources`**: the official docs URL(s) you verified the content against.
-  `stable` lessons don't need any. `evolving` and `volatile` lessons **require**
-  at least one — the content check (`npm run check-snippets`) fails otherwise.
+The curriculum spec (`curriculum-design/claude-code-craft-curriculum_v6.md`) is
+the source of truth for each lesson's metadata: its per-lesson table already
+lists the `volatility`, `docsSources`, and the lesson's `Structure` line. Start
+from those — don't invent them from scratch.
+
+For each lesson:
+- **`docsSources`**: the official docs URL(s) the content is verified against.
+  **Every lesson needs sources — there is no exception for `stable` lessons.**
+  The curriculum already lists sources for each lesson; use those as the
+  starting set, fetch them, and add more as you find them necessary while
+  writing. (The content check enforces `docsSources` on every lesson except
+  `checkpoint`/`milestone` recap lessons, which teach no feature surface.)
+- **`volatility`**: the curriculum already specifies this per lesson; use it as
+  the default. But after fetching the docs, if the real surface is more or less
+  volatile than the curriculum tagged it, override it with the volatility the
+  docs warrant (pass a new `--volatility`).
 - **`verifiedAgainstDocsAt`**: the ISO date (`YYYY-MM-DD`) you checked those docs.
   Defaults to today if you omit `--verified-at`.
 
-If the lesson teaches anything about current Claude Code behavior, fetch the
-relevant official docs first so the content you write is accurate as of today,
-not as of training data.
+Always fetch the relevant official docs first (start from the docs map at
+`https://code.claude.com/docs/en/claude_code_docs_map`) so the content you write
+is accurate as of today, not as of training data. If a lesson's content
+conflicts with current docs, the docs win.
+
+## Follow the lesson's Structure line
+
+Every core and resolver lesson in the curriculum carries a **Structure** line
+(right after its "Covers" paragraph) stating exactly how the section menu
+applies to *that* lesson. Follow it — it overrides the generic full-menu
+skeleton the scaffolder writes.
+
+Core lessons name one of four profiles plus lesson-specific deltas:
+- **Full** — the default menu, complete or near-complete (heavyweight feature
+  lessons). *Full — compact* keeps every section but brief; *Full — extended*
+  goes beyond the menu where the topic demands it.
+- **Concept** — mental-model lessons: problem, concept, how-it-works,
+  interactive, FAQ, where-next. Do **not** invent use-case scenarios,
+  when-not-to-use, or pitfalls where they don't naturally arise.
+- **Brief** — deliberately short: problem and concept merged, one compact pass
+  of mechanics, a comparison table or single example, where-next. No walkthrough
+  required.
+- **Custom** — the body follows its own shape (reference catalog, cookbook,
+  pattern blocks, guided tour, symptom→response playbook), as the line describes.
+
+Resolver lessons carry Structure lines too: most use all five resolver sections,
+but Edge cases may be dropped or folded for two-option comparisons, and resolvers
+without a dedicated chart replace the decision tree with an inline if/then
+decision ladder.
+
+The scaffolder writes the default skeleton regardless of profile — **reshape it
+to match the Structure line**: delete sections the profile drops rather than
+padding them, and reorder or merge as the line directs. The always-required
+elements still hold under every profile: answer every "Must answer" question,
+include when-not-to-use + a cost note for feature lessons, a Try It whenever
+there is anything hands-on, and "Where next" cross-links plus the "Official docs"
+footer.
 
 ## Single lesson
 
@@ -60,8 +103,9 @@ not as of training data.
    - `--teaches diff-review` — comma-separated concept tags
    - `--references B2.1` — comma-separated dotted ids that must resolve;
      rendered as the "Where next" footer at the bottom of the lesson
-   - `--docs-sources <url>` — comma-separated; required when volatility isn't
-     `stable`
+   - `--docs-sources <url>` — comma-separated; **set on every lesson** (see
+     Part 0). The content check hard-fails when it's missing on any lesson except
+     `checkpoint`/`milestone` recap lessons.
    - `--interactive diagram:spec-id` — comma-separated `kind:spec` pairs; each
      `spec` must exist in the chart registry (`src/content/charts/index.ts`).
      Charts can be linear card-flows **or** branching flowcharts (`flow` rows
@@ -72,6 +116,9 @@ not as of training data.
      entirely if the lesson doesn't need language-specific examples
 
 3. Fill content:
+   - **Prose style: use em-dashes (—) minimally, ideally none.** Reach for
+     periods, commas, colons, or parentheses instead. Overusing em-dashes makes
+     lessons read as machine-authored; keep them rare across all lesson prose.
    - The scaffolder writes the anatomy for the chosen `--type` as headings with
      `@@TODO@@` guidance comments describing what belongs in each section
      (e.g. `core` gets "The problem" → "The concept" → "How it works" →

@@ -11,6 +11,10 @@ export interface ValidateInput {
 
 const LESSON_TYPES = new Set(['core', 'resolver', 'workflow', 'checkpoint', 'milestone'])
 const VOLATILITIES = new Set(['stable', 'evolving', 'volatile'])
+// Every lesson must be verified against official docs — including `stable` ones.
+// Only recap lessons (checkpoint/milestone), which teach no feature surface, may
+// omit sources.
+const SOURCELESS_TYPES = new Set(['checkpoint', 'milestone'])
 
 export function validateContent({ structure, metas, knownChartIds }: ValidateInput): string[] {
   const errors: string[] = []
@@ -72,8 +76,8 @@ export function validateContent({ structure, metas, knownChartIds }: ValidateInp
       for (const ref of m.references) if (!dottedIds.has(ref)) errors.push(`${at}: reference "${ref}" does not resolve`)
     if (Array.isArray(m.interactive))
       for (const it of m.interactive) if (!knownChartIds.has(it.spec)) errors.push(`${at}: interactive spec "${it.spec}" not in chart registry`)
-    if (m.volatility && m.volatility !== 'stable' && (!Array.isArray(m.docsSources) || m.docsSources.length === 0))
-      errors.push(`${at}: volatility "${m.volatility}" requires docsSources`)
+    if (!SOURCELESS_TYPES.has(m.type ?? '') && (!Array.isArray(m.docsSources) || m.docsSources.length === 0))
+      errors.push(`${at}: ${m.type ?? 'this'} lesson requires docsSources (only checkpoint/milestone lessons may omit them)`)
   }
 
   const ordersByModule = new Map<string, { order: number; file: string }[]>()

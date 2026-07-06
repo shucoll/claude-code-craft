@@ -52,7 +52,7 @@ export default python
   )
   fs.writeFileSync(
     path.join(dir, 'lessons/beginner/e.mdx'),
-    '---\nid: "B1.1"\nslug: "e"\ntitle: "E"\norder: 1\n---\n\n# E\n\n<Snippet id="edit-function" />\n\n<TryPrompt id="refactor" />\n',
+    '---\nid: "B1.1"\nslug: "e"\ntitle: "E"\norder: 1\ndocsSources: ["https://code.claude.com/docs/en/overview"]\n---\n\n# E\n\n<Snippet id="edit-function" />\n\n<TryPrompt id="refactor" />\n',
   )
   const { errors, warnings } = checkContent(dir)
   expect(errors).toEqual([])
@@ -70,7 +70,7 @@ test('a key missing from a non-default pack is a warning, not an error', () => {
   const dir = seedContent() // python has neither edit-function nor refactor
   fs.writeFileSync(
     path.join(dir, 'lessons/beginner/e.mdx'),
-    '---\nid: "B1.1"\nslug: "e"\ntitle: "E"\norder: 1\n---\n\n# E\n\n<Snippet id="edit-function" />\n\n<TryPrompt id="refactor" />\n',
+    '---\nid: "B1.1"\nslug: "e"\ntitle: "E"\norder: 1\ndocsSources: ["https://code.claude.com/docs/en/overview"]\n---\n\n# E\n\n<Snippet id="edit-function" />\n\n<TryPrompt id="refactor" />\n',
   )
   const { errors, warnings } = checkContent(dir)
   expect(errors).toEqual([])
@@ -81,7 +81,7 @@ test('references inside code fences or inline code are ignored (no false-positiv
   const dir = seedContent()
   fs.writeFileSync(
     path.join(dir, 'lessons/beginner/e.mdx'),
-    '---\nid: "B1.1"\nslug: "e"\ntitle: "E"\norder: 1\n---\n\n# E\n\nInline `<Snippet id="doc-only" />` and:\n\n```mdx\n<Snippet id="fenced-only" />\n<TryPrompt id="fenced-prompt" />\n```\n',
+    '---\nid: "B1.1"\nslug: "e"\ntitle: "E"\norder: 1\ndocsSources: ["https://code.claude.com/docs/en/overview"]\n---\n\n# E\n\nInline `<Snippet id="doc-only" />` and:\n\n```mdx\n<Snippet id="fenced-only" />\n<TryPrompt id="fenced-prompt" />\n```\n',
   )
   const { errors } = checkContent(dir)
   expect(errors).toEqual([])

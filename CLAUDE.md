@@ -54,8 +54,9 @@ wrapped by skills:
   pack; existing lessons fall back to the default until translated.
 - **Check coverage:** `npm run check-snippets` — now the full **content check** (also a CI
   gate and the `/check-snippets` command): frontmatter validation (type/volatility,
-  unresolved prerequisites/references, non-contiguous order, missing `docsSources` for
-  non-stable lessons, slug/filename mismatch, etc.) plus snippet/prompt coverage. Tiered: any
+  unresolved prerequisites/references, non-contiguous order, missing `docsSources` on any
+  lesson except `checkpoint`/`milestone`, slug/filename mismatch, etc.) plus snippet/prompt
+  coverage. Tiered: any
   frontmatter or coverage error fails; non-default pack gaps and leftover `@@TODO@@` stubs warn.
 
 ## Commands

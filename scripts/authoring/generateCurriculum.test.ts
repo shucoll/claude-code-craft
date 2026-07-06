@@ -25,7 +25,7 @@ test('generate writes a curriculum.ts with a literal import for valid content', 
   const dir = tmpContentDir((beginner) => {
     fs.writeFileSync(
       path.join(beginner, 'what-is-cc.mdx'),
-      `---\nid: "B1.1"\nslug: "what-is-cc"\ntitle: "What is Claude Code?"\ntype: "core"\norder: 1\nvolatility: "stable"\n---\n\n# What is Claude Code?\n`,
+      `---\nid: "B1.1"\nslug: "what-is-cc"\ntitle: "What is Claude Code?"\ntype: "core"\norder: 1\nvolatility: "stable"\ndocsSources: ["https://code.claude.com/docs/en/overview"]\n---\n\n# What is Claude Code?\n`,
     )
   })
   generate(dir)
@@ -55,7 +55,7 @@ test('generate reads structure.ts from the passed contentDir, not a stale in-mem
   )
   fs.writeFileSync(
     path.join(dir, 'lessons', 'beginner', 'probe.mdx'),
-    `---\nid: "B1.1"\nslug: "probe"\ntitle: "Probe"\ntype: "core"\norder: 1\nvolatility: "stable"\nverifiedAgainstDocsAt: "2026-07-03"\n---\n\n# Probe\n`,
+    `---\nid: "B1.1"\nslug: "probe"\ntitle: "Probe"\ntype: "core"\norder: 1\nvolatility: "stable"\nverifiedAgainstDocsAt: "2026-07-03"\ndocsSources: ["https://code.claude.com/docs/en/overview"]\n---\n\n# Probe\n`,
   )
 
   expect(() => generate(dir)).not.toThrow()
