@@ -150,7 +150,7 @@ export const curriculum: Level[] = [
             order: 5,
             estimatedMinutes: 9,
             volatility: 'evolving',
-            verifiedAgainstDocsAt: '2026-07-07',
+            verifiedAgainstDocsAt: '2026-07-09',
             prerequisites: ['B2.3'],
             teaches: ['sessions', 'resume', 'fork'],
             references: ['B2.4'],

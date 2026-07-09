@@ -6,7 +6,7 @@ type: "core"
 order: 5
 estimatedMinutes: 9
 volatility: "evolving"
-verifiedAgainstDocsAt: "2026-07-07"
+verifiedAgainstDocsAt: "2026-07-09"
 prerequisites: ["B2.3"]
 teaches: ["sessions", "resume", "fork"]
 references: ["B2.4"]
@@ -15,42 +15,130 @@ docsSources: ["https://code.claude.com/docs/en/sessions"]
 
 # Sessions: resume, name, branch
 
-## The problem
+## Closing the terminal loses nothing
 
-{/* @@TODO@@ 2–4 sentence scenario the learner recognizes; the pain this solves. */}
+There is a fear most people carry through their first week: that the conversation is fragile. You keep a terminal tab open for days because closing it feels like throwing away an hour of context. You avoid `/clear` for the same reason.
 
-## The concept
+You can stop. **A session is a saved conversation tied to a project directory**, written to disk continuously as you work. Close the terminal, reboot the machine, run `/clear` in a fit of housekeeping: the conversation is still there, and you can walk back into it.
 
-{/* @@TODO@@ What it is, plain language, one analogy maximum. */}
+This is what made <LessonLink id="B2.4" /> safe. Every reset in that lesson except `/compact` was recoverable, and this is the mechanism behind that promise.
 
-## How it works
+## How sessions work
 
-{/* @@TODO@@ Mechanics: what happens under the hood; files/config; what loads into context and when. */}
+Three properties explain nearly everything.
 
-## Walkthrough
+**Sessions are tied to a directory.** Run `claude` in `~/projects/api` and you get that project's sessions, not your other project's. The session picker looks at your current worktree by default.
 
-{/* @@TODO@@ One fully worked example — real commands, real file contents, representative output. */}
+**Sessions are saved as you go**, not on exit. There is nothing to remember to do, and a crash costs you nothing.
 
-## Use-case scenarios
+**Sessions are independent.** Each one starts with a fresh context window. Resuming a session brings its conversation back; starting a new one does not inherit anything except what reloads, like `CLAUDE.md`.
 
-{/* @@TODO@@ 3–5 short "You want X → do Y because Z" scenarios; include one near-miss. */}
+## Resume, name, branch
 
-## When to use / when not to use
+Three moves, in the order you will need them.
 
-{/* @@TODO@@ Two-column guidance; include the context/token/complexity cost. */}
+### Resume: pick up where you left off
 
-## Pitfalls
+To continue the most recent session in this directory, from your shell:
 
-{/* @@TODO@@ 3–6 real mistakes, each with the observable symptom and the fix. */}
+```bash
+claude --continue
+```
+
+To choose from a list instead, open the session picker:
+
+```bash
+claude --resume
+```
+
+The picker shows one row per session with its name (or the first prompt, if unnamed), how long ago you touched it, the message count, and its git branch. `Space` previews a session before you commit to it, `Enter` resumes. If what you want is not there, widen the search: `Ctrl+W` shows every worktree of this repository, `Ctrl+A` shows every project on the machine.
+
+You do not have to leave Claude to switch. From inside a running session, this opens the same picker:
+
+```prompt
+/resume
+```
+
+### Name: make it findable later
+
+Unnamed sessions are identified by their first prompt, which is a terrible label a week later. Name anything you expect to return to.
+
+At startup:
+
+```bash
+claude -n auth-refactor
+```
+
+Or from inside the session, any time:
+
+```prompt
+/rename auth-refactor
+```
+
+Then you can jump straight back to it without the picker at all:
+
+```bash
+claude --resume auth-refactor
+```
+
+One trap: recent versions give every session a **default display name**, like `my-app-3f`, combining the directory and a short suffix. It looks like a name and it is not one. `claude --resume <name>` matches only names *you* set. Naming the session replaces the default.
+
+### Branch: try two approaches from one starting point
+
+You are deep in a session and about to try something you are not sure about. You want to attempt it without losing the conversation that got you here.
+
+```prompt
+/branch try-streaming-approach
+```
+
+This copies the conversation so far into a **new** session and drops you into it. The original is untouched and still sits in the picker. Now you can explore, and if it goes badly you resume the original as though the detour never happened.
+
+The command prints two session ids: the branch you are now in, and the original. In the picker, branches are grouped under the session they came from; press `→` to expand the group. From the shell, the same move is `claude --continue --fork-session`.
+
+Two things to know about a branch. Permissions you approved with "allow for this session" **do not** carry over, so you may be asked again. And this is a beginner's version of a technique that becomes serious later in the course, when you run several forked sessions in parallel deliberately.
+
+Finally, a thing not to do: resuming the *same* session in two terminals without forking. Both terminals write to one transcript and the messages interleave. If you want two, branch.
+
+## Where your sessions live
+
+Worth knowing once, for two reasons that arrive later: tooling and privacy.
+
+Transcripts are JSONL files on your own machine, at `~/.claude/projects/<project>/<session-id>.jsonl`, where `<project>` is your working directory path with every non-alphanumeric character replaced by `-`. One line per message, tool use, or metadata entry.
+
+Three cautions:
+
+- **Do not parse these files.** The entry format is internal and changes between releases, so a script that reads them directly will break. To get a conversation out, run `/export`, which writes a readable transcript.
+- **They expire.** Sessions and their checkpoints are cleaned up after 30 days by default.
+- **They are plaintext, and they contain whatever your session contained.** If a secret ended up in your context, it is now on disk. That is the other half of the hygiene point from <LessonLink id="B1.3" />.
 
 ## Try It
 
-{/* @@TODO@@ Hands-on 5–15 min exercise with self-verifiable success criteria. */}
+**Environment:** the public repo you cloned in <LessonLink id="B2.1" />. Nothing here modifies your code.
+
+1. Start Claude, ask it one question about the project, then name the session: `/rename belt-practice`.
+2. Quit entirely with `/exit`. Close the terminal if you want to make the point properly.
+3. Reopen, `cd` back to the repo, and run `claude --resume belt-practice`. Ask Claude what you just discussed.
+4. Now run `/branch experiment`, and ask a different question in the branch.
+5. Open the picker with `/resume` and expand the group with `→`.
+
+**Success criteria:** Claude recalls your original question after a full restart, the picker shows `belt-practice` with `experiment` grouped beneath it, and you can resume either one.
 
 ## FAQ
 
-{/* @@TODO@@ The mustAnswer questions not covered above, answered directly. */}
+**If I close the terminal, is my work gone?** No. Sessions are written to disk continuously, so closing the terminal, exiting, or crashing loses nothing. Reopen and run `claude --continue`.
+
+**How do I pick up yesterday's session?** `claude --continue` for the most recent one in this directory, or `claude --resume` to pick from a list. If you named it, `claude --resume <name>` goes straight there.
+
+**Can I fork a session to try two approaches?** Yes. `/branch` copies the conversation into a new session and leaves the original intact, so you can explore and come back. From the shell it is `claude --continue --fork-session`.
+
+**Where is session data stored?** As JSONL transcripts under `~/.claude/projects/`, on your machine, kept for 30 days by default. Use `/export` to get one out in readable form rather than reading the file.
+
+**Why can't I resume by the name shown in the list?** Because it is probably the auto-generated display name, not a real one. Set a name with `/rename` or `claude -n`, and it becomes a resume handle.
+
+**Does `/clear` destroy the conversation?** No, and this lesson is why. It starts a fresh conversation; the old one is saved and appears in `/resume`, exactly as <LessonLink id="B2.4" /> promised.
 
 ## Where next
 
-{/* @@TODO@@ Cross-links: prerequisites recap + forward teasers (see §1.6). */}
+That closes the module. You can drive a session (<LessonLink id="B2.1" />), you understand the window that constrains it (<LessonLink id="B2.2" />), you know the commands that steer it (<LessonLink id="B2.3" />), you can reset it deliberately (<LessonLink id="B2.4" />), and you now know it is never really lost.
+
+Everything so far has been about the session. The next module is about the project: how to give Claude standing instructions it reads every single time, so you stop repeating yourself. It begins with <LessonLink id="B3.1" />.
