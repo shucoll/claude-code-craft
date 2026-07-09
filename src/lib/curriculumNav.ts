@@ -28,6 +28,12 @@ export function levelIdFromPath(pathname: string): string | null {
   return match ? match[1] : null
 }
 
+/** The module segment of a `/learn/:levelId/:moduleId/...` path, or null if absent. */
+export function moduleIdFromPath(pathname: string): string | null {
+  const match = pathname.match(/^\/learn\/[^/]+\/([^/]+)/)
+  return match ? match[1] : null
+}
+
 export function firstLesson(levels: Level[]): LessonLocation | undefined {
   return flattenLessons(levels)[0]
 }
