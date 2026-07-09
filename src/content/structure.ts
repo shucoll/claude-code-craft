@@ -19,7 +19,7 @@ export const structure: LevelDef[] = [
     id: 'beginner',
     title: 'Beginner',
     order: 1,
-    modules: [{ code: 'B1', slug: 'meet-claude-code', title: 'Meet Claude Code', order: 1 }],
+    modules: [{ code: 'B1', slug: 'meet-claude-code', title: 'Meet Claude Code', order: 1 }, { code: 'B2', slug: 'sessions-and-context', title: 'Sessions and Context', order: 2 }],
   },
   {
     id: 'intermediate',

@@ -1,0 +1,134 @@
+---
+id: "B2.1"
+slug: "your-first-working-session"
+title: "Your first working session"
+type: "core"
+order: 1
+estimatedMinutes: 15
+volatility: "evolving"
+verifiedAgainstDocsAt: "2026-07-07"
+prerequisites: ["B1.4"]
+teaches: ["first-session", "diff-review", "interrupting", "at-mentions", "turns"]
+references: ["B1.1", "B1.3"]
+docsSources: ["https://code.claude.com/docs/en/quickstart", "https://code.claude.com/docs/en/common-workflows", "https://code.claude.com/docs/en/interactive-mode"]
+---
+
+# Your first working session
+
+You installed Claude in <LessonLink id="B1.4" /> and met the agentic loop in <LessonLink id="B1.1" />. Now you drive one real session start to finish. No new theory: just the shape of a working session, and one habit worth installing on day one, reading the diff before you accept it.
+
+We will make three moves, in this order: **ask questions first**, **request one small change**, then **read the change before accepting it**. Along the way you will interrupt Claude mid-action, hand it a file by name, and see exactly what a "turn" is.
+
+## Set up your lab
+
+This session needs real code to explore, so clone a small, well-known public repo to practice on. A throwaway clone means you can ask for changes freely without touching anything you care about. Any small project works; three reliable choices:
+
+- `sindresorhus/slugify`, a tiny single-purpose JavaScript utility
+- `chalk/chalk`, a small and hugely popular terminal-styling library
+- `pallets/click`, a widely used Python command-line library
+
+Pick one, clone it, and start Claude inside it:
+
+```bash
+git clone https://github.com/sindresorhus/slugify
+cd slugify
+claude
+```
+
+You will see the prompt with the model and working directory shown above it. If a trust dialog appears, that is the first gate from <LessonLink id="B1.3" />: it is asking permission to work in this folder. Accept it.
+
+## Move 1: Ask before you touch anything
+
+The instinct from chat tools is to immediately ask for a change. Resist it. Claude works better once it has read the code, and *you* work better once you have watched it read. So your first prompt is a question, not a command:
+
+```text
+what does this project do, and where is the entry point?
+```
+
+Claude reads files on its own (you never paste them in) and answers. Watch what happens on screen: it opens a few files, maybe runs a command to list the structure, then summarizes. That whole thing, from your prompt to Claude handing control back to you, is **one turn**. A turn is not one message; it is one prompt and everything Claude does in response, however many files it reads or commands it runs, ending when it stops and waits for you again.
+
+Ask one or two more questions to get your bearings:
+
+```text
+what are the main pieces, and how do they fit together?
+```
+
+You are doing the reading-before-writing half of the agentic loop on purpose. By the end of a couple of turns you know enough to ask for a change and to judge the answer.
+
+> **Try it.** In the repo you cloned, ask one question about what it does and one about how it is organized. Notice that you never told Claude which files to open. That is the harness gathering context for you.
+
+## Steer while Claude works
+
+You will not always like where a turn is going. Three controls let you stay in the driver's seat.
+
+**Stop it with `Esc`.** Press `Esc` to interrupt Claude mid-response or mid-tool-call. It halts, keeps the work already done, and hands control back to you so you can redirect, for example if it starts editing the wrong file or heads down a path you did not intend. This is your steering wheel; use it freely. (`Esc` `Esc` on an empty prompt does something different, a rewind, which is a later topic.)
+
+**Point at a file with `@`.** Instead of describing a file in prose, type `@` and start its path. An autocomplete menu appears and Claude gets the exact file:
+
+```text
+explain what @src/auth/login.ts is responsible for
+```
+
+This is faster and less ambiguous than "the login file," especially in a big repo.
+
+**Hand it a URL or an image.** Paste a URL straight into your prompt and Claude can fetch and read it (fetching a web page is one of the actions that asks permission first, from <LessonLink id="B1.3" />). For an image, a screenshot of a bug or a design mockup, copy it and paste with `Ctrl+V` (on macOS iTerm2 use `Cmd+V`; on WSL use `Alt+V`). Do not use `Cmd+V` in plain Terminal.app, it pastes the file path, not the image. Claude inserts an `[Image #1]` chip you can refer to:
+
+```text
+the layout in [Image #1] is broken on mobile. what in @src/styles.css would cause that?
+```
+
+## Move 2: Ask for one small change
+
+Now make Claude do some work. Keep it small and specific, this is your first change, not your best one:
+
+```text
+add a one-line docstring to the main entry function explaining what it does
+```
+
+Claude finds the function, writes the change, and, because editing a file is the second gate from <LessonLink id="B1.3" />, it stops and asks permission before touching anything. This pause is the whole point of the next move. Do not approve it reflexively.
+
+> **Try it.** Request one small, specific change in the cloned repo. When Claude proposes it, stop at the permission prompt without accepting yet. The next section is what to do while you are paused there.
+
+## Move 3: Read the diff before you accept
+
+This is the habit this lesson exists to install. When Claude proposes an edit, it shows you a **diff**: the exact lines it wants to remove and add, before anything is written to disk. Read it. Every time.
+
+You are checking three things:
+
+- **Right file, right place.** Is it editing what you meant?
+- **Only what you asked.** A one-line docstring should be a one-line change, not a "helpful" refactor of the whole function.
+- **Nothing you would not write yourself.** If a line looks wrong, it is easier to reject now than to unwind later.
+
+Then decide. You can approve this single change, reject it and tell Claude what to fix instead, or turn on **accept-edits mode** to stop being asked for the rest of the session. You reach accept-edits mode with `Shift+Tab`, which cycles permission modes. It is convenient and it is also how people accept changes they never actually read, so leave it off until reviewing each diff is second nature.
+
+After you accept, confirm what landed the same way you would with any change, by asking Claude or checking git:
+
+```text
+what files did you just change?
+```
+
+```text
+! git diff
+```
+
+That `!` runs a shell command directly and drops its output into the session (you met shell passthrough in passing; the command belt lesson covers it). Reviewing before you accept and confirming after is the loop that keeps you in control of your own codebase.
+
+> **Try it.** Read the diff Claude proposed in Move 2. Confirm it touches only the function you named and adds only the docstring you asked for. Accept it, then run `! git diff` to see the change on disk. You just completed a full read, change, review cycle.
+
+## FAQ
+
+**What should my first prompt actually be?** A question about the code, not a change. "What does this do?" or "where is X handled?" Let Claude read before it writes, and let yourself watch it work before you ask it to change anything.
+
+**How do I stop Claude once it is going?** Press `Esc`. It interrupts the current response or tool call, keeps the work done so far, and returns control to you. Nothing is lost; you just get to redirect.
+
+**What exactly is a turn?** One prompt plus everything Claude does in response, reading files, running commands, making edits, ending when it stops and waits for your next prompt. A single turn can involve many tool calls. This matters later: turns are also what fill up the context window, the subject of <LessonLink id="B2.2" />.
+
+**How do I give Claude a specific file instead of describing it?** Type `@` and start the path; pick from the autocomplete. Claude gets the exact file, which is faster and less error-prone than "the config file."
+
+**Can I give it a URL or a screenshot?** Yes. Paste a URL and Claude can fetch it (it asks first). Paste an image with `Ctrl+V` (`Cmd+V` in iTerm2, `Alt+V` in WSL) and reference the `[Image #N]` chip it inserts.
+
+**How do I know what changed?** Read the diff Claude shows before you accept, and confirm afterward by asking "what did you change?" or running `! git diff`. Never accept an edit you have not looked at.
+
+## Where next
+
+You have run a full session: asked questions, made a change, and reviewed it before accepting. The single most useful thing to understand next is why long sessions start to drift, and how to see it coming. <LessonLink id="B2.2" /> covers the context window, the working memory every one of those turns is filling up. After that, <LessonLink id="B2.3" /> gives you the small set of commands you will reach for every day.
