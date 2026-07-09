@@ -124,5 +124,7 @@ test('the decision tree opts into guided traversal with a single root question',
   const roots = flow.nodes.filter((n) => !targets.has(n.id))
   expect(roots).toHaveLength(1)
   expect(roots[0].role).toBe('question')
-  expect(flow.nodes.filter((n) => n.role === 'question')).toHaveLength(2)
+  // undo? -> still relevant? -> same setup?, resolving to four leaves
+  expect(flow.nodes.filter((n) => n.role === 'question')).toHaveLength(3)
+  expect(flow.nodes.filter((n) => n.role === 'leaf')).toHaveLength(4)
 })

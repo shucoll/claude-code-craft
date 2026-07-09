@@ -6,31 +6,115 @@ type: "resolver"
 order: 4
 estimatedMinutes: 10
 volatility: "stable"
-verifiedAgainstDocsAt: "2026-07-07"
+verifiedAgainstDocsAt: "2026-07-09"
 prerequisites: ["B2.2", "B2.3"]
 teaches: ["clear", "compact", "session-reset"]
 references: ["B2.2"]
-docsSources: ["https://code.claude.com/docs/en/context-window", "https://code.claude.com/docs/en/sessions", "https://code.claude.com/docs/en/memory"]
+docsSources: ["https://code.claude.com/docs/en/context-window", "https://code.claude.com/docs/en/sessions", "https://code.claude.com/docs/en/memory", "https://code.claude.com/docs/en/checkpointing"]
+interactive:
+  - kind: "diagram"
+    spec: "clear-compact-new-tree"
 ---
 
 # /clear vs /compact vs starting a new session
 
 ## The confusion
 
-{/* @@TODO@@ State exactly what people mix up and why the confusion exists. */}
+Your session has gone long, or gone sideways. You know from <LessonLink id="B2.2" /> that the window is filling. You reach for the menu and find `/clear`, `/compact`, and the option of just quitting and starting over. They all promise room to breathe. Nothing tells you what each one takes from you.
+
+Two things make this genuinely confusing rather than merely unfamiliar.
+
+**The names describe the mechanism, not the consequence.** "Clear" and "compact" both sound like tidying. One summarizes your conversation; the other replaces it. That difference decides whether Claude still knows what you were doing.
+
+**The option you usually want is not on the list.** Very often the problem is not "my session is too full." It is "Claude just made a mess of that file." That is not a reset at all, and reaching for one is how people throw away a good session to fix a bad edit. The fourth option, `/rewind`, is the one nobody thinks of.
+
+So the real question is not "which reset?" It is: **do you want to lose context, lose changes, or lose neither?**
 
 ## Side-by-side
 
-{/* @@TODO@@ Compare the options on: what it does, when it runs/loads, cost, who controls it, persistence. */}
+| | `/compact` | `/clear` | New session | `/rewind` |
+|---|---|---|---|---|
+| **What it does** | Summarizes the conversation in place | Starts a fresh conversation, empty context | Exits and starts over | Restores an earlier point |
+| **Conversation** | Kept, as a summary | Emptied (old one saved) | Gone from context | Restorable to any prompt |
+| **Your code** | Untouched | Untouched | Untouched | **Reverted**, if you choose |
+| **Startup (CLAUDE.md, memory)** | Reloads | Reloads | Reloads | Unaffected |
+| **Session id** | Same | Same process, new conversation | New | Same |
+| **Permissions you allowed** | Kept | Kept | **Gone** | Kept |
+| **Recoverable?** | Detail is lost | Old conversation is in `/resume` | Old session is in `/resume` | Yes, that is the point |
+| **Cheapest when** | The history still matters | The history is irrelevant | The setup must change too | You regret a change |
 
-## Decision tree
+Three things in that table surprise people.
 
-{/* @@TODO@@ The resolver logic as a flowchart (static clickable diagram in Phase 1). */}
+**`/clear` does not destroy anything.** It starts a new conversation with an empty context, and the previous conversation is saved and resumable. You have not lost your work, you have set it down. (If you `/clear` and immediately regret it, the `/rewind` menu offers the previous session at the top of the list.)
+
+**`/compact` is the only option that loses information permanently.** Everything else preserves or restores. Compaction replaces detail with a summary, and the detail does not come back.
+
+**`/rewind` is the only one that touches your code.** The other three are pure context operations. This is why it belongs in the comparison: if your actual problem is a bad edit, the other three will not help, and you will have burned your session for nothing.
+
+## Which reset, in order
+
+Work through it in this order, because the first question is the one people skip.
+
+<ChartEmbed id="clear-compact-new-tree" />
+
+The order matters more than the answers. Ask "do I want to undo?" before "do I want room?", because the two feel identical in the moment and have opposite remedies.
 
 ## Scenario walkthroughs
 
-{/* @@TODO@@ 5–8 rapid-fire scenarios, each stated then resolved with the recommended option + reasoning. */}
+**You finished the login feature and want to start on the API client. Same repo.**
+`/clear`. The login conversation has nothing to say about the API client, and carrying it costs you context for no benefit. Your `CLAUDE.md` reloads, your permissions stay, and the login conversation is still in `/resume` if you need to check what you decided.
+
+**You are halfway through a refactor and `/context` says you are running out of room.**
+`/compact`. The conversation is the whole point: Claude needs to remember which files it has already migrated and why. Steer the summary so the important part survives: `/compact focus on which modules are already migrated`.
+
+**Claude just rewrote a function and made it worse.**
+`/rewind`. Not a reset. Your context is fine; one edit is bad. Press `Esc` twice on an empty prompt, pick the message before the bad change, and choose "Restore code" to revert the file while keeping the conversation, so Claude still knows what you were trying to do.
+
+**You spent forty minutes on an approach that turned out to be wrong.**
+New session, or `/clear`. Compaction would faithfully summarize the failed approach and carry it forward, and Claude will keep referring to it. You want that history gone, not compressed. If you are staying in the same repo, `/clear` is enough.
+
+**You are done with this project and switching to a different repo.**
+New session. `/clear` keeps you in the same directory and the same process. Changing projects means changing Claude's whole view of the world, and you want a clean set of permissions too.
+
+**A long debugging session filled the window with verbose test output, but your original instructions at the top still matter.**
+`/rewind`, used as a scalpel rather than an undo. Open it, select the message where the debugging began, and choose **"Summarize from here"**: everything before that message stays intact, everything from it onward becomes a summary. Your setup survives in full detail and the noise collapses. `/compact` would have flattened both equally.
 
 ## Edge cases
 
-{/* @@TODO@@ Situations where two options are both defensible, and what tips the balance. */}
+**Compaction fires mid-task and quietly drops the detail you needed.** This is the classic failure, and it is invisible: nothing tells you a decision was summarized away. Claude carries on, subtly wrong, and you spend ten minutes wondering why it forgot the constraint you set.
+
+The taught pattern, and the one habit to keep from this lesson:
+
+> **Do not let compaction catch you mid-task.** Finish the current milestone, write a handoff note, *then* reset.
+
+The handoff note is the part people skip. Before you `/clear` or `/compact` at a natural boundary, have Claude write down where things stand. Put durable rules in `CLAUDE.md`, since it reloads every session, and put task state in a scratch file:
+
+```prompt
+before we reset: append a short "where we are" note to NOTES.md covering what is done, what is left, and the two constraints we agreed on
+```
+
+Now the reset is free. Anything that mattered is on disk, not in a summary you are hoping survives.
+
+**Switching tasks in the same repo: `/clear` or a new session?** Both work, and `/clear` is usually right because it is one keystroke and keeps your setup. Tip to a new session when you want your "allow for this session" permission grants reset, for instance because the last task made you approve something broad that the next task should not inherit.
+
+**"Just getting long" versus "no longer relevant" is a judgement call.** When you cannot tell, ask whether you would be annoyed if Claude forgot the last hour. If yes, `/compact`. If you shrug, `/clear`. The cost of guessing wrong is asymmetric: a wrong `/compact` leaves you with a session that half-remembers, which is worse than one that cleanly remembers nothing.
+
+**You cleared, then realized you needed the old conversation.** It is not gone. `/resume` lists it, and within the same Claude Code process the `/rewind` menu shows the pre-clear session at the top. This is why `/clear` is the low-risk default.
+
+**`/rewind` cannot undo everything.** It tracks Claude's file edits. It does not track files changed by shell commands (`rm`, `mv`), edits you made yourself, or anything with an effect outside your machine. Checkpoints are seatbelts; git is the vehicle. That distinction gets its own lesson in <LessonLink id="B3.4" />.
+
+## FAQ
+
+**Which reset do I reach for, and what do I lose?** `/compact` when the history still matters (you lose detail). `/clear` when it does not (you lose nothing; it is resumable). A new session when your setup must change too (you lose your permission grants). `/rewind` when you actually wanted to undo a change (you lose the change, which is the point).
+
+**Does `/clear` delete my conversation?** No. It starts a new conversation with an empty context, and the old one stays available through `/resume`.
+
+**Is `/compact` ever the wrong choice?** Yes, whenever the history is not worth keeping. Summarizing a failed approach preserves it in compressed form, and Claude will keep acting on it. Clear instead.
+
+**Why is `/rewind` in a lesson about resets?** Because it is the option people fail to consider. The urge to reset most often arrives right after a bad edit, and a reset does not fix a bad edit.
+
+**Can I control what compaction keeps?** Yes. `/compact focus on the API changes` biases the summary, and a "Compact Instructions" section in `CLAUDE.md` states what must always survive.
+
+## Where next
+
+You can now choose a reset deliberately instead of reaching for whichever one you remember. Two threads run out of this lesson. <LessonLink id="B2.5" /> picks up the promise made three times above: that a cleared or abandoned conversation is never really gone, and shows you how to find it, name it, and branch it. And <LessonLink id="B3.4" /> takes `/rewind` seriously as an undo button: what it checkpoints, what it silently cannot restore, and why it is not a replacement for git.
