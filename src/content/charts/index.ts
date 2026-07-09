@@ -1,5 +1,6 @@
 import { agenticLoopDiagram } from './agentic-loop-diagram'
 import { clearCompactNewTree } from './clear-compact-new-tree'
+import { contextWindowSimulator } from './context-window-simulator'
 import { demo } from './demo'
 import type { ChartDef } from './types'
 
@@ -7,6 +8,7 @@ const charts: Record<string, ChartDef> = {
   [demo.id]: demo,
   [agenticLoopDiagram.id]: agenticLoopDiagram,
   [clearCompactNewTree.id]: clearCompactNewTree,
+  [contextWindowSimulator.id]: contextWindowSimulator,
 }
 
 export const registeredChartIds: string[] = Object.keys(charts)
@@ -18,6 +20,7 @@ export function getChart(id: string): ChartDef | undefined {
 export type {
   ChartDef,
   ChartCard,
+  ChartBarSegment,
   ChartRow,
   ChartTone,
   ChartTarget,

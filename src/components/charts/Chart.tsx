@@ -1,5 +1,6 @@
 import { cn } from '../../lib/cn'
 import type { ChartCard, ChartDef } from '../../content/charts/types'
+import { BarView } from './BarView'
 import { ChartCardView } from './ChartCardView'
 import { FlowView } from './FlowView'
 import { GuidedFlow } from './GuidedFlow'
@@ -50,6 +51,8 @@ export function Chart({ def, onActivate }: ChartProps) {
             ) : (
               <FlowView row={row} onActivate={onActivate} />
             )
+          ) : row.kind === 'bar' ? (
+            <BarView row={row} onActivate={onActivate} />
           ) : (
             <div
               data-testid="chart-cards-row"

@@ -1,0 +1,5 @@
+The result of everything Claude runs: test suites, `grep` searches, build logs, hook output, command stdout.
+
+It is easy to underestimate. One verbose test run or a search that matches hundreds of lines can cost more than several file reads, and a failing build printed three times costs three times.
+
+Compaction **clears older tool output first**, before it touches your conversation, precisely because it is bulky and rarely worth keeping once Claude has acted on it. That is also why a session recovers so much room the moment compaction fires.

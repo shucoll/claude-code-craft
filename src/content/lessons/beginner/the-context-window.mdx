@@ -6,51 +6,125 @@ type: "core"
 order: 2
 estimatedMinutes: 12
 volatility: "stable"
-verifiedAgainstDocsAt: "2026-07-07"
+verifiedAgainstDocsAt: "2026-07-09"
 prerequisites: ["B2.1"]
 teaches: ["context-window", "compaction", "usage-check"]
 references: ["B1.1"]
 docsSources: ["https://code.claude.com/docs/en/context-window", "https://code.claude.com/docs/en/how-claude-code-works"]
+interactive:
+  - kind: "diagram"
+    spec: "context-window-simulator"
 ---
 
 # The context window
 
 ## The problem
 
-{/* @@TODO@@ 2–4 sentence scenario the learner recognizes; the pain this solves. */}
+An hour into a good session, something changes. Claude re-reads a file it opened earlier. It forgets the naming convention you spelled out at the start. It suggests a fix you already rejected. Nothing broke, and Claude did not get worse at coding.
+
+It ran out of room to remember.
+
+This is the one mental model everything else in this course hangs off. Once you have it, the difference between `/clear` and `/compact`, why subagents exist, why `CLAUDE.md` is worth writing, and why long sessions degrade all stop being separate facts and become the same fact seen from different angles.
 
 ## The concept
 
-{/* @@TODO@@ What it is, plain language, one analogy maximum. */}
+The **context window** is the session's working memory: everything Claude can see at this moment, all at once.
+
+It is not a database and it is not storage. Think of it as a desk. Everything Claude needs has to be on the desk: your instructions, the files it opened, the output of the tests it ran, the conversation so far. Claude takes in the whole desk in an instant, but the desk is a fixed size. When it fills, something comes off.
+
+That size is measured in **tokens**, each roughly three quarters of a word. The standard window holds 200,000 of them, and newer models offer a one-million-token option. Either way it is finite, and everything competes for the same surface.
+
+Two consequences follow, and they are the entire lesson:
+
+- **Everything Claude does costs space.** Reading is not free.
+- **Nothing carries between sessions on its own.** Every new session starts with an empty desk. Only things that reload, like `CLAUDE.md`, come back.
 
 ## How it works
 
-{/* @@TODO@@ Mechanics: what happens under the hood; files/config; what loads into context and when. */}
+Four things share the window, and they are wildly unequal in size.
 
-## Walkthrough
+**Startup** loads before you type: Claude's system prompt, your environment and git state, your `CLAUDE.md` files, saved memory, and the names of available skills and MCP tools. It is small, and you never see it.
 
-{/* @@TODO@@ One fully worked example — real commands, real file contents, representative output. */}
+**Your conversation** is every prompt you send and every reply Claude writes. Individually cheap, and it never shrinks on its own.
 
-## Use-case scenarios
+**File reads** are usually the largest consumer, and the most surprising. When Claude reads a file it loads the *entire* file, not just the part it needed, and that file stays in the window for the rest of the session. Reading a dozen files to understand one feature can half-fill a window before you change a single line.
 
-{/* @@TODO@@ 3–5 short "You want X → do Y because Z" scenarios; include one near-miss. */}
+**Tool output** is the result of everything Claude runs: test suites, searches, build logs, command output. One verbose test run can cost more than several files, and a failing build printed three times costs three times.
 
-## When to use / when not to use
+### When the window fills
 
-{/* @@TODO@@ Two-column guidance; include the context/token/complexity cost. */}
+Claude does not simply stop. It **compacts**, in two stages, and the order matters:
 
-## Pitfalls
+1. It clears older **tool output** first, since it is bulky and rarely worth keeping once Claude has acted on it.
+2. If that is not enough, it **summarizes the conversation**, replacing it with a structured account of what you asked for, what was decided, and the code that mattered.
 
-{/* @@TODO@@ 3–6 real mistakes, each with the observable symptom and the fix. */}
+Startup then reloads automatically. This is why a session recovers so much room the moment compaction fires, and it is the mechanical answer to "why did Claude forget?"
 
-## Try It
+What survives: your requests, the key decisions, important code snippets, and everything in startup. What is lost: raw file contents, tool output, exact wording, and **detailed instructions you gave early in the conversation**. That last one is the trap. If a rule matters, a message from an hour ago is the wrong place to keep it. `CLAUDE.md` reloads every time; your conversation does not.
 
-{/* @@TODO@@ Hands-on 5–15 min exercise with self-verifiable success criteria. */}
+You can steer compaction rather than just suffer it. Run `/compact focus on the API changes` to bias the summary, or add a "Compact Instructions" section to `CLAUDE.md` naming what must always be kept.
+
+Here is a window partway through a real session, and the same window immediately after compaction. Click any segment to see what it holds and whether it survives.
+
+<ChartEmbed id="context-window-simulator" />
+
+## Watching a session fill
+
+You do not have to guess how full you are. `/context` shows exactly what is occupying the window right now, broken down by category.
+
+The habit worth building is checking *before* it becomes a problem rather than after Claude starts acting confused. Start a session in the repo you cloned in <LessonLink id="B2.1" /> and check immediately:
+
+```prompt
+/context
+```
+
+Almost everything you see is startup. That is your floor: the cost of existing before you ask for anything. Note the number.
+
+Now give Claude the kind of work that reads widely:
+
+```prompt
+read the main source files and explain how this project is structured
+```
+
+Then check again:
+
+```prompt
+/context
+```
+
+The jump is almost entirely file reads. That one question, which felt cheap to ask, was the most expensive thing you did. Ask a narrow question instead, like "what does `@src/index.js` export?", and the cost barely moves. That contrast is the whole skill: **how you phrase a request determines what it costs.**
+
+> **Try it.** In your cloned repo from <LessonLink id="B2.1" />, run `/context` on a fresh session and note the percentage used. Ask Claude to explain the codebase, then run `/context` again. **Success criteria:** you can say which category grew the most, and roughly by how much. Nothing here writes to disk, so it is safe to run anywhere.
+
+## Symptoms of a full window
+
+You will usually feel these before you check the number. Any of them is a cue to run `/context`.
+
+- **Claude re-reads a file it already read.** The earlier read was cleared.
+- **It forgets a rule you stated early on.** The conversation was summarized and your instruction did not make the cut. That rule belongs in `CLAUDE.md`.
+- **It repeats a suggestion you already rejected.** Your rejection was in the part that got compressed.
+- **Answers get vaguer, or it loses the thread of a multi-step task.** It is working from a summary, not the detail.
+- **A "Conversation compacted" message appears.** Less a symptom than the event itself. If it fires mid-task, expect to restate where you were.
+- **Compaction fires over and over.** A single file or command output is so large that the window refills immediately after each summary. Claude gives up after a few attempts rather than looping forever. Stop feeding it the giant thing.
+
+The fix is rarely "start over." It is usually to finish the current milestone, write down where you are, then reset deliberately. Which reset to reach for is exactly the subject of <LessonLink id="B2.4" />.
 
 ## FAQ
 
-{/* @@TODO@@ The mustAnswer questions not covered above, answered directly. */}
+**What is context, in one sentence?** Everything Claude can see right now, held in a fixed-size window measured in tokens: startup, your conversation, the files it read, and the output of what it ran.
+
+**What fills it up?** File reads most of all, because a read loads the whole file and it stays. Then tool output, especially verbose test runs and searches. Your conversation and startup are comparatively tiny.
+
+**Why does Claude "forget"?** Because the window filled and compaction ran. It cleared tool output, then replaced the conversation with a summary. Detail from early in the session, including instructions you gave, may not have survived.
+
+**What is compaction, and what survives it?** Automatic housekeeping when the window fills: older tool output is cleared first, then the conversation is summarized. Surviving are your requests, key decisions, important code, and all of startup, which reloads. Lost are raw file contents, tool output, exact wording, and early instructions. One quiet exception: skill descriptions do not reload, so only skills you actually invoked are preserved.
+
+**How do I check how full my session is?** Run `/context`. It breaks the window down by category, so you can see what is really eating it. `/mcp` shows what each MCP server costs.
+
+**Can I just get a bigger window?** Sometimes, with a model offering the one-million-token option. It buys headroom, not a different mental model. A bigger desk still fills, and everything above still applies.
+
+**How do I stop a rule from being forgotten?** Put it in `CLAUDE.md`. It reloads after every compaction and at the start of every session, which conversation history does not. That is the subject of the next module.
 
 ## Where next
 
-{/* @@TODO@@ Cross-links: prerequisites recap + forward teasers (see §1.6). */}
+Nearly everything from here refers back to this lesson. <LessonLink id="B2.3" /> introduces `/context` alongside the handful of other commands you will reach for daily. <LessonLink id="B2.4" /> resolves the beginner's canonical confusion, `/clear` versus `/compact` versus a fresh session, entirely in terms of what each one does to the window you just learned to read. Later, when you meet subagents, `CLAUDE.md`, and prompt caching, each turns out to be a different answer to the same question: how do you keep the desk clear enough to think on?

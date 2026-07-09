@@ -39,6 +39,12 @@ Displays a labeled pill (e.g., "unlock: unlock advanced features"). Arrows auto-
 ```
 Renders a branching flowchart with nodes and labeled edges — see "Flowcharts (branching)" below.
 
+**Bar row:**
+```typescript
+{ kind: 'bar', segments: ChartBarSegment[]; label?: string; caption?: string }
+```
+Renders a horizontal stacked bar — see "Bars (proportions)" below.
+
 ### Cards
 
 Each card in a cards row:
@@ -262,6 +268,41 @@ export const levelChart: ChartDef = {
 ```
 
 Then register in `index.ts` and embed with `<ChartEmbed id="levels" />`.
+
+## Bars (proportions)
+
+Card rows and flow rows both give every item the same visual weight. When the
+lesson's point is that one thing is *much bigger* than another — a context
+window mostly eaten by file reads, a cost ledger, a token budget — use a `bar`
+row.
+
+```typescript
+{ kind: 'bar'; segments: ChartBarSegment[]; label?: string; caption?: string }
+```
+
+- `label` — a small heading above the bar (e.g. "Partway through a session").
+- `caption` — a muted note below the legend, for the "representative numbers,
+  not exact" style disclaimer.
+
+```typescript
+interface ChartBarSegment extends ChartCard {
+  percent: number   // relative share; normalized against the row's total
+}
+```
+
+Segments are `ChartCard`s with a `percent`, so they take the same `tone` palette
+and the same `target` (lesson or popup) as cards, and inert segments simply omit
+`target`. Widths are normalized against the sum of the row's percents, so they
+do not have to add to 100.
+
+Every segment is rendered **twice**: once as a slice of the bar, and once as a
+legend row beneath it. A 2% slice is too narrow to click reliably or to hold a
+label, so the legend is what keeps small segments reachable and readable.
+Segments below 8% omit their in-bar percent label; the legend always shows it.
+
+Stack several bars with `connector` rows between them to show a before/after
+(see `context-window-simulator`, which shows a filled window, then the same
+window after compaction).
 
 ## Flowcharts (branching)
 

@@ -1,0 +1,7 @@
+Compaction replaces the conversation with a structured summary of what happened: what you asked for, what Claude decided, and the code that mattered.
+
+**Survives:** your requests, key decisions, important code snippets, and all of startup (system prompt, `CLAUDE.md`, memory, MCP tools), which simply reloads.
+
+**Lost:** raw file contents, tool output, exact wording, and detailed instructions from early in the conversation. The skill descriptions do not reload either.
+
+You can steer it. Run `/compact focus on the API changes`, or add a "Compact Instructions" section to `CLAUDE.md` to say what must always be kept.

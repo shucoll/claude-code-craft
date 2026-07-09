@@ -1,0 +1,5 @@
+Every prompt you send and every reply Claude writes, kept in full so it can refer back to what you agreed three turns ago.
+
+Individually these are cheap: a prompt is often under 100 tokens. They accumulate slowly compared to file reads, but they never shrink on their own during a session.
+
+When compaction runs, this is the part that gets **summarized rather than discarded**. Your requests and the key decisions survive in compressed form. Precise wording, and detailed instructions you gave early on, may not.

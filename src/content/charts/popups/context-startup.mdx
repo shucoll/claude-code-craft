@@ -1,0 +1,5 @@
+Everything Claude loads before you type: its system prompt, your environment (working directory, platform, git state), your `CLAUDE.md` files, saved memory, and the names of available skills and MCP tools.
+
+It is small, typically under 10,000 tokens, and you never see it. It is also the only part of the window that **reloads automatically after compaction**, which is exactly why standing rules belong in `CLAUDE.md` rather than in a message you sent an hour ago.
+
+One exception: the skill descriptions do not reload. Only skills you actually invoked survive.

@@ -102,11 +102,12 @@ export const curriculum: Level[] = [
             order: 2,
             estimatedMinutes: 12,
             volatility: 'stable',
-            verifiedAgainstDocsAt: '2026-07-07',
+            verifiedAgainstDocsAt: '2026-07-09',
             prerequisites: ['B2.1'],
             teaches: ['context-window', 'compaction', 'usage-check'],
             references: ['B1.1'],
             docsSources: ['https://code.claude.com/docs/en/context-window', 'https://code.claude.com/docs/en/how-claude-code-works'],
+            interactive: [{ kind: 'diagram', spec: 'context-window-simulator' }],
             content: () => import('./lessons/beginner/the-context-window.mdx'),
           },
           {

@@ -26,6 +26,15 @@ export interface ChartCard {
   target?: ChartTarget
 }
 
+/**
+ * One slice of a `bar` row. Structurally a `ChartCard` (so it activates through
+ * the same lesson/popup targets) plus the share of the bar it occupies.
+ */
+export interface ChartBarSegment extends ChartCard {
+  /** Relative share of the bar. Widths are normalized against the row's total. */
+  percent: number
+}
+
 export type FlowNodeRole = 'default' | 'question' | 'leaf'
 
 export interface FlowNode {
@@ -58,6 +67,7 @@ export type ChartRow =
   | { kind: 'cards'; cards: ChartCard[] }
   | { kind: 'connector'; label: string }
   | { kind: 'flow'; nodes: FlowNode[]; edges: FlowEdge[]; direction?: FlowDirection; guided?: boolean }
+  | { kind: 'bar'; segments: ChartBarSegment[]; label?: string; caption?: string }
 
 export interface ChartDef {
   id: string

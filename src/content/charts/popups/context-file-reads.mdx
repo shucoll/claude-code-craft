@@ -1,0 +1,5 @@
+Usually the single largest consumer. When Claude reads a file it loads the **whole file**, not the relevant part, and it stays in the window for the rest of the session.
+
+A 500-line source file can cost a few thousand tokens. Reading a dozen of them to understand a feature is how a session quietly gets to half full before you have changed a single line.
+
+This is why asking a narrow question ("what does `@src/auth.ts` do?") costs far less than a broad one ("explain this codebase"), and why subagents, which read in their own separate window, help on long tasks.
