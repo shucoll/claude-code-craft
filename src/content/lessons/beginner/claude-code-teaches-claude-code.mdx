@@ -15,42 +15,59 @@ docsSources: ["https://code.claude.com/docs/en/common-workflows"]
 
 # Claude Code teaches Claude Code
 
-## The problem
+## The shortest, longest-lived habit
 
-{/* @@TODO@@ 2–4 sentence scenario the learner recognizes; the pain this solves. */}
+This is the shortest lesson in the course, and the one you will use after everything else here has gone slightly out of date.
 
-## The concept
+Here is the whole thing: **when you want to know how to do something in Claude Code, ask Claude Code.** It has its own documentation available to it, and it fetches the current version to answer, so you can just ask:
 
-{/* @@TODO@@ What it is, plain language, one analogy maximum. */}
+```prompt
+how do I make you always run prettier after every edit?
+```
 
-## How it works
+Claude explains hooks, because that is what your question is really about, and it does so from today's docs, not a half-remembered version. Try any of these:
 
-{/* @@TODO@@ Mechanics: what happens under the hood; files/config; what loads into context and when. */}
+```prompt
+can you create pull requests?
+```
 
-## Walkthrough
+```prompt
+how does permission mode "auto" differ from "accept edits"?
+```
 
-{/* @@TODO@@ One fully worked example — real commands, real file contents, representative output. */}
+```prompt
+what skills do I have available right now?
+```
 
-## Use-case scenarios
+```prompt
+how do I connect a database with MCP?
+```
 
-{/* @@TODO@@ 3–5 short "You want X → do Y because Z" scenarios; include one near-miss. */}
+No special syntax, no command to memorize. You ask a question the way you would ask a senior teammate who happens to have read the entire manual this morning.
 
-## When to use / when not to use
+## Why the answer stays current
 
-{/* @@TODO@@ Two-column guidance; include the context/token/complexity cost. */}
+This matters more than it looks, and it is the reason to build the habit now.
 
-## Pitfalls
+Claude Code ships new features constantly. Any course, including this one, is a snapshot: it was accurate when written and drifts a little with every release after. You already know from <LessonLink id="B1.2" /> that the version you are running may be newer than the version this platform was built against.
 
-{/* @@TODO@@ 3–6 real mistakes, each with the observable symptom and the fix. */}
+The self-documentation habit is immune to that drift. **Claude always has access to the latest Claude Code documentation, regardless of which version you are running or when this lesson was written.** When the platform lags a release behind, asking Claude directly does not. That is exactly why every feature lesson here carries an **Official docs** footer: this platform teaches the concepts, and the live docs, reachable through Claude or through that footer, carry the current specifics.
+
+Treat asking Claude as your active freshness tool, and the product's changelog or What's new feed as the passive one: pull the answer you need now, and skim the feed occasionally to learn what became possible since.
 
 ## Try It
 
-{/* @@TODO@@ Hands-on 5–15 min exercise with self-verifiable success criteria. */}
+**Environment:** any Claude Code session. This costs nothing and touches no files.
 
-## FAQ
+Ask Claude two questions about itself:
 
-{/* @@TODO@@ The mustAnswer questions not covered above, answered directly. */}
+1. One you already know the answer to from this level, for example *"what's the difference between `/clear` and `/compact`?"* Check its answer against <LessonLink id="B2.3" />'s command belt. It should line up, and where it adds detail, that detail is current.
+2. One this course has **not** taught you, something you are genuinely curious about: *"how do I run you on a schedule?"* or *"what's an agent team?"* Read the answer.
+
+**Success criteria:** the second answer taught you something the course did not, and you did not need this platform to get it. That is the whole point: you now have a way to keep learning Claude Code that does not depend on anyone updating a lesson.
 
 ## Where next
 
-{/* @@TODO@@ Cross-links: prerequisites recap + forward teasers (see §1.6). */}
+That completes The Beginner Workflow, and with it the concept modules of the Beginner level. You can prompt an agent, run the explore-plan-code-verify-commit loop, use git through Claude, recover from a session going wrong, and now keep yourself current without waiting on this platform.
+
+What is left is proof. <LessonLink id="B4.6" /> is the optional level self-assessment: a small real project, run end to end against a rubric you grade yourself, where the goal is not to be told you passed but to watch yourself choose the right tool at each step without prompting.
