@@ -14,14 +14,44 @@ references: ["B2.4", "B3.2", "B3.5", "B4.2"]
 
 # Beginner self-assessment
 
-## What you should be able to do
+## What this checks
 
-{/* @@TODO@@ The competencies this checkpoint verifies (no gating; skippable). */}
+This is optional, skippable, and graded by nobody but you. Nothing here unlocks or blocks anything. It exists so you can watch yourself work and see whether the level's habits have become automatic.
 
-## The exercise
+It does not test whether you *remember* the lessons. It tests whether, on a real repository you have never seen, you reach for the right tool at each step **without being prompted to**: explore before editing, plan when the code is unfamiliar, verify with something real, and recover from a mistake using the tool that actually fits. Choosing the right mechanism is the competence, which is why the rubric leans on the level's resolvers, <LessonLink id="B2.4" />, <LessonLink id="B3.2" />, and <LessonLink id="B3.5" />.
 
-{/* @@TODO@@ One ~10-minute hands-on task. */}
+## The brief
 
-## Self-check
+**Environment:** a small public repository you have **never read before**. Pick any modest open-source project, a CLI tool, a small library, a utility. Good properties: it has tests, it builds quickly, and it is small enough to get your head around in a few minutes. It must not be code you already know, because exploring unfamiliar code is half of what is being checked. Clone it, and commit nothing to a branch you care about.
 
-{/* @@TODO@@ Explicit success criteria the learner grades themselves against. */}
+Run the full <LessonLink id="B4.2" /> loop, end to end, with two deliberate detours:
+
+1. **Explore.** In plan mode, get Claude to give you the tour and answer real comprehension questions: what does this project do, how is it structured, where is the entry point, how are tests run? You should be able to answer those yourself afterward.
+2. **Plan and code.** Pick one small, genuine improvement (a new flag, a guard, a missing test, a small doc fix). Before Claude writes anything, **write your own acceptance criteria**: one or two sentences stating what "done and correct" means, in a way you can check. Then let Claude implement it, and read the diff.
+3. **Verify.** Run your acceptance check for real, tests, a build, a manual run whose output you inspect. Have Claude show you the evidence, not just a claim.
+4. **Break it on purpose, then recover.** Deliberately accept one bad change (ask for something you know is wrong, and approve it). Then recover, and **make the recovery choice consciously**: was this a job for `/rewind` or for git? Justify it before you act.
+5. **Leave it clean.** End with a commit history you would be happy to show, one concern per commit and messages you reviewed, plus a short `CLAUDE.md` you author for the repo, containing only things that would actually help the next session.
+
+## The rubric
+
+Grade yourself honestly on four dimensions. For each, the question is not "did it work?" but "did you choose deliberately?"
+
+**1. Workflow order.** Did you explore and plan *before* coding, or did you jump straight to edits and backfill understanding later? On unfamiliar code, plan mode is the default, and skipping it is the most common beginner tell. If you skipped planning, could you honestly justify it by <LessonLink id="B3.5" />'s ladder, or was it just impatience?
+
+**2. Context hygiene.** Did you keep the session focused, and reset when it made sense? If you hit a wall and kept correcting, did you recognize the three-strikes moment from <LessonLink id="B4.4" /> and reset, or did you grind? Did you know *which* reset you wanted, per <LessonLink id="B2.4" />?
+
+**3. Verification evidence.** Can you point to a concrete pass/fail signal you actually ran, not "it looked right"? The whole level pivots on this. No evidence means the task was never really finished, only abandoned at "looks done."
+
+**4. The recovery choice.** When you recovered from the bad change, did you pick `/rewind` versus git *for a reason you can state*? Rewind for a bad edit still in the session; git for anything committed or pushed. Picking the wrong tool, or picking the right one by luck, both count against you here, because this is exactly the judgment the level was built to give you.
+
+And one thing that cuts across all four: **your `CLAUDE.md`.** Does it hold team-worthy, reviewable instructions, or did you dump personal notes and things Claude could infer from the code? Knowing what belongs there versus in auto memory is <LessonLink id="B3.2" />, and it shows.
+
+## Reading your result
+
+There is no passing score. Read your own work like this:
+
+- **Every dimension deliberate.** You did not just complete the task, you can explain *why* each move was the right one. The level's habits are yours; move on to the guided project or the next level with confidence.
+- **It worked, but some choices were luck.** You got a good result, but on a dimension or two you can't fully justify the choice. Re-read the resolver behind that dimension, <LessonLink id="B2.4" />, <LessonLink id="B3.2" />, or <LessonLink id="B3.5" />, and run the brief once more on a different repo. Competence is choosing right on purpose, repeatably.
+- **You skipped a stage and it cost you.** Good. That is the assessment working. The stage you skipped is the one to practice, and now you know which it is from experience rather than from a lesson telling you.
+
+The honest version of this exercise is worth more than a flattering one. The point was never a grade. It was to catch yourself reaching for the right tool without thinking, which is what it means to have actually learned this.
