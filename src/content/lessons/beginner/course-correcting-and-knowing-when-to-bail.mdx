@@ -17,40 +17,103 @@ docsSources: ["https://code.claude.com/docs/en/best-practices"]
 
 ## The problem
 
-{/* @@TODO@@ 2–4 sentence scenario the learner recognizes; the pain this solves. */}
+It is minute twenty-five. Claude has tried to fix the same failing test four times. Each attempt looks a little different and none of them works. You are still typing corrections, because you have already spent twenty-five minutes and stopping now feels like admitting the time was wasted.
 
-## The concept
+That feeling is the trap. The session went wrong around minute eight, and everything since has been you and Claude reinforcing the same misunderstanding. The skill this lesson teaches is not a feature. It is the judgment to notice a doomed trajectory early, and the nerve to throw it out, which almost always beats pushing through.
 
-{/* @@TODO@@ What it is, plain language, one analogy maximum. */}
+The <LessonLink id="B4.2" /> loop already told you to steer when verify fails. This lesson is the missing half: *how to tell* when steering is working, and what to do the moment it stops.
 
-## How it works
+## Two questions, over and over
 
-{/* @@TODO@@ Mechanics: what happens under the hood; files/config; what loads into context and when. */}
+Every rough patch in a session comes down to two decisions, asked repeatedly:
 
-## Walkthrough
+1. **Interrupt, or let it finish?** Claude is mid-task and something looks off.
+2. **Steer, or reset?** You have corrected it, and it is still not right.
 
-{/* @@TODO@@ One fully worked example — real commands, real file contents, representative output. */}
+Get these two right and most frustrating sessions simply stop happening. The rest of this lesson is a playbook for each.
 
-## Use-case scenarios
+## Failure smells: spotting a doomed session early
 
-{/* @@TODO@@ 3–5 short "You want X → do Y because Z" scenarios; include one near-miss. */}
+You cannot bail at the right time if you only notice trouble at minute twenty-five. These are the signs a trajectory is going bad, usually visible long before you feel it:
 
-## When to use / when not to use
+- **Circling.** Claude makes an edit, it fails, it reverts to something close to the previous version, and rounds again. The diffs start to look familiar. This is the loudest smell.
+- **Fixing symptoms, not causes.** It suppresses the error instead of explaining it: a `try/except` that swallows, a test assertion loosened, a `// eslint-disable`. The red went away but nothing was understood.
+- **Hedging language creeping in.** "This *should* work." "Let me *try* another approach." "*Perhaps* the issue is..." When Claude's confidence drops into guesswork, it has run out of a real model of the problem and is now poking at it.
+- **Re-reading the same files.** It reads `auth.ts` for the third time, because the earlier reads have scrolled out of a context window that is now full of failed attempts. A signal the context has turned from asset to liability, which is <LessonLink id="B2.2" />'s world.
+- **The change growing.** A one-line fix has become a refactor of four files, because each failed attempt widened the blast radius rather than narrowing the hypothesis.
 
-{/* @@TODO@@ Two-column guidance; include the context/token/complexity cost. */}
+None of these is fatal on its own. Two or three together mean the session is unlikely to recover by continuing, and the earlier you smell them the cheaper the exit.
 
-## Pitfalls
+## Question 1: interrupt, or let it finish?
 
-{/* @@TODO@@ 3–6 real mistakes, each with the observable symptom and the fix. */}
+The cost of interrupting is near zero. `Esc` stops Claude mid-action and **preserves the context**, so you can redirect without losing anything, as <LessonLink id="B2.1" /> introduced. That low cost should bias you toward interrupting whenever the *approach* is wrong.
+
+The rule is about approach versus detail:
+
+- **Interrupt early when the approach is wrong.** Wrong file, wrong strategy, misread the request, heading somewhere you already know is a dead end. Do not wait politely for it to finish building the wrong thing. Every tool call it makes is context spent digging in the wrong direction. Hit `Esc` and correct.
+- **Let it finish when only the details are off.** The plan is right and it is 80% done; the naming is off or it missed an edge case. Interrupting mid-flow just fragments the work. Let it complete, then fix on review, which is what the diff review in <LessonLink id="B4.2" /> is for.
+
+The test: *is the thing it is doing pointed at the right target?* Wrong target, interrupt now. Right target, wrong finish, let it land and correct after.
+
+## Question 2: the three-strikes rule
+
+Here is the heuristic that saves the most time in this whole level:
+
+> If you have corrected Claude on the **same issue** two or three times and it is still wrong, stop correcting. The context is now polluted with failed approaches, and each new correction makes it worse, not better.
+
+The reason is mechanical, not mystical. Every failed attempt, and every "no, not like that," is still sitting in the context window. Claude is now reasoning about your problem *through* a growing pile of things that did not work, and that noise crowds out the signal. A fourth correction is added on top of the mess that caused the first three to fail. This is the "correcting over and over" failure the best practices name outright, and the fix is not a better correction.
+
+The move is to **bail and restart clean**:
+
+1. **Write a handoff note before you clear.** Ask Claude, while the context still holds it: *"summarize what we tried to fix this, what worked, and what we ruled out."* Capture that, or have it written to a file. This is the one valuable thing the failed session produced.
+2. **`/clear`, or start a new session.** Wipe the polluted context. Which reset to reach for is exactly the decision in <LessonLink id="B2.4" />.
+3. **Re-prompt, sharper.** Open the clean session with a prompt that bakes in what you learned, in the load-bearing style of <LessonLink id="B4.1" />: the goal, the constraints the failures revealed, and the approaches already ruled out so Claude does not re-walk them.
+
+A clean session with a better prompt almost always outperforms a long session carrying an hour of dead ends. You are not throwing away the twenty-five minutes. You are keeping the one paragraph that was worth keeping and discarding the noise around it.
+
+## Steer or reset: the dividing line
+
+Both halves of this lesson are really the same judgment, about what your context has become:
+
+- **While context is an asset, steer.** It holds what you are trying to do and what just went wrong, and spending it is how corrections land. `Esc` and redirect; rewind a bad edit with <LessonLink id="B3.4" />.
+- **Once context is a liability, reset.** When it is mostly failed attempts, more of it actively hurts. `/clear` and restart with a sharper prompt.
+
+The three smells that tell you the line has been crossed: you are on your third correction of the same thing, Claude is re-reading files it already read, and its language has gone from stating to guessing.
+
+## Scenarios
+
+- **Claude starts editing the wrong file.** → Interrupt immediately. `Esc`, and point it at the right one. Approach is wrong; do not let it finish.
+- **The feature works but a variable name is ugly.** → Let it finish, fix on review. Detail, not approach. Interrupting mid-flow costs more than the fix.
+- **Second failed attempt at the same bug, hedging language starting.** → You are one strike from the wall. Ask for the summary now, while it is still coherent, so your handoff note is ready if the third attempt also fails.
+- **Third failed fix, context clearly full of dead ends.** → Bail. Handoff note, `/clear`, re-prompt with the ruled-out approaches named. Do not attempt fix four.
+- **Near-miss: it's slow, but making real progress.** → Do **not** bail. Steady progress on a hard problem is not a failure smell, even at minute thirty. Bail on *circling*, not on *difficulty*. The tell is whether each attempt is learning something or repeating something.
+- **You asked one thing, then three unrelated things, and now it's confused.** → Not a three-strikes case, a context-hygiene one: the window is full of unrelated tasks. `/clear` between unrelated work, per <LessonLink id="B2.4" />, and keep one session to one job.
 
 ## Try It
 
-{/* @@TODO@@ Hands-on 5–15 min exercise with self-verifiable success criteria. */}
+**Environment:** the public repo from <LessonLink id="B4.2" />, or any repo you can experiment in safely.
+
+1. Give Claude a deliberately underspecified, slightly wrong task, the kind that invites a bad approach: *"make the tests faster"* with no other detail. Watch how it starts.
+2. The instant its approach looks wrong (editing the wrong thing, guessing), **interrupt with `Esc`** rather than letting it run. Notice the context is intact and you can redirect.
+3. Now force a three-strikes situation: correct it toward a goal you keep vague, twice, so it stays wrong. Watch for the smells, circling, hedging, re-reading.
+4. Instead of a third correction, run the bail: *"summarize what we tried and ruled out,"* save that, `/clear`, and open a fresh session with a sharp prompt that includes the ruled-out approaches.
+
+**Success criteria:** you interrupted on a wrong *approach* (not a wrong detail), you can name at least two failure smells you actually saw, and your restarted session, with the better prompt, reached a good result faster than the polluted one was going to. That speed difference is the entire lesson.
 
 ## FAQ
 
-{/* @@TODO@@ The mustAnswer questions not covered above, answered directly. */}
+**When should I interrupt versus let Claude finish?** Interrupt the moment the *approach* is wrong, wrong file, wrong strategy, since `Esc` is nearly free and preserves context. Let it finish when the approach is right and only details are off, then fix those on review.
+
+**How do I get Claude unstuck from a loop of failed fixes?** You usually don't, by staying in the session. After two or three corrections on the same issue, the context is polluted with dead ends. Capture a summary of what was ruled out, `/clear`, and re-prompt clean. A fourth correction almost never works.
+
+**When is `/clear` the right call instead of steering?** When your context has become a liability rather than an asset: third correction of the same thing, Claude re-reading files, language turned to guessing. While the context still helps, steer; once it mostly holds failures, reset. Choosing the reset itself is <LessonLink id="B2.4" />.
+
+**Isn't bailing just wasting the time I already spent?** The opposite. The time is already spent; the question is whether to spend *more* on a polluted session. Keep the one summary paragraph worth keeping and discard the noise. Sunk cost is the feeling that keeps doomed sessions alive.
+
+**How is this different from just rewinding?** <LessonLink id="B3.4" /> undoes a bad *edit* and keeps the conversation. Bailing discards the *conversation* because the conversation is what went bad. Rewind fixes a wrong change; `/clear` fixes a wrong context.
 
 ## Where next
 
-{/* @@TODO@@ Cross-links: prerequisites recap + forward teasers (see §1.6). */}
+You can now read a session's health in real time: interrupt a wrong approach on sight, let a right one land, and recognize the three-strikes wall before you hit it face-first. Combined with the loop in <LessonLink id="B4.2" />, that is a complete working practice, including its failure modes.
+
+One short lesson remains, and it is the one with the longest shelf life. <LessonLink id="B4.5" /> is about the freshness tool that outlives this whole platform: Claude Code can answer questions about itself, from its own current documentation, so the newest feature is always one prompt away.
