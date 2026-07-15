@@ -15,18 +15,152 @@ docsSources: ["https://code.claude.com/docs/en/checkpointing"]
 
 # Break it, rewind it
 
+Shelf works: it stores tagged items and filters by tag. This milestone you are going to break it on purpose, twice, and recover two different ways. The point is not the app, you will put it back exactly as it was. The point is to make recovery feel boring, because a developer who knows undo is cheap works more boldly than one who is afraid to touch anything.
+
 ## Goal for this stage
 
-{/* @@TODO@@ The working artifact this milestone produces. */}
+Practice the two recovery tools on real breakage you cause deliberately:
+
+- **`/rewind`** for a bad change that is still in the session.
+- **`git revert`** for a bad change that has crossed a commit boundary.
+
+By the end, Shelf is exactly where it started and you can tell, without thinking, which tool a given mess calls for.
+
+**Environment:** your Shelf repo. You committed the tagging feature in <LessonLink id="B5.2" />, so you have a clean baseline. That commit is precisely what makes the second half safe.
 
 ## Steps
 
-{/* @@TODO@@ The build steps for this stage. */}
+### 1. Break it with a file edit
+
+Ask Claude for a change you *know* is wrong, and accept it:
+
+<WhenLang is="javascript">
+
+```prompt
+Simplify listItems in db.js: drop the tag parameter and the filter,
+just return all items.
+```
+
+</WhenLang>
+
+<WhenLang is="python">
+
+```prompt
+Simplify list_items in db.py: drop the tag parameter and the filter,
+just return all items.
+```
+
+</WhenLang>
+
+Accept the edit. The tag filter is now gone.
+
+### 2. See the breakage
+
+This is the sly kind of bug, because the endpoint still returns `200`. It just returns the wrong thing: a tag query now hands back everything, kids titles included.
+
+<WhenLang is="javascript">
+
+```bash
+curl -s "localhost:3000/items?tag=scifi"
+# [{"id":1,"title":"Dune","tag":"scifi"},{"id":2,"title":"Heidi","tag":"kids"}]
+```
+
+</WhenLang>
+
+<WhenLang is="python">
+
+```bash
+curl -s "localhost:5000/items?tag=scifi"
+# [{"id":1,"tag":"scifi","title":"Dune"},{"id":2,"tag":"kids","title":"Heidi"}]
+```
+
+</WhenLang>
+
+"Still returns 200" is exactly why the verification habit matters: nothing errored, but the behavior is wrong.
+
+### 3. Recover with `/rewind`
+
+That breakage was a single file edit Claude made, which means checkpointing caught it. Claude Code snapshots your code before every prompt automatically, so the working version is one step back.
+
+Open the rewind menu by running `/rewind`, or by pressing `Esc` twice while the input is empty. The menu lists every prompt you sent this session. Select the one just before the bad edit and pick an action:
+
+- **Restore code**: revert the files, keep the conversation.
+- **Restore code and conversation**: revert both, erasing the detour entirely.
+- **Restore conversation**: rewind the chat but keep current code (not what you want here).
+
+Choose **Restore code**, and the tag filter reappears. Verify it:
+
+<WhenLang is="javascript">
+
+```bash
+curl -s "localhost:3000/items?tag=scifi"
+# [{"id":1,"title":"Dune","tag":"scifi"}]
+```
+
+</WhenLang>
+
+<WhenLang is="python">
+
+```bash
+curl -s "localhost:5000/items?tag=scifi"
+# [{"id":1,"tag":"scifi","title":"Dune"}]
+```
+
+</WhenLang>
+
+Seconds, no git, no ceremony. This is `/rewind` at its best, the fast, low-drama undo from <LessonLink id="B3.4" />.
+
+### 4. Now cross a commit boundary
+
+Make the same kind of mistake, but this time let it get committed. Break the filter again, then commit before you notice:
+
+```prompt
+git commit everything with the message "simplify item listing".
+```
+
+The bad change now lives in git history. Reach for `/rewind` and you hit its limits.
+
+### 5. Why `/rewind` is the wrong tool now
+
+Two reasons, and both are worth internalizing:
+
+1. **The change is permanent history.** Checkpoints are session-level local undo; git is where committed history lives. Once a change crosses a commit, git is the system of record for reversing it.
+2. **`git commit` is a bash command, and checkpointing does not track those.** `/rewind` only undoes Claude's *file edits*. It cannot un-run a bash command, un-commit, un-send an API call, or restore a file it never touched. The commit is outside its reach by design.
+
+That second point is the sharp edge to remember: the moment recovery involves anything but a Claude file edit, a deletion via `rm`, a database migration, a commit, `/rewind` is blind to it.
+
+### 6. Recover with `git revert`
+
+The right move is to add a commit that undoes the bad one, which keeps history honest instead of rewriting it, exactly the discipline from <LessonLink id="B4.3" />:
+
+```prompt
+That last commit broke the tag filter. git revert it.
+```
+
+`git revert HEAD` creates a new commit that reverses the change. Nothing is erased; the history now reads "we did this, then we undid it," which is the truth. Verify the filter works, and check the log:
+
+```bash
+git log --oneline -3
+# a1b2c3d Revert "simplify item listing"
+# e4f5g6h simplify item listing
+# 9h8i7j6 add tagging to Shelf
+```
 
 ## The artifact
 
-{/* @@TODO@@ What "done" looks like; how to verify it works. */}
+Shelf is back exactly where this milestone started: tag filtering works, the tests pass. But you leave with something you did not have an hour ago, which is two clean recoveries under your belt:
+
+- `/rewind` restored an uncommitted session edit in seconds.
+- `git revert` reversed a committed mistake without rewriting history.
+
+**Done looks like:** `GET /items?tag=scifi` filters correctly again, the test suite is green, and `git log` shows the revert commit sitting on top, history preserved rather than rewritten.
 
 ## Reasoning recap
 
-{/* @@TODO@@ Why these choices — the transferable lesson behind the build. */}
+The dividing line between the two tools is the **commit boundary**. While a change is uncommitted and recent, `/rewind` is the fast path: local undo for the last few minutes of Claude's edits. Once a change has crossed a commit, git owns it, and `git revert` is how you back it out while keeping an honest record. This is <LessonLink id="B3.4" />'s framing made physical: checkpoints are the seatbelt, git is the vehicle.
+
+Keep the blind spot in view. `/rewind` sees only Claude's file edits, so a bash deletion, a migration, or the commit itself is beyond it. When a recovery involves any of those, you are in git's territory, not the checkpoint's.
+
+The real payoff is not the two commands, it is what they let you do. Now that you have felt how cheap recovery is, you can tell Claude to try the risky refactor, the bold rewrite, the thing you are not sure about, because undo is one command away. Fear of breaking things is what keeps beginners timid; you just traded it for a seatbelt.
+
+Next milestone, <LessonLink id="B5.4" />: with recovery cheap, you raise the bar on what counts as done. You build the search feature so that Claude has to *prove* it works before you accept it.
