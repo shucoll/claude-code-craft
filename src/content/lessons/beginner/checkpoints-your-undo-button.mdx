@@ -104,20 +104,20 @@ There is a second use, which changes how you work rather than how you recover. B
 
 ## When not to use it
 
-The when-not is the whole point of this lesson, and it is a single rule.
+The when-not is what this lesson turns on, and it is a single rule.
 
 **`/rewind` is not a replacement for git.** Use it for quick, session-level recovery, and keep using version control for everything git is for: commits, branches, shared history, anything you would be upset to lose.
 
 Concretely, commit before you start a risky change. Then you have two undo levels: `/rewind` for "that edit was wrong," `git checkout` for "that whole hour was wrong." Checkpoints expire after 30 days, live only on this machine, and cover only what Claude edited. Git does not, is not, and does not.
 
-The cost of rewinding is near zero, which is exactly why the temptation is to lean on it too hard.
+The cost of rewinding is near zero, which is why the temptation is to lean on it too hard.
 
 ## Pitfalls: what rewind cannot undo
 
 The limitations are not edge cases. They are the difference between a seatbelt and a vehicle, and each one is a real way people lose work.
 
 - **Bash commands are not tracked.** If Claude ran `rm file.txt`, `mv old.txt new.txt`, or a script that rewrote things, rewind will not bring any of it back. Only edits made through Claude's file-editing tools are snapshotted. This is the big one, because a destructive command feels exactly like a destructive edit while you watch it happen.
-- **Anything outside your machine is gone for good.** A pushed commit, a deployed change, an API call, a database migration, an email. Rewind restores local files. It cannot un-send. This is precisely why Claude asks before commands with external side effects.
+- **Anything outside your machine is gone for good.** A pushed commit, a deployed change, an API call, a database migration, an email. Rewind restores local files. It cannot un-send. This is why Claude asks before commands with external side effects.
 - **Your own edits are not tracked.** Checkpoints cover files Claude edited in this session. If you changed a file by hand in your editor, rewind does not know about it. Nor does it know about a second Claude session editing the same repo, unless it happens to touch the same files.
 - **Restoring code does not restore your understanding.** After "restore code and conversation" Claude has forgotten the failed attempt entirely, so it may cheerfully make the same mistake. Usually you want "restore code" alone, keeping the conversation, so the failure stays in context as something to avoid.
 - **Confusing summarize with restore.** Summarize is a context operation and touches no files. Restore is a file operation. Choosing "Summarize from here" when you wanted your code back will leave the bad edit exactly where it is.

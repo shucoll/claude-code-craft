@@ -121,7 +121,7 @@ Pick one small, well-understood change: add a parameter with a default value to 
 
 **Does plan mode cost anything?** Yes, and it is worth naming. An extra review-and-approve cycle on every task, plus the context that exploration and the plan consume. On a task that would have gone fine, you paid that for nothing.
 
-**If undo is so cheap, why plan at all?** Because undo only covers Claude's file edits on your machine. Bash side effects, pushes, deploys, and migrations are not reversible, and that is precisely where plan mode earns its cost. Cheap undo substitutes for planning only where undo actually works.
+**If undo is so cheap, why plan at all?** Because undo only covers Claude's file edits on your machine. Bash side effects, pushes, deploys, and migrations are not reversible, and that is where plan mode earns its cost. Cheap undo substitutes for planning only where undo actually works.
 
 **Should I make plan mode my default?** You can, with `defaultMode` in settings, and some people do. Notice what it will feel like on your next typo fix before you commit to it.
 

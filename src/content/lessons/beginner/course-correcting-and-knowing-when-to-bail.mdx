@@ -66,7 +66,7 @@ The reason is mechanical, not mystical. Every failed attempt, and every "no, not
 The move is to **bail and restart clean**:
 
 1. **Write a handoff note before you clear.** Ask Claude, while the context still holds it: *"summarize what we tried to fix this, what worked, and what we ruled out."* Capture that, or have it written to a file. This is the one valuable thing the failed session produced.
-2. **`/clear`, or start a new session.** Wipe the polluted context. Which reset to reach for is exactly the decision in <LessonLink id="B2.4" />.
+2. **`/clear`, or start a new session.** Wipe the polluted context. Which reset to reach for is the decision in <LessonLink id="B2.4" />.
 3. **Re-prompt, sharper.** Open the clean session with a prompt that bakes in what you learned, in the load-bearing style of <LessonLink id="B4.1" />: the goal, the constraints the failures revealed, and the approaches already ruled out so Claude does not re-walk them.
 
 A clean session with a better prompt almost always outperforms a long session carrying an hour of dead ends. You are not throwing away the twenty-five minutes. You are keeping the one paragraph that was worth keeping and discarding the noise around it.
@@ -98,7 +98,7 @@ The three smells that tell you the line has been crossed: you are on your third 
 3. Now force a three-strikes situation: correct it toward a goal you keep vague, twice, so it stays wrong. Watch for the smells, circling, hedging, re-reading.
 4. Instead of a third correction, run the bail: *"summarize what we tried and ruled out,"* save that, `/clear`, and open a fresh session with a sharp prompt that includes the ruled-out approaches.
 
-**Success criteria:** you interrupted on a wrong *approach* (not a wrong detail), you can name at least two failure smells you actually saw, and your restarted session, with the better prompt, reached a good result faster than the polluted one was going to. That speed difference is the entire lesson.
+**Success criteria:** you interrupted on a wrong *approach* (not a wrong detail), you can name at least two failure smells you actually saw, and your restarted session, with the better prompt, reached a good result faster than the polluted one was going to. That speed difference is what the lesson comes down to.
 
 ## FAQ
 

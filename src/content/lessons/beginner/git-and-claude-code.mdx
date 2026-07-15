@@ -81,7 +81,7 @@ push the branch and open a PR. describe the change and call out anything a revie
 
 Claude pushes (you confirm the push), runs `gh pr create`, and writes a description from the diff. Read that too before it goes up, and ask it to flag risks: *"add a note about the edge case where progress is already disabled."* The docs are blunt about this: review Claude's PR before submitting.
 
-That is the whole loop. You wrote nothing, and reviewed everything that mattered.
+That is the loop. You wrote nothing, and reviewed everything that mattered.
 
 ## When a commit is wrong: git, not /rewind
 
@@ -97,7 +97,7 @@ The rule underneath: reach for `/rewind` while you are still editing, and reach 
 - **You finished a verified change and want it in.** → *"branch, commit with a message from the diff, open a PR."* The happy path above.
 - **Your working tree has two unrelated changes.** → *"commit the auth fix and the README update as two separate commits."* Claude splits them; one concern per commit keeps each reviewable and each revert surgical.
 - **You want to understand a gnarly function before touching it.** → *"summarize this file's git history and why the API looks like this."* This is a read, and one of the most underused things Claude does well.
-- **Near-miss: a wrong commit you already pushed.** It is tempting to say *"delete that commit."* Don't. On a pushed branch that means rewriting history others may have, and Claude force-pushing history you don't understand is exactly the wrong-tool trap. Revert instead.
+- **Near-miss: a wrong commit you already pushed.** It is tempting to say *"delete that commit."* Don't. On a pushed branch that means rewriting history others may have, and Claude force-pushing history you don't understand is the wrong-tool trap. Revert instead.
 
 ## When to use it, and when not to
 
@@ -113,7 +113,7 @@ The cost here is not tokens, it is trust. Claude committing is cheap; Claude com
 ## Pitfalls
 
 - **The giant commit.** You let a whole session's worth of unrelated changes land in one commit. Symptom: a diff too big to review and a revert that is all-or-nothing. Fix: commit per concern, as you go, not once at the end.
-- **The unread message.** Claude's message is usually good, so you stop reading it. Symptom: a history that says the wrong thing, discovered months later during a bisect. Fix: the thirty-second read is not optional; it is the whole discipline.
+- **The unread message.** Claude's message is usually good, so you stop reading it. Symptom: a history that says the wrong thing, discovered months later during a bisect. Fix: the thirty-second read is not optional; it is the discipline.
 - **Reaching for /rewind after committing.** Symptom: you rewind, the commit is still there, and now your files and your history disagree. Fix: committed means git. Amend if local, revert if pushed.
 - **Rewriting pushed history.** Asking Claude to "clean up" or "squash" commits already on a shared branch. Symptom: teammates' next pull conflicts violently. Fix: never rewrite shared history; revert forward instead.
 - **No branch, straight to main.** Committing directly to your main branch out of habit. Symptom: no clean place to open a PR from, and main now carries half-done work. Fix: branch first, or ask Claude to move the changes onto one after the fact, as in the walkthrough.

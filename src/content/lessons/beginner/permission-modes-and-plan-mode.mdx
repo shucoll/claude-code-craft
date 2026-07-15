@@ -82,7 +82,7 @@ More than its name suggests. Alongside file edits it auto-approves the ordinary 
 
 Claude reads files, runs commands to explore, and writes you a plan. **It does not edit your source.** That is the guarantee, and it is a real one.
 
-Two honest qualifications. Permission prompts still apply exactly as in Manual mode, so plan mode is not a silent free-for-all; Claude asking to fetch a URL will still ask. And it is a mode, not a sandbox: it constrains what Claude does, and it is not a security boundary against a hostile prompt. For that you want deny rules or sandboxing, both later material.
+Two qualifications. Permission prompts still apply as in Manual mode, so plan mode is not a silent free-for-all; Claude asking to fetch a URL will still ask. And it is a mode, not a sandbox: it constrains what Claude does, and it is not a security boundary against a hostile prompt. For that you want deny rules or sandboxing, both later material.
 
 ### Protected paths
 
@@ -134,7 +134,7 @@ Approving exits plan mode and drops you into the mode you picked. For anything y
 
 **A one-line typo fix.** Manual, or just do it. Planning a typo fix is ceremony with no payoff.
 
-**A change spanning many files.** Plan mode. The blast radius is exactly what a plan is for.
+**A change spanning many files.** Plan mode. The blast radius is what a plan is for.
 
 **Grinding through lint errors you will inspect with `git diff` anyway.** Accept edits. You are reviewing afterwards; being asked forty times adds nothing.
 
@@ -146,7 +146,7 @@ Approving exits plan mode and drops you into the mode you picked. For anything y
 
 Reach for **plan mode** when you are uncertain about the approach, when the change spans multiple files, when you are unfamiliar with the code, or when getting it wrong is expensive.
 
-**Do not** reach for it when the scope is obvious and the fix is small. If you could describe the diff in one sentence, planning it is pure overhead: you will read a plan that says what you already knew, approve it, and have spent a minute to save nothing. Honest ceremony has a cost, and plan mode's cost is a full extra review cycle plus the context that plan consumed. Knowing when to skip it is the subject of <LessonLink id="B3.5" />.
+**Do not** reach for it when the scope is obvious and the fix is small. If you could describe the diff in one sentence, planning it is pure overhead: you will read a plan that says what you already knew, approve it, and have spent a minute to save nothing. Ceremony has a cost, and plan mode's cost is a full extra review cycle plus the context that plan consumed. Knowing when to skip it is the subject of <LessonLink id="B3.5" />.
 
 Two modes a beginner should simply not enable:
 

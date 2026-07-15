@@ -34,7 +34,7 @@ It is not a database and it is not storage. Think of it as a desk. Everything Cl
 
 That size is measured in **tokens**, each roughly three quarters of a word. The standard window holds 200,000 of them, and newer models offer a one-million-token option. Either way it is finite, and everything competes for the same surface.
 
-Two consequences follow, and they are the entire lesson:
+Two consequences follow:
 
 - **Everything Claude does costs space.** Reading is not free.
 - **Nothing carries between sessions on its own.** Every new session starts with an empty desk. Only things that reload, like `CLAUDE.md`, come back.
@@ -92,7 +92,7 @@ Then check again:
 /context
 ```
 
-The jump is almost entirely file reads. That one question, which felt cheap to ask, was the most expensive thing you did. Ask a narrow question instead, like "what does `@src/index.js` export?", and the cost barely moves. That contrast is the whole skill: **how you phrase a request determines what it costs.**
+The jump is almost entirely file reads. That one question, which felt cheap to ask, was the most expensive thing you did. Ask a narrow question instead, like "what does `@src/index.js` export?", and the cost barely moves. That contrast is the skill: **how you phrase a request determines what it costs.**
 
 > **Try it.** In your cloned repo from <LessonLink id="B2.1" />, run `/context` on a fresh session and note the percentage used. Ask Claude to explain the codebase, then run `/context` again. **Success criteria:** you can say which category grew the most, and roughly by how much. Nothing here writes to disk, so it is safe to run anywhere.
 
@@ -107,7 +107,7 @@ You will usually feel these before you check the number. Any of them is a cue to
 - **A "Conversation compacted" message appears.** Less a symptom than the event itself. If it fires mid-task, expect to restate where you were.
 - **Compaction fires over and over.** A single file or command output is so large that the window refills immediately after each summary. Claude gives up after a few attempts rather than looping forever. Stop feeding it the giant thing.
 
-The fix is rarely "start over." It is usually to finish the current milestone, write down where you are, then reset deliberately. Which reset to reach for is exactly the subject of <LessonLink id="B2.4" />.
+The fix is rarely "start over." It is usually to finish the current milestone, write down where you are, then reset deliberately. Which reset to reach for is the subject of <LessonLink id="B2.4" />.
 
 ## FAQ
 

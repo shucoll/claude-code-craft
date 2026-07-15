@@ -42,7 +42,7 @@ Give it a task and it works through three phases that blend together and repeat:
 
 Each result feeds the next decision, so Claude chains many steps together and course-corrects as it learns. The loop adapts to the request. A question about your code might only need step one; a bug fix cycles through all three several times.
 
-Those actions come from **tools**. Informally they fall into a few buckets: reading and editing files, searching, running shell commands, and looking things up on the web. Without tools a model can only produce text. Tools are exactly what turn "chat" into "agent." (You will meet the full tool set later in the course; here it is enough to know why they matter.)
+Those actions come from **tools**. Informally they fall into a few buckets: reading and editing files, searching, running shell commands, and looking things up on the web. Without tools a model can only produce text. Tools are what turn "chat" into "agent." (You will meet the full tool set later in the course; here it is enough to know why they matter.)
 
 To make this concrete, picture a failing test. In a chat tool you would copy the error, paste in the files you think are relevant, and relay fixes back and forth. With Claude Code you say:
 
@@ -66,8 +66,8 @@ The whole cycle looks like this. Click any stage to see what happens inside it, 
 
 **Does it act without asking me?** Not by default. Claude asks before it edits files or runs shell commands, and it always asks before actions that reach outside your project, like deleting data or calling a live service. You approve each step until you deliberately choose to loosen that. You are steering the whole time.
 
-**Can it break my computer?** It is scoped to the directory you start it in, so it works inside your project, not across your whole machine. On top of that, every file edit is snapshotted first, so you can rewind changes. The actions a snapshot cannot undo, the ones that touch systems outside your files, are exactly the ones it stops to ask about first.
+**Can it break my computer?** It is scoped to the directory you start it in, so it works inside your project, not across your whole machine. On top of that, every file edit is snapshotted first, so you can rewind changes. The actions a snapshot cannot undo, the ones that touch systems outside your files, are the ones it stops to ask about first.
 
 ## Where next
 
-You now have the shape of the agentic loop: gather, act, verify, repeat, with you steering. The rest of this module fills in the picture before you install anything. <LessonLink id="B1.2" /> places Claude Code precisely (not a chatbot, not an editor) and tours the surfaces it runs on. <LessonLink id="B1.3" /> covers exactly what Claude can see and touch, and the permission prompts that keep you in control. Then <LessonLink id="B1.4" /> gets it installed so you can run your own first loop.
+You now have the shape of the agentic loop: gather, act, verify, repeat, with you steering. The rest of this module fills in the picture before you install anything. <LessonLink id="B1.2" /> places Claude Code (not a chatbot, not an editor) and tours the surfaces it runs on. <LessonLink id="B1.3" /> covers what Claude can see and touch, and the permission prompts that keep you in control. Then <LessonLink id="B1.4" /> gets it installed so you can run your own first loop.

@@ -52,7 +52,7 @@ Three rows deserve more than a cell.
 
 **"Versioned, reviewable" is the one that bites later.** Auto memory changes without a diff. Nothing tells you it happened beyond a brief "Writing memory" in the interface. Facts accumulate, and some of them go stale.
 
-**Neither is enforced.** Both are context, both shape behavior, and neither guarantees it. When you need a guarantee, you need a hook, exactly as in <LessonLink id="B3.1" />.
+**Neither is enforced.** Both are context, both shape behavior, and neither guarantees it. When you need a guarantee, you need a hook, as in <LessonLink id="B3.1" />.
 
 There is also a structural difference worth knowing. Auto memory's directory holds a `MEMORY.md` index plus topic files (`debugging.md`, `api-conventions.md`, and so on). Only `MEMORY.md` loads at startup, and only its first 200 lines. The topic files sit on disk and Claude opens them when it needs them. That is a deliberately cheaper design than `CLAUDE.md`, which loads in full no matter how long it is, and it is why auto memory does not blow up your context the way an unpruned `CLAUDE.md` would (see <LessonLink id="B2.2" />).
 
@@ -64,7 +64,7 @@ You do not need a decision tree for two options. You need one question:
 
 If yes, it belongs in `CLAUDE.md`. Write it there yourself, or tell Claude explicitly: *"add this to CLAUDE.md."* Team conventions, build commands, architectural rules, anything a code reviewer would care about.
 
-If no, let auto memory have it. Your personal quirks, the corrections you keep making, the debugging insight that only matters to how *you* work. You do not have to curate this. That is the whole point of it.
+If no, let auto memory have it. Your personal quirks, the corrections you keep making, the debugging insight that only matters to how *you* work. You do not have to curate this. That is what it is for.
 
 And the operational half of the rule: **you deliberately manage `CLAUDE.md`. You periodically audit auto memory.** One is authored. The other is inspected.
 
@@ -79,7 +79,7 @@ Both are plain markdown, and `/memory` opens either.
 Let auto memory handle it, or better, notice why you are being asked. If this is true for everyone on the project, it is a project fact and belongs in `CLAUDE.md`. If it is true because of how your machine is set up, auto memory is right.
 
 **You correct Claude's comment style for the third time this week.**
-This is exactly what auto memory is for. It will pick it up on its own. If it does not, and the preference matters across every project, put it in `~/.claude/CLAUDE.md` instead.
+This is what auto memory is for. It will pick it up on its own. If it does not, and the preference matters across every project, put it in `~/.claude/CLAUDE.md` instead.
 
 **Claude confidently uses an API helper that was deleted two months ago.**
 Stale auto memory. It learned the helper existed, the fact expired, and nothing tells a note to expire. Run `/memory`, open the auto memory folder, find the entry, delete it. This is the failure mode of the whole system: **auto memory is silently wrong far more easily than `CLAUDE.md`, because nothing forces you to look at it.**

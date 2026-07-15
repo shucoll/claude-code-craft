@@ -40,7 +40,7 @@ So the real question is not "which reset?" It is: **do you want to lose context,
 | **Startup (CLAUDE.md, memory)** | Reloads | Reloads | Reloads | Unaffected |
 | **Session id** | Same | Same process, new conversation | New | Same |
 | **Permissions you allowed** | Kept | Kept | **Gone** | Kept |
-| **Recoverable?** | Detail is lost | Old conversation is in `/resume` | Old session is in `/resume` | Yes, that is the point |
+| **Recoverable?** | Detail is lost | Old conversation is in `/resume` | Old session is in `/resume` | Yes, by design |
 | **Cheapest when** | The history still matters | The history is irrelevant | The setup must change too | You regret a change |
 
 Three things in that table surprise people.
@@ -65,7 +65,7 @@ The order matters more than the answers. Ask "do I want to undo?" before "do I w
 `/clear`. The login conversation has nothing to say about the API client, and carrying it costs you context for no benefit. Your `CLAUDE.md` reloads, your permissions stay, and the login conversation is still in `/resume` if you need to check what you decided.
 
 **You are halfway through a refactor and `/context` says you are running out of room.**
-`/compact`. The conversation is the whole point: Claude needs to remember which files it has already migrated and why. Steer the summary so the important part survives: `/compact focus on which modules are already migrated`.
+`/compact`. The conversation is what you are protecting: Claude needs to remember which files it has already migrated and why. Steer the summary so the important part survives: `/compact focus on which modules are already migrated`.
 
 **Claude just rewrote a function and made it worse.**
 `/rewind`. Not a reset. Your context is fine; one edit is bad. Press `Esc` twice on an empty prompt, pick the message before the bad change, and choose "Restore code" to revert the file while keeping the conversation, so Claude still knows what you were trying to do.
@@ -105,7 +105,7 @@ Now the reset is free. Anything that mattered is on disk, not in a summary you a
 
 ## FAQ
 
-**Which reset do I reach for, and what do I lose?** `/compact` when the history still matters (you lose detail). `/clear` when it does not (you lose nothing; it is resumable). A new session when your setup must change too (you lose your permission grants). `/rewind` when you actually wanted to undo a change (you lose the change, which is the point).
+**Which reset do I reach for, and what do I lose?** `/compact` when the history still matters (you lose detail). `/clear` when it does not (you lose nothing; it is resumable). A new session when your setup must change too (you lose your permission grants). `/rewind` when you actually wanted to undo a change (you lose the change, which is what you wanted).
 
 **Does `/clear` delete my conversation?** No. It starts a new conversation with an empty context, and the old one stays available through `/resume`.
 

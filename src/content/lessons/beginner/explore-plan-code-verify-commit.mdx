@@ -24,7 +24,7 @@ interactive:
 
 Every lesson in this level was a piece of one thing. Plan mode, checkpoints, the verifiable prompt, `CLAUDE.md`, the resets: separately they are features. Assembled, they are a single loop you can run on real code without holding your breath.
 
-This is that assembly. There is almost nothing new to learn here, which is the point. You are going to take a public repository you have never opened, and make a real change to it, using only moves you already have.
+This is that assembly. There is almost nothing new to learn here, which is intentional. You are going to take a public repository you have never opened, and make a real change to it, using only moves you already have.
 
 It helps to see the two loops that are running. Inside every turn, Claude runs its own loop, the one from <LessonLink id="B1.1" />:
 
@@ -42,7 +42,7 @@ Read this as the shape; the walkthrough below runs it for real.
 
 1. **Explore** — understand before you change. Ask the codebase questions in **plan mode** (<LessonLink id="B3.3" />), so Claude reads and explains but cannot touch your source.
 2. **Plan** — get a plan you can read and correct while mistakes are still cheap sentences. How much plan the task deserves is the judgment call from <LessonLink id="B3.5" />.
-3. **Code** — approve the plan, let Claude implement, and read each diff before you accept it, exactly as in <LessonLink id="B2.1" />.
+3. **Code** — approve the plan, let Claude implement, and read each diff before you accept it, as in <LessonLink id="B2.1" />.
 4. **Verify** — run the check Claude can read for itself: tests, a build, a screenshot. This is the habit from <LessonLink id="B4.1" />, and it is the stage people skip.
 5. **Commit** — a small, single-concern commit with a message Claude drafts from the actual diff. The full git treatment is <LessonLink id="B4.3" />.
 
@@ -50,7 +50,7 @@ And the branch that makes it survive contact with reality: **when verify fails, 
 
 ## Guided walkthrough
 
-**Environment:** a small public repository you have never read. Anything modest works, a CLI utility or a single-purpose library you can find on GitHub. The point is that you do *not* know this code, because the whole workflow exists to handle exactly that. Clone it and let Claude do the reading.
+**Environment:** a small public repository you have never read. Anything modest works, a CLI utility or a single-purpose library you can find on GitHub. What matters is that you do *not* know this code, because the whole workflow exists to handle that. Clone it and let Claude do the reading.
 
 ```bash
 git clone https://github.com/some-org/some-small-tool.git
@@ -84,7 +84,7 @@ Read the plan the way you read a diff: right files, only what you asked, nothing
 that also touches the logging config, which is out of scope. plan again without it.
 ```
 
-For a change this small you might skip the plan and just prompt, and <LessonLink id="B3.5" /> is exactly about when to make that call. Here we plan on purpose, because you do not know the code.
+For a change this small you might skip the plan and just prompt, and <LessonLink id="B3.5" /> is about when to make that call. Here we plan on purpose, because you do not know the code.
 
 ### Code
 
@@ -127,9 +127,9 @@ The failure branch is not an exception to the workflow. It *is* the workflow, mo
 the new test fails because --quiet still prints the summary line. suppress that too, then re-run.
 ```
 
-**If a bad edit is the problem, rewind, don't debug the mess.** A wrong change three edits back is one `Esc Esc` and "Restore code" away from gone, keeping the conversation so Claude remembers the attempt. That is the entire point of <LessonLink id="B3.4" />.
+**If a bad edit is the problem, rewind, don't debug the mess.** A wrong change three edits back is one `Esc Esc` and "Restore code" away from gone, keeping the conversation so Claude remembers the attempt. That is what <LessonLink id="B3.4" /> is for.
 
-**Only reset when steering stops working.** If you have corrected the same failure two or three times and it keeps coming back, the context is now polluted with dead ends, and more steering makes it worse, not better. That is the moment for the resets of <LessonLink id="B2.4" />: `/clear` and start fresh with a sharper prompt that bakes in what you learned. Knowing *which* reset, and recognizing that moment before minute twenty, is its own skill, and it is the whole of <LessonLink id="B4.4" />.
+**Only reset when steering stops working.** If you have corrected the same failure two or three times and it keeps coming back, the context is now polluted with dead ends, and more steering makes it worse, not better. That is the moment for the resets of <LessonLink id="B2.4" />: `/clear` and start fresh with a sharper prompt that bakes in what you learned. Knowing *which* reset, and recognizing that moment before minute twenty, is its own skill, and it is the subject of <LessonLink id="B4.4" />.
 
 The ladder, in one line: **steer first, rewind a bad edit, reset only when steering has clearly stopped paying off.**
 
@@ -144,6 +144,6 @@ The ladder, in one line: **steer first, rewind a bad edit, reset only when steer
 
 ## Where next
 
-You now have the whole loop, and a map that links every stage back to where it was taught. This is the workflow the rest of your Claude Code life is built on; everything past this level makes individual stages faster or more powerful, but the shape stays.
+You now have the loop, and a map that links every stage back to where it was taught. This is the workflow the rest of your Claude Code life is built on; everything past this level makes individual stages faster or more powerful, but the shape stays.
 
 Two lessons finish the module by deepening the stages you just ran. <LessonLink id="B4.3" /> is the Commit stage in full: letting Claude branch, commit, and open PRs while keeping the history reviewable, and fixing a bad commit with git rather than `/rewind`. <LessonLink id="B4.4" /> is the failure branch in full: the smells that tell you a session is doomed, and the three-strikes rule for when to bail.

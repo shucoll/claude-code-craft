@@ -45,7 +45,7 @@ The instinct from chat tools is to immediately ask for a change. Resist it. Clau
 what does this project do, and where is the entry point?
 ```
 
-Claude reads files on its own (you never paste them in) and answers. Watch what happens on screen: it opens a few files, maybe runs a command to list the structure, then summarizes. That whole thing, from your prompt to Claude handing control back to you, is **one turn**. A turn is not one message; it is one prompt and everything Claude does in response, however many files it reads or commands it runs, ending when it stops and waits for you again.
+Claude reads files on its own (you never paste them in) and answers. Watch what happens on screen: it opens a few files, maybe runs a command to list the structure, then summarizes. All of that, from your prompt to Claude handing control back to you, is **one turn**. A turn is not one message; it is one prompt and everything Claude does in response, however many files it reads or commands it runs, ending when it stops and waits for you again.
 
 Ask one or two more questions to get your bearings:
 
@@ -85,7 +85,7 @@ Now make Claude do some work. Keep it small and specific, this is your first cha
 add a one-line docstring to the main entry function explaining what it does
 ```
 
-Claude finds the function, writes the change, and, because editing a file is the second gate from <LessonLink id="B1.3" />, it stops and asks permission before touching anything. This pause is the whole point of the next move. Do not approve it reflexively.
+Claude finds the function, writes the change, and, because editing a file is the second gate from <LessonLink id="B1.3" />, it stops and asks permission before touching anything. This pause is the reason for the next move. Do not approve it reflexively.
 
 > **Try it.** Request one small, specific change in the cloned repo. When Claude proposes it, stop at the permission prompt without accepting yet. The next section is what to do while you are paused there.
 
