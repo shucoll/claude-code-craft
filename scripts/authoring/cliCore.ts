@@ -55,7 +55,7 @@ function parseInteractive(v: string | undefined): { kind: string; spec: string }
     })
 }
 
-const VALID_TYPES = new Set(['core', 'resolver', 'workflow', 'checkpoint', 'milestone'])
+const VALID_TYPES = new Set(['overview', 'core', 'resolver', 'workflow', 'checkpoint', 'milestone'])
 const VALID_VOLATILITIES = new Set(['stable', 'evolving', 'volatile'])
 
 function today(): string {

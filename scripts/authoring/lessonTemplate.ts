@@ -1,6 +1,6 @@
 import { STUB } from './paths.ts'
 
-export type LessonType = 'core' | 'resolver' | 'workflow' | 'checkpoint' | 'milestone'
+export type LessonType = 'overview' | 'core' | 'resolver' | 'workflow' | 'checkpoint' | 'milestone'
 
 export interface LessonFrontmatter {
   id: string
@@ -63,6 +63,26 @@ function optIn(opts: TemplateOptions | undefined): string {
   for (const id of opts?.snippets ?? []) parts.push(`<Snippet id="${id}" />`)
   for (const id of opts?.prompts ?? []) parts.push(`<TryPrompt id="${id}" />`)
   return parts.join('\n\n')
+}
+
+function overviewBody(fm: LessonFrontmatter): string {
+  const chart = chartBlock(fm)
+  return [
+    '## You are here',
+    todo("The previous level's exit capabilities mirrored back in one tight paragraph, anchored to its exit artifact. Capabilities, not a lesson list."),
+    '## The gap',
+    todo('2–3 concrete scenarios the learner cannot handle yet; the problems this level exists to solve.'),
+    '## The map',
+    chart || todo("The level's interactive stack chart: one node per component with a one-line identity, each linking to its module. The centerpiece."),
+    '## How it fits together',
+    todo('Short prose on the relationships and dependencies between the components — the shape of the system, not its mechanics.'),
+    '## Suggested route',
+    todo("The default module order, what can be reordered or skipped and what shouldn't, with reasons."),
+    "## What you'll build",
+    todo('The guided-project teaser, linked.'),
+  ]
+    .filter(Boolean)
+    .join('\n\n')
 }
 
 function coreBody(fm: LessonFrontmatter, opts?: TemplateOptions): string {
@@ -158,6 +178,9 @@ function milestoneBody(): string {
 export function renderLesson(fm: LessonFrontmatter, opts?: TemplateOptions): string {
   let body: string
   switch (fm.type) {
+    case 'overview':
+      body = overviewBody(fm)
+      break
     case 'resolver':
       body = resolverBody(fm)
       break

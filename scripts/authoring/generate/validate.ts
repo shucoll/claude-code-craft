@@ -9,7 +9,7 @@ export interface ValidateInput {
   knownChartIds: Set<string>
 }
 
-const LESSON_TYPES = new Set(['core', 'resolver', 'workflow', 'checkpoint', 'milestone'])
+const LESSON_TYPES = new Set(['overview', 'core', 'resolver', 'workflow', 'checkpoint', 'milestone'])
 const VOLATILITIES = new Set(['stable', 'evolving', 'volatile'])
 // Every lesson must be verified against official docs — including `stable` ones.
 // Only recap lessons (checkpoint/milestone), which teach no feature surface, may

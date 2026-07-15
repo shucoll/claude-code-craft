@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 
-export type LessonType = 'core' | 'resolver' | 'workflow' | 'checkpoint' | 'milestone'
+export type LessonType = 'overview' | 'core' | 'resolver' | 'workflow' | 'checkpoint' | 'milestone'
 export type Volatility = 'stable' | 'evolving' | 'volatile'
 export type InteractiveKind = 'diagram' | 'decision-tree' | 'simulator' | 'quiz'
 

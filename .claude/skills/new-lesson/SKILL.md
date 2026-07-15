@@ -18,7 +18,7 @@ after scaffolding; if you ever change frontmatter by hand afterwards, rerun
 
 ## Part 0 — before writing anything
 
-The curriculum spec (`curriculum-design/claude-code-craft-curriculum_v8.md`) is
+The curriculum spec (`curriculum-design/claude-code-craft-curriculum_v9.md`) is
 the source of truth for each lesson's metadata: its per-lesson table already
 lists the `volatility`, `docsSources`, and the lesson's `Structure` line. Start
 from those — don't invent them from scratch.
@@ -67,6 +67,15 @@ but Edge cases may be dropped or folded for two-option comparisons, and resolver
 without a dedicated chart replace the decision tree with an inline if/then
 decision ladder.
 
+**`overview` lessons** (the single-lesson orientation module that opens
+Intermediate and Advanced, e.g. `I0.1`, `A0.1`) do **not** carry Structure lines.
+Their shape is fixed by curriculum §1.8, and the scaffolder writes it: *You are
+here* → *The gap* → *The map* (the level's interactive stack chart, the
+centerpiece) → *How it fits together* → *Suggested route* → *What you'll build*.
+They teach no mechanics and contain **no Try It and no pitfalls**; every feature
+claim stays at one-line-identity depth (the modules own the mechanics). They
+still take `docsSources` (typically `features-overview.md`) and `references`.
+
 The scaffolder writes the default skeleton regardless of profile — **reshape it
 to match the Structure line**: delete sections the profile drops rather than
 padding them, and reorder or merge as the line directs. The always-required
@@ -87,8 +96,8 @@ footer.
      --level beginner --module B2 --slug review-changes \
      --title "Reviewing Changes" --type core
    ```
-   `--type` is one of `core | resolver | workflow | checkpoint | milestone` —
-   it picks which section skeleton gets written (see below).
+   `--type` is one of `overview | core | resolver | workflow | checkpoint | milestone`
+   — it picks which section skeleton gets written (see below).
 
    Optional flags (exactly as the CLI parses them):
    - `--level-title`, `--module-title`, `--module-slug` — only needed the

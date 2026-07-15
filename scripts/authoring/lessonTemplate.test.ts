@@ -75,6 +75,26 @@ test('checkpoint and milestone bodies carry their headings', () => {
   expect(ms).toContain('## Reasoning recap')
 })
 
+test('overview body carries the level-entry anatomy headings and no Try It', () => {
+  const out = renderLesson({ ...base, type: 'overview' })
+  expect(out).toContain('## You are here')
+  expect(out).toContain('## The gap')
+  expect(out).toContain('## The map')
+  expect(out).toContain('## How it fits together')
+  expect(out).toContain('## Suggested route')
+  expect(out).toContain("## What you'll build")
+  expect(out).not.toContain('## Try It')
+  expect(out).not.toContain('## Pitfalls')
+})
+
+test('overview body embeds its interactive stack map under The map', () => {
+  const out = renderLesson({ ...base, type: 'overview', interactive: [{ kind: 'diagram', spec: 'intermediate-stack-map' }] })
+  const mapIdx = out.indexOf('## The map')
+  const chartIdx = out.indexOf('<ChartEmbed id="intermediate-stack-map" />')
+  expect(chartIdx).toBeGreaterThan(mapIdx)
+  expect(out.indexOf('## How it fits together')).toBeGreaterThan(chartIdx)
+})
+
 test('snippets/prompts are opt-in: absent by default, present when requested', () => {
   expect(renderLesson(base)).not.toContain('<Snippet')
   expect(renderLesson(base)).not.toContain('<TryPrompt')
