@@ -15,18 +15,130 @@ docsSources: ["https://code.claude.com/docs/en/context-window"]
 
 # Context management under pressure
 
+Shelf can add, tag, and search. Two things are missing to make it a real app: you cannot edit or delete an item, and there is no usable page, just a placeholder. This milestone finishes both in one deliberately long session, and the length matters: a session big enough to fill the context window is where the habits from <LessonLink id="B2.2" /> stop being theory. Context is a budget, and here you practice spending it on purpose.
+
 ## Goal for this stage
 
-{/* @@TODO@@ The working artifact this milestone produces. */}
+Finish Shelf, edit, delete, and a working browser page, in one long session, while practicing the three moves that keep a long session healthy:
+
+- Read your budget with `/context`.
+- `/compact` at a boundary you choose.
+- Write a handoff note before `/clear`, and confirm a fresh session picks up from it.
+
+**Environment:** your Shelf repo. Commit each piece as you finish it, so the session's work is banked in git even if the session itself gets long and messy.
 
 ## Steps
 
-{/* @@TODO@@ The build steps for this stage. */}
+### 1. Take on the long job
+
+Start with the remaining API work:
+
+<WhenLang is="javascript">
+
+```prompt
+Round out the API in server.js and db.js: PUT /items/:id to edit an item's
+title or tag (404 if it doesn't exist), and DELETE /items/:id to remove one
+(404 if missing). Add tests for both, run them, and show the output.
+```
+
+</WhenLang>
+
+<WhenLang is="python">
+
+```prompt
+Round out the API in app.py and db.py: PUT /items/<id> to edit an item's
+title or tag (404 if it doesn't exist), and DELETE /items/<id> to remove one
+(404 if missing). Add tests for both, run them, and show the output.
+```
+
+</WhenLang>
+
+As Claude reads files, runs tests, and shows diffs, the context fills. You will feel it: responses have more history to carry, and the session has been going a while. That is normal. What matters is that you notice it instead of being surprised by it.
+
+### 2. Read your budget with `/context`
+
+Partway through, check where you stand:
+
+```prompt
+/context
+```
+
+It prints a live breakdown by category with suggestions, something like:
+
+```text
+Context: 118k / 200k tokens (59%)
+  System prompt & tools    9k
+  CLAUDE.md & memory       3k
+  Files read              66k
+  Conversation            40k
+  Free                    82k
+```
+
+This is the gauge <LessonLink id="B2.2" /> gave you the model for, now read for real. You are past halfway, most of it is files Claude read while building. Good to know before you start the next big piece.
+
+### 3. `/compact` at a boundary, not mid-thought
+
+You have just finished the edit and delete work: tests are green and you committed it. That is a **boundary**, one coherent piece done, and it is the right moment to compact, because the summary gets made when the work is in a clean state rather than halfway through a thought.
+
+Compact with a focus so the summary keeps what the next task needs:
+
+```prompt
+/compact focus on the Shelf API: the endpoints, the db module, and how to run the tests
+```
+
+Compaction replaces the conversation with a structured summary. Your project-root `CLAUDE.md` and auto memory are re-injected from disk, so the durable facts survive; it is the back-and-forth chatter that gets condensed. Claude Code also compacts automatically as you approach the limit, and it works the same way.
+
+### 4. Hand off before you `/clear`
+
+The frontend is a fresh, self-contained task, and it deserves a clean context rather than one carrying the whole API build. But `/clear` wipes the conversation entirely, and a summary is not always enough to restart from. So before you clear, capture the one paragraph worth keeping, the professional move from <LessonLink id="B4.4" />:
+
+```prompt
+Before I clear: write a short HANDOFF.md describing where Shelf stands. Include
+the API endpoints and their shapes, how to run the server and the tests, and
+that the next task is wiring public/ to the API: list, add, tag-filter, search,
+edit, delete.
+```
+
+Put it somewhere that survives a reset, a `HANDOFF.md` file or appended to `CLAUDE.md`. Then clear:
+
+```prompt
+/clear
+```
+
+### 5. Confirm the fresh session picks up
+
+In the cleared session, point Claude at the note and start the frontend:
+
+```prompt
+Read HANDOFF.md and CLAUDE.md, then wire public/index.html and public/app.js to
+the API: list items, add one, filter by tag, search, and delete. Keep it plain
+HTML, CSS, and fetch, no framework.
+```
+
+If the note was good, the cold session is productive from the first prompt, with none of the previous session's clutter weighing it down. That is the real test of a handoff note: a fresh context becomes useful immediately.
+
+### 6. Finish and commit
+
+With the page wired, open `http://localhost:3000` (or `:5000` on the Python track) and use Shelf in the browser: add a book, tag it, search, delete it. Commit the frontend as the final piece.
 
 ## The artifact
 
-{/* @@TODO@@ What "done" looks like; how to verify it works. */}
+Shelf is now a complete app: add, tag, search, edit, delete, and a working page you can use in a browser. And you produced it across a session long enough to fill the window without losing the thread, because you:
+
+- read `/context` instead of guessing,
+- compacted at a boundary you chose,
+- and handed off to a clean session that resumed from your note.
+
+**Done looks like:** the app works end to end in the browser, the full test suite is green, and the long session never derailed despite its length.
 
 ## Reasoning recap
 
-{/* @@TODO@@ Why these choices — the transferable lesson behind the build. */}
+Context is a budget you spend, not an infinite resource, and the whole difference between a smooth long session and a frustrating one is whether you manage that budget or let it manage you. Three habits do it:
+
+1. **Read the gauge.** `/context` means you are never surprised by a full window.
+2. **Compact at a boundary.** Summaries made when the work is coherent are better than ones made mid-thought, and choosing the moment beats waiting for auto-compaction to choose it for you.
+3. **Hand off before you clear.** A note that captures the state of play turns "I have to start over" into "I start fresh with everything that mattered." The handoff note is what makes a reset cost nothing.
+
+Auto-compaction is the safety net, not the plan. Professionals do not wait for the window to fill; they spend it deliberately and reset on their own terms. And knowing *which* reset to reach for, compact to continue lighter or clear to start clean, is the judgment from <LessonLink id="B2.4" />, now exercised under real pressure.
+
+Next milestone, <LessonLink id="B5.6" />: the app is done, so the last step is shipping it. Claude writes the README from the actual code, you tidy the commit history into a story, and you take the final read-through, because shipping means owning it.
