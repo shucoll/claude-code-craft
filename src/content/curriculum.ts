@@ -438,6 +438,27 @@ export const curriculum: Level[] = [
     title: 'Intermediate',
     modules: [
       {
+        id: 'level-overview',
+        title: 'Level Overview',
+        lessons: [
+          {
+            id: 'where-you-are-where-youre-going',
+            dottedId: 'I0.1',
+            title: 'Where you are, where you\'re going',
+            type: 'overview',
+            order: 1,
+            estimatedMinutes: 6,
+            volatility: 'stable',
+            verifiedAgainstDocsAt: '2026-07-15',
+            teaches: ['level-orientation', 'intermediate-map'],
+            references: ['B4.2', 'B5.6'],
+            docsSources: ['https://code.claude.com/docs/en/features-overview'],
+            interactive: [{ kind: 'diagram', spec: 'intermediate-stack-map' }],
+            content: () => import('./lessons/intermediate/where-you-are-where-youre-going.mdx'),
+          },
+        ],
+      },
+      {
         id: 'tools-permissions-settings',
         title: 'Tools, Permissions, Settings',
         lessons: [
@@ -494,5 +515,6 @@ export const lessonPathById: Record<string, string> = {
   'B5.4': '/learn/beginner/guided-project-shelf/verify-driven-feature',
   'B5.5': '/learn/beginner/guided-project-shelf/context-management-under-pressure',
   'B5.6': '/learn/beginner/guided-project-shelf/ship-the-repo',
+  'I0.1': '/learn/intermediate/level-overview/where-you-are-where-youre-going',
   'I1.1': '/learn/intermediate/tools-permissions-settings/the-built-in-tool-belt',
 }

@@ -4,6 +4,7 @@ import { clearCompactNewTree } from './clear-compact-new-tree'
 import { commandBeltReference } from './command-belt-reference'
 import { contextWindowSimulator } from './context-window-simulator'
 import { demo } from './demo'
+import { intermediateStackMap } from './intermediate-stack-map'
 import { toolBeltMap } from './tool-belt-map'
 import type { ChartDef } from './types'
 
@@ -15,6 +16,7 @@ const charts: Record<string, ChartDef> = {
   [contextWindowSimulator.id]: contextWindowSimulator,
   [commandBeltReference.id]: commandBeltReference,
   [toolBeltMap.id]: toolBeltMap,
+  [intermediateStackMap.id]: intermediateStackMap,
 }
 
 export const registeredChartIds: string[] = Object.keys(charts)

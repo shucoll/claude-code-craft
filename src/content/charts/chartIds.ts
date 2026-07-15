@@ -10,4 +10,5 @@ export const chartIds: readonly string[] = [
   'context-window-simulator',
   'demo',
   'tool-belt-map',
+  'intermediate-stack-map',
 ]

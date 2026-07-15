@@ -1,0 +1,54 @@
+---
+id: "I0.1"
+slug: "where-you-are-where-youre-going"
+title: "Where you are, where you're going"
+type: "overview"
+order: 1
+estimatedMinutes: 6
+volatility: "stable"
+verifiedAgainstDocsAt: "2026-07-15"
+teaches: ["level-orientation", "intermediate-map"]
+references: ["B4.2", "B5.6"]
+docsSources: ["https://code.claude.com/docs/en/features-overview"]
+interactive:
+  - kind: "diagram"
+    spec: "intermediate-stack-map"
+---
+
+# Where you are, where you're going
+
+## You are here
+
+You finished Beginner by shipping Shelf and writing a `WORKFLOW.md` in your own words: the loop you now run without thinking about it. You can scaffold a project with intent, design a multi-file change in plan mode before a line is written, break something and rewind without fear, ask for proof instead of hoping a change works, keep a long session healthy when context fills, and ship a repo you would sign your name to. That is genuine fluency with Claude Code as it comes out of the box, and everything in this level takes it as the starting line. The <LessonLink id="B4.2">explore, plan, code, verify, commit</LessonLink> loop does not go away here; it becomes the thing the rest of this level makes faster.
+
+## The gap
+
+Out of the box has a ceiling, and you have probably already met it:
+
+- You explain the same convention every session, and a busy one forgets it anyway. Re-typing "use pnpm, run the tests before committing" is not a workflow, it is a tax you pay every morning.
+- You need a guarantee, not a polite request. "Never touch the migrations" written in CLAUDE.md is advice Claude can miss under context pressure, and some rules have to hold every single time.
+- Claude cannot see the systems your work actually lives in: your GitHub issues, your database, your error tracker. So you copy from a browser tab it cannot reach and paste the results back by hand.
+
+Each of these has a purpose-built answer, and this level is the guided tour of them. The theme in one sentence: Beginner was about *using* Claude Code well, and Intermediate is about *shaping* it.
+
+## The map
+
+Here is the entire level as one stack. It reads top to bottom in the order the modules build on each other, and each layer links through to the module that teaches it.
+
+<ChartEmbed id="intermediate-stack-map" />
+
+Think of this as the itinerary. At the end of the level, the same components come back as the `claude-code-system-map` in I7.3, which shows how they interlock inside a single running session rather than as a list of places to visit.
+
+## How it fits together
+
+Two of these layers are foundations and the rest are choices. **Tools, permissions, and settings (I1)** are the substrate: every other feature is assembled from the same tools you already watched Claude use, and all of it answers to the same permission machinery. **Context engineering (I2)** is the economy: every feature you add spends some of Claude's context before you type a word, so the budget quietly frames every later decision.
+
+On top of that foundation sit four mechanisms, each answering a different question. Skills (I3) teach Claude a repeatable procedure. Hooks (I4) enforce something deterministically, with no model judgment involved. MCP (I5) connects Claude to an outside service. Subagents (I6) run heavy work in an isolated context and hand back only a summary. They are not rivals competing for the same job; the recurring skill of this whole level is recognizing which one a given problem calls for, and every module ends by resolving exactly that question against its neighbors. Plugins (I7) are the packaging layer that bundles whatever you assembled into one installable unit.
+
+## Suggested route
+
+Take **I1 and I2 first**. They are not optional background: every other module leans on the tool belt, the permission rules, and the context budget they establish. After that, **I3 through I6 come in any order.** Start with whichever gap above bit you hardest, since each mechanism stands on its own. Save **I7 for last**, because it packages what the earlier modules produce and there is nothing to bundle until they exist. This overview and the end-of-level self-assessment are both skippable, though the assessment is the cheapest way to find out which "which mechanism?" decision you have not yet made second nature.
+
+## What you'll build
+
+The level lands in a guided project, **PulseBoard**: a GitHub project-health dashboard built with skills, hooks, an MCP connection, and a review subagent all working together. The twist that makes it an Intermediate project rather than a Beginner one is that the configured environment is itself a deliverable. You finish with two things: the working dashboard, and a `pulseboard-dev` plugin any teammate could install to stand up the same setup in one command. The loop you wrote into `WORKFLOW.md` at the end of <LessonLink id="B5.6" /> still runs underneath all of it. This level just gives it sharper tools.
