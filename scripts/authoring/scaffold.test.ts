@@ -119,6 +119,29 @@ test('scaffoldOutline seeds a new level + module in structure.ts and writes less
   expect(data.id).toBe('A1.1')
 })
 
+// An outline lesson may omit verifiedAgainstDocsAt, matching the `lesson` CLI's
+// --verified-at default. Without the fallback it was written to YAML as the
+// literal `undefined`, which then failed frontmatter validation.
+test('scaffoldOutline defaults an omitted verifiedAgainstDocsAt to today', () => {
+  const dir = seedContent()
+  scaffoldOutline(
+    {
+      levels: [
+        {
+          id: 'advanced',
+          title: 'Advanced',
+          modules: [
+            { code: 'A1', slug: 'power', title: 'Power User', lessons: [{ slug: 'subagents', title: 'Subagents', type: 'core' }] },
+          ],
+        },
+      ],
+    },
+    dir,
+  )
+  const { data } = matter(fs.readFileSync(path.join(dir, 'lessons/advanced/subagents.mdx'), 'utf8'))
+  expect(data.verifiedAgainstDocsAt).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+})
+
 test('re-scaffolding an existing lesson preserves authored .mdx content', () => {
   const dir = seedContent()
   scaffoldLesson(spec, dir)

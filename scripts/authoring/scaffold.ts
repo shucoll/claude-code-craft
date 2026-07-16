@@ -43,7 +43,8 @@ export interface OutlineLesson {
   type: LessonType
   estimatedMinutes?: number
   volatility?: string
-  verifiedAgainstDocsAt: string
+  /** Defaults to today, matching the `lesson` CLI's --verified-at. */
+  verifiedAgainstDocsAt?: string
   prerequisites?: string[]
   teaches?: string[]
   references?: string[]
@@ -80,6 +81,10 @@ interface Ctx {
   packTouched: boolean
 }
 
+function today(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
 function writeLessonFile(ctx: Ctx, level: { id: string }, lesson: OutlineLesson, dottedId: string, order: number): void {
   const dir = path.join(lessonsDir(ctx.contentDir), level.id)
   fs.mkdirSync(dir, { recursive: true })
@@ -94,7 +99,7 @@ function writeLessonFile(ctx: Ctx, level: { id: string }, lesson: OutlineLesson,
     order,
     estimatedMinutes: lesson.estimatedMinutes,
     volatility: lesson.volatility ?? 'stable',
-    verifiedAgainstDocsAt: lesson.verifiedAgainstDocsAt,
+    verifiedAgainstDocsAt: lesson.verifiedAgainstDocsAt ?? today(),
     prerequisites: lesson.prerequisites,
     teaches: lesson.teaches,
     references: lesson.references,
