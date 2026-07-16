@@ -23,7 +23,7 @@ export function ChartCardView({ card, onActivate }: ChartCardViewProps) {
 
   const body = (
     <>
-      <h3 className={cn('font-mono text-lg font-bold', tone.heading)}>{card.title}</h3>
+      <h3 className={cn('break-words font-mono text-lg font-bold', tone.heading)}>{card.title}</h3>
       {card.lines?.map((line, i) => (
         <p key={i} className="mt-1 text-sm text-muted-foreground">
           {line}
@@ -32,7 +32,11 @@ export function ChartCardView({ card, onActivate }: ChartCardViewProps) {
     </>
   )
 
-  const surface = cn('block w-full rounded-card border-2 p-4 text-left shadow-hard', tone.surface)
+  // min-w-0: as a grid item, the card's default `min-width: auto` would size its
+  // track to the title's min-content width, so a long unbroken title (a permission
+  // rule, an MCP tool name) would push past the card. Paired with `break-words` on
+  // the heading, long titles wrap inside the card instead of escaping it.
+  const surface = cn('block w-full min-w-0 rounded-card border-2 p-4 text-left shadow-hard', tone.surface)
   const entrance = {
     initial: reduce ? false : { opacity: 0 },
     animate: { opacity: 1 },

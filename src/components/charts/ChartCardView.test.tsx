@@ -33,3 +33,13 @@ test('targetless card is inert and applies its tone surface class', () => {
   const el = screen.getByText('Just a label').closest('div')
   expect(el?.className).toContain('bg-chart-neutral-bg')
 })
+
+// A permission rule or MCP tool name has no spaces, so it is one unbreakable
+// word: without these two classes it renders straight through the card's border.
+test('a long unbroken title wraps inside the card instead of overflowing it', () => {
+  const longTitle = 'WebFetch(domain:*.example.com)'
+  render(<ChartCardView card={{ id: 'c3', title: longTitle, tone: 'violet' }} onActivate={() => {}} />)
+  const heading = screen.getByRole('heading', { name: longTitle })
+  expect(heading.className).toContain('break-words')
+  expect(heading.closest('div')?.className).toContain('min-w-0')
+})
