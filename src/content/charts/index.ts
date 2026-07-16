@@ -5,6 +5,7 @@ import { commandBeltReference } from './command-belt-reference'
 import { contextWindowSimulator } from './context-window-simulator'
 import { demo } from './demo'
 import { intermediateStackMap } from './intermediate-stack-map'
+import { permissionRuleShapes } from './permission-rule-shapes'
 import { toolBeltMap } from './tool-belt-map'
 import type { ChartDef } from './types'
 
@@ -17,6 +18,7 @@ const charts: Record<string, ChartDef> = {
   [commandBeltReference.id]: commandBeltReference,
   [toolBeltMap.id]: toolBeltMap,
   [intermediateStackMap.id]: intermediateStackMap,
+  [permissionRuleShapes.id]: permissionRuleShapes,
 }
 
 export const registeredChartIds: string[] = Object.keys(charts)
