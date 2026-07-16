@@ -2,27 +2,25 @@ import type { ChartDef, LessonRef } from './types'
 
 const lesson = (ref: LessonRef) => ({ kind: 'lesson' as const, ref })
 
-const I1_1: LessonRef = {
-  level: 'intermediate',
-  module: 'tools-permissions-settings',
-  lesson: 'the-built-in-tool-belt',
-}
+/** Each module's home lesson: where clicking that layer of the stack lands. */
+const home = (module: string, lesson: string): LessonRef => ({ level: 'intermediate', module, lesson })
+
+const I1_1 = home('tools-permissions-settings', 'the-built-in-tool-belt')
+const I2_1 = home('context-engineering', 'what-loads-at-startup')
+const I3_1 = home('skills', 'skills-teachable-procedures')
+const I4_1 = home('hooks', 'hooks-deterministic-automation')
+const I5_1 = home('mcp-servers', 'mcp-giving-claude-new-tools')
+const I6_1 = home('subagents', 'subagents-context-isolation-and-delegation')
+const I7_1 = home('plugins-and-integration', 'plugins-and-marketplaces')
+const I8_1 = home('guided-project-pulseboard', 'environment-first')
 
 /**
- * The itinerary for Level 2: one layer per module, foundation at the bottom of
- * the reading order and the guided project at the top. The mechanical
- * counterpart is I7.3's `claude-code-system-map`, which returns at level's end
- * to show how these same pieces interlock at runtime.
+ * The itinerary for Level 2: one layer per module, read top to bottom in the
+ * order the modules build on each other. The mechanical counterpart is I7.3's
+ * `claude-code-system-map`, which returns at level's end to show how these same
+ * pieces interlock at runtime.
  *
- * Each node should link to its module's home lesson. Only I1 exists today; wire
- * the rest as each module is authored:
- *   I2 -> intermediate/context-engineering/what-loads-at-startup
- *   I3 -> intermediate/skills/skills-teachable-procedures
- *   I4 -> intermediate/hooks/hooks-deterministic-automation
- *   I5 -> intermediate/mcp-servers/mcp-giving-claude-new-tools
- *   I6 -> intermediate/subagents/subagents-context-isolation-and-delegation
- *   I7 -> intermediate/plugins-and-integration/plugins-and-marketplaces
- *   I8 -> intermediate/guided-project-pulseboard/environment-first
+ * Every node links to its module's home lesson.
  */
 export const intermediateStackMap: ChartDef = {
   id: 'intermediate-stack-map',
@@ -50,6 +48,7 @@ export const intermediateStackMap: ChartDef = {
           title: 'I2 · Context Engineering',
           lines: ['Context as a budget: what loads at startup, and what it costs'],
           tone: 'blue',
+          target: lesson(I2_1),
         },
       ],
     },
@@ -58,10 +57,10 @@ export const intermediateStackMap: ChartDef = {
       kind: 'grid',
       columns: 2,
       items: [
-        { id: 'i3', title: 'I3 · Skills', lines: ['Teachable procedures'], tone: 'violet' },
-        { id: 'i4', title: 'I4 · Hooks', lines: ['Deterministic automation'], tone: 'violet' },
-        { id: 'i5', title: 'I5 · MCP Servers', lines: ['New tools from outside services'], tone: 'violet' },
-        { id: 'i6', title: 'I6 · Subagents', lines: ['Context isolation and delegation'], tone: 'violet' },
+        { id: 'i3', title: 'I3 · Skills', lines: ['Teachable procedures'], tone: 'violet', target: lesson(I3_1) },
+        { id: 'i4', title: 'I4 · Hooks', lines: ['Deterministic automation'], tone: 'violet', target: lesson(I4_1) },
+        { id: 'i5', title: 'I5 · MCP Servers', lines: ['New tools from outside services'], tone: 'violet', target: lesson(I5_1) },
+        { id: 'i6', title: 'I6 · Subagents', lines: ['Context isolation and delegation'], tone: 'violet', target: lesson(I6_1) },
       ],
     },
     { kind: 'connector', label: 'package it all' },
@@ -73,6 +72,7 @@ export const intermediateStackMap: ChartDef = {
           title: 'I7 · Plugins and Integration',
           lines: ['Bundle skills, hooks, MCP, and subagents into one shareable unit'],
           tone: 'amber',
+          target: lesson(I7_1),
         },
       ],
     },
@@ -85,6 +85,7 @@ export const intermediateStackMap: ChartDef = {
           title: 'I8 · Guided Project: PulseBoard',
           lines: ['Build a dashboard and the configured environment that builds it'],
           tone: 'teal',
+          target: lesson(I8_1),
         },
       ],
     },

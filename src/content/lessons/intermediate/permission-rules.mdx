@@ -36,7 +36,7 @@ Every tool call is checked against all three, in a fixed order: **deny first, th
 
 That single sentence, **deny > ask > allow**, explains almost every permission surprise you will ever have. Hold onto it.
 
-Rules live in your settings files and you manage them with the `/permissions` command, which lists every active rule and the file it came from. There are three files, and the next lesson maps them properly; for now the short version is enough:
+Rules live in your settings files and you manage them with the `/permissions` command, which lists every active rule and the file it came from. There are three files, and <LessonLink id="I1.3">the next lesson</LessonLink> maps them properly; for now the short version is enough:
 
 | File | Who it is for |
 |---|---|
@@ -70,7 +70,7 @@ One detail carries most of the confusion: **the space before `*` enforces a word
 - `WebFetch(domain:example.com)` matches that host.
 - `WebFetch(domain:*.example.com)` matches any subdomain, but not `example.com` itself.
 
-**MCP tools** (a forward look at Module I5's territory) use `mcp__server__tool`, or `mcp__server` for every tool a server exposes.
+**MCP tools** (a forward look at <LessonLink id="I5.1">Module I5</LessonLink>'s territory) use `mcp__server__tool`, or `mcp__server` for every tool a server exposes.
 
 ### How rules meet modes
 
@@ -122,7 +122,7 @@ You do not have to hand-write this. The fastest way to grow a policy is to click
 
 **Do not reach for a rule when:**
 
-- **You need a real guarantee against evasion.** Argument-constraining Bash denies are fragile: `rm` has many spellings, `curl` follows redirects, a variable can hide a URL. A deny rule is a strong speed bump against mistakes, not a wall against a determined or prompt-injected adversary. For that, use a `PreToolUse` hook (Module I4) or the OS-level sandbox (Advanced).
+- **You need a real guarantee against evasion.** Argument-constraining Bash denies are fragile: `rm` has many spellings, `curl` follows redirects, a variable can hide a URL. A deny rule is a strong speed bump against mistakes, not a wall against a determined or prompt-injected adversary. For that, use a `PreToolUse` hook (<LessonLink id="I4.1">Module I4</LessonLink>) or the OS-level sandbox (Advanced).
 - **It is a one-off.** A command you will run once does not need a policy. Just click.
 - **You would be allowing broadly to save typing.** A bare `Bash` allow or a wide `Bash(git *)` trades away the safety you came for. Scope allows narrowly and let `ask` cover the exceptions.
 
@@ -163,7 +163,7 @@ On a Bash prompt, `Ctrl+E` also explains what the command does and rates its ris
 
 ## FAQ
 
-**Where exactly do rules live?** In the three settings files above, and you edit them with `/permissions` or by hand. Which file to choose (team vs personal vs global) is the whole subject of the next lesson, on settings and scopes.
+**Where exactly do rules live?** In the three settings files above, and you edit them with `/permissions` or by hand. Which file to choose (team vs personal vs global) is the whole subject of <LessonLink id="I1.3">the next lesson</LessonLink>, on settings and scopes.
 
 **Can a rule use a regular expression?** No. Bash rules are glob patterns and file rules are gitignore patterns. This trips up anyone expecting regex; there is no `.*` or anchors, just `*` and `**`.
 
@@ -171,10 +171,10 @@ On a Bash prompt, `Ctrl+E` also explains what the command does and rates its ris
 
 **Do permission rules cost me context?** No. They are enforced by the harness and never enter the model's context window, unlike `CLAUDE.md` instructions. You can keep a large policy at no token cost.
 
-**Is a deny rule real security?** It reliably stops honest mistakes and keeps Claude away from files and commands you have marked off. It is not proof against evasion or prompt injection. When you need a hard guarantee, a `PreToolUse` hook (Module I4) or the sandbox is the right tool.
+**Is a deny rule real security?** It reliably stops honest mistakes and keeps Claude away from files and commands you have marked off. It is not proof against evasion or prompt injection. When you need a hard guarantee, a `PreToolUse` hook (<LessonLink id="I4.1">Module I4</LessonLink>) or the sandbox is the right tool.
 
 **How do I remove a rule?** Delete it in `/permissions`, or remove the line from the settings file. Rules take effect immediately.
 
 ## Where next
 
-You have turned the per-prompt clicking from <LessonLink id="B1.3" /> into a policy, and connected the fine-grained rules to the broad permission modes from <LessonLink id="B3.3" />. The open question is *which file* each rule belongs in, and what else lives alongside them. The next lesson, on settings, scopes, and the `.claude` directory, tours all three so you can decide with confidence where any piece of configuration should go. Later, when you need a guarantee a rule cannot make, Module I4's hooks are where "deny" becomes truly non-negotiable.
+You have turned the per-prompt clicking from <LessonLink id="B1.3" /> into a policy, and connected the fine-grained rules to the broad permission modes from <LessonLink id="B3.3" />. The open question is *which file* each rule belongs in, and what else lives alongside them. <LessonLink id="I1.3" /> tours the whole `.claude` directory and its three scopes, so you can decide with confidence where any piece of configuration should go. Later, when you need a guarantee a rule cannot make, <LessonLink id="I4.1">Module I4's hooks</LessonLink> are where "deny" becomes truly non-negotiable.

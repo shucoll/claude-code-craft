@@ -103,7 +103,7 @@ The prompt names the tool's target. Approving an edit lasts until the session en
        3. No, tell Claude what to do differently
 ```
 
-The first command read state and ran silently; the second has consequences and stopped. Notice that "don't ask again" for a shell command is remembered permanently for that command in that project, unlike a file edit. That asymmetry is the seed of permission rules, the next lesson in this module.
+The first command read state and ran silently; the second has consequences and stopped. Notice that "don't ask again" for a shell command is remembered permanently for that command in that project, unlike a file edit. That asymmetry is the seed of <LessonLink id="I1.2">permission rules</LessonLink>, the next lesson in this module.
 
 ### Leaves your machine: the network tier
 
@@ -123,11 +123,11 @@ The prompt names the domain, not the full URL, because approval is granted per d
 
 ### Delegation: the tool that hides a whole session
 
-**`Agent`** hands a task to a subagent that runs in its own separate context window and returns a single result. Launching it does not prompt. The subagent then uses these same tools, and *its* calls are checked against your rules as they happen. The catch for reading transcripts: you see the launch and the final result, never the subagent's intermediate work. A short `Agent(...)` line can represent a great deal of activity you did not watch. Subagents get their own module later; for now, know that an `Agent` line is a closed door, not an idle one.
+**`Agent`** hands a task to a subagent that runs in its own separate context window and returns a single result. Launching it does not prompt. The subagent then uses these same tools, and *its* calls are checked against your rules as they happen. The catch for reading transcripts: you see the launch and the final result, never the subagent's intermediate work. A short `Agent(...)` line can represent a great deal of activity you did not watch. Subagents get <LessonLink id="I6.1">their own module</LessonLink> later; for now, know that an `Agent` line is a closed door, not an idle one.
 
 ### The long tail
 
-Beyond these, the belt carries a set of session-control tools: task-list and scheduling tools, plan-mode toggles, MCP resource readers, and so on. They manage the session rather than your code, most run without a prompt, and you never need to memorize them. Two are worth naming now because you will meet them later: `Skill` runs a skill (Module I3), and `Agent` you just met. When a real tool matters, its own lesson introduces it.
+Beyond these, the belt carries a set of session-control tools: task-list and scheduling tools, plan-mode toggles, MCP resource readers, and so on. They manage the session rather than your code, most run without a prompt, and you never need to memorize them. Two are worth naming now because you will meet them later: `Skill` runs a skill (<LessonLink id="I3.1">Module I3</LessonLink>), and `Agent` you just met. When a real tool matters, its own lesson introduces it.
 
 ## Reading the prompt: tool to tier
 
@@ -150,7 +150,7 @@ Your exact tool set depends on your provider, platform, and settings, so the rel
 What tools do you have access to?
 ```
 
-Claude answers with a plain-language summary. For the exact names of tools added by MCP servers (Module I5), run:
+Claude answers with a plain-language summary. For the exact names of tools added by MCP servers (<LessonLink id="I5.1">Module I5</LessonLink>), run:
 
 ```text
 /mcp
@@ -187,12 +187,12 @@ These are all misreadings of a transcript, and each one sends people chasing a p
 
 **What are all the tools my summary listed that aren't on the map?** Session-control tools: task lists, scheduling, plan mode, MCP resource access. They act on the session, not your code, and mostly run without a prompt. The map deliberately shows only the tools whose behavior you need to read.
 
-**Is a skill a tool?** A skill runs *through* the built-in `Skill` tool rather than adding a new tool of its own. You will build skills in Module I3.
+**Is a skill a tool?** A skill runs *through* the built-in `Skill` tool rather than adding a new tool of its own. You will build skills in <LessonLink id="I3.1">Module I3</LessonLink>.
 
-**How do I turn a tool off entirely?** Add its name to a `deny` rule in your permission settings. That is the mechanism the next lesson, on permission rules, is built on.
+**How do I turn a tool off entirely?** Add its name to a `deny` rule in your permission settings. That is the mechanism the next lesson, on <LessonLink id="I1.2">permission rules</LessonLink>, is built on.
 
 ## Where next
 
-You can now read a transcript by tier and predict its prompts. The obvious next move is to stop clicking those prompts one by one: permission rules let you pre-approve the safe tools and deny the dangerous ones by name, turning the tier awareness you just built into a written policy. That is Module I1's next lesson.
+You can now read a transcript by tier and predict its prompts. The obvious next move is to stop clicking those prompts one by one: permission rules let you pre-approve the safe tools and deny the dangerous ones by name, turning the tier awareness you just built into a written policy. That is <LessonLink id="I1.2" />, this module's next lesson.
 
 For the session side of the command surface, <LessonLink id="B2.3" /> is the companion to this lesson: it maps the slash commands that act on your session, where this one maps the tools that act on your code. And <LessonLink id="B1.1" /> is where the whole idea of an agent using tools began.
