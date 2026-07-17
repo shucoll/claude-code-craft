@@ -1,7 +1,7 @@
 ---
 id: "I2.1"
 slug: "what-loads-at-startup"
-title: "What loads at startup"
+title: "What loads at startup (and what it costs)"
 type: "core"
 order: 1
 estimatedMinutes: 12
@@ -9,47 +9,138 @@ volatility: "evolving"
 verifiedAgainstDocsAt: "2026-07-16"
 prerequisites: ["I1.3"]
 references: ["B2.2"]
-docsSources: ["https://code.claude.com/docs/en/features-overview", "https://code.claude.com/docs/en/costs", "https://code.claude.com/docs/en/context-window"]
+docsSources: ["https://code.claude.com/docs/en/context-window", "https://code.claude.com/docs/en/costs", "https://code.claude.com/docs/en/mcp", "https://code.claude.com/docs/en/features-overview"]
+interactive:
+  - kind: "diagram"
+    spec: "context-cost-ledger"
 ---
 
-# What loads at startup
+# What loads at startup (and what it costs)
 
 ## The problem
 
-{/* @@TODO@@ 2–4 sentence scenario the learner recognizes; the pain this solves. */}
+Run `claude` in a project you have been configuring for a few months, and type nothing at all. The session is not empty. It already holds a system prompt, your project's `CLAUDE.md`, your personal `CLAUDE.md`, notes Claude wrote to itself during last week's session, a one-line description of every skill you have installed, and the name of every MCP tool you can reach.
+
+You did not ask for any of that today. You asked for it once, in a settings file or a `CLAUDE.md` line or an install command, and the answer arrives in every session from now on.
+
+<LessonLink id="B2.2" /> taught the window as something that fills while you work. That model has a gap at the front: it starts counting at your first prompt, and the session does not.
 
 ## The concept
 
-{/* @@TODO@@ What it is, plain language, one analogy maximum. */}
+Everything in <LessonLink id="I1.3">the `.claude` directory</LessonLink> you toured has a price, and the price is paid at startup, in every session, whether or not today's work touches it.
+
+Two things make this worth understanding, and neither is the one people expect.
+
+**It is smaller than you think.** A representative startup is around 7,850 tokens against a 200,000-token window: under 4%. Four file reads during a single bug investigation cost about as much. If you have been carrying a vague worry that your configuration is eating your context, the numbers do not support it.
+
+**It is the part you chose.** File reads are Claude's decisions, made fresh each time. Startup is your decisions, made once and repeated forever. A `CLAUDE.md` line you wrote in March is in context right now, shaping a task it has nothing to do with.
+
+So startup is not a budget problem. It is a curation problem that happens to have a token bill attached.
 
 ## How it works
 
-{/* @@TODO@@ Mechanics: what happens under the hood; files/config; what loads into context and when. */}
+The mechanism underneath is **progressive disclosure**: load an index up front, load the body on demand.
 
-## Walkthrough
+Most of what you configure now works this way. A skill contributes one line to a listing at startup; its actual content loads only if Claude invokes it. An MCP server contributes its tool *names*; the full schemas stay deferred until a task needs one. In both cases you pay for the table of contents, not the book.
 
-{/* @@TODO@@ One fully worked example — real commands, real file contents, representative output. */}
+A shorter list loads in full, every time, no matter what you are doing:
 
-## Use-case scenarios
+| Loads eagerly, always | Loads on demand |
+|---|---|
+| System prompt | Skill bodies |
+| Project and personal `CLAUDE.md` | MCP tool schemas |
+| Auto memory | Path-scoped rules in `.claude/rules/` |
+| Environment info | Subagent context |
+| Skill and MCP *listings* | Files, tool output, everything after your prompt |
 
-{/* @@TODO@@ 3–5 short "You want X → do Y because Z" scenarios; include one near-miss. */}
+The eager column is the one to watch, and it is short. `CLAUDE.md` is the only entry on it that grows without anyone deciding to grow it.
 
-## When to use / when not to use
+### The MCP default moved
 
-{/* @@TODO@@ Two-column guidance; include the context/token/complexity cost. */}
+Older advice, including advice still circulating, says connecting MCP servers floods your context with tool definitions. That was true. It is not the default any more.
+
+Tool search is on by default: only tool names and server instructions load at session start. The docs state the consequence plainly, that adding more MCP servers has minimal impact on your context window. You can still get the old behavior on purpose with `ENABLE_TOOL_SEARCH=false`, which loads every schema eagerly, or `ENABLE_TOOL_SEARCH=auto`, which loads them up front when they fit inside 10% of the window and defers the rest.
+
+If you have been rationing your MCP connections, you were following a rule whose reason expired.
+
+## The startup ledger
+
+<ChartEmbed id="context-cost-ledger" />
+
+Two thirds of startup is the system prompt and `CLAUDE.md`. The system prompt you cannot touch, which leaves exactly one line worth your attention, and it is the one you write.
+
+Skills and MCP servers, the two features people most expect to be expensive, are the two smallest entries on the board.
+
+## Auditing your own session
+
+The numbers above are representative. Yours are a command away.
+
+```bash
+claude
+```
+
+In a fresh session, before typing anything else:
+
+```text
+/context
+```
+
+`/context` breaks down everything occupying the window right now, by category: system prompt, memory files, skills, custom subagents (with the source each loaded from), MCP tools, and conversation messages. In a session where you have not spoken yet, the last category is empty and everything else is your startup.
+
+Read it against the ledger and ask three questions:
+
+1. **Is anything much larger than the ledger's version of it?** The line that most often is, by a wide margin, is `CLAUDE.md`.
+2. **Is anything here that you forgot you installed?** A skill from an experiment, a server for a project you finished. The listing is cheap, but a listing you cannot justify is a decision nobody made.
+3. **What is the largest thing you control?** That is where any effort belongs, and it is rarely where people look first.
+
+Then compare against a session that has done some work. Read four or five files and run `/context` again. The startup block will not have moved. Everything else will have dwarfed it.
 
 ## Pitfalls
 
-{/* @@TODO@@ 3–6 real mistakes, each with the observable symptom and the fix. */}
+**`CLAUDE.md` as a junk drawer.** The symptom is not a token warning, it is Claude ignoring your instructions. A file carrying migration procedures, PR conventions, and deploy steps is mostly irrelevant to any given task, and the signal you care about is buried in it. The docs put the target at under 200 lines. Past that, the fix is not deletion: move procedures into <LessonLink id="I3.1">skills</LessonLink> and file-specific conventions into path-scoped rules, both covered in <LessonLink id="I2.2" />.
+
+**Rationing MCP servers on outdated advice.** The symptom is a workflow where you paste from a browser tab because you decided a server was too expensive to connect. At 120 tokens for the names, it is not. <LessonLink id="I5.3" /> is where this gets its full treatment.
+
+**Putting a procedure in `CLAUDE.md` instead of a skill.** The symptom is a startup cost that grows every time you teach Claude something new. A skill costs one line until invoked; the same text in `CLAUDE.md` costs its full length in every session, including the ones where it is irrelevant.
+
+**Expecting the skill listing to survive `/compact`.** It does not. Alone among the startup content, the skill index is not re-injected after compaction, and only skills you actually invoked are preserved. A long session that compacts twice is a session where Claude has quietly stopped knowing what skills it has.
+
+**Never running `/context`.** The symptom is arguing from a hunch. Every claim in this lesson is checkable in about ten seconds inside your own project, where the numbers are yours rather than representative.
 
 ## Try It
 
-{/* @@TODO@@ Hands-on 5–15 min exercise with self-verifiable success criteria. */}
+**Environment:** your own repo, the one with the `CLAUDE.md` you have been growing the longest. Nothing here writes to disk, so no branch or commit is needed.
+
+1. Start a fresh session with `claude` and run `/context` before typing anything else. Write down the total and the three largest lines.
+2. Find your `CLAUDE.md` and count its lines: `wc -l CLAUDE.md`. Compare against the 200-line target.
+3. Read four or five real files with a prompt like this one, then run `/context` again:
+
+```prompt
+Read the files involved in how authentication works in this project. Don't change anything yet.
+```
+
+4. Compare the two readings. Work out what fraction of your startup you actually control, and what fraction of the *session* your startup turned out to be.
+
+**Success looks like:** you can name your single largest controllable startup line without guessing, and you can say whether it is closer to the ledger's 1,800 tokens or several times that. If it is several times, you have found what <LessonLink id="I2.2" /> is for.
 
 ## FAQ
 
-{/* @@TODO@@ The mustAnswer questions not covered above, answered directly. */}
+**What exactly is in context before I type anything?** The system prompt, your project and personal `CLAUDE.md`, auto memory, environment info (working directory, platform, shell, git state), the skill listing, and MCP tool names. Your setup may add to that: an output style and text from `--append-system-prompt` both fold into the system prompt the same way.
+
+**What does a plugin cost?** Whatever its components cost, because a plugin is a delivery mechanism rather than a thing in itself. A plugin shipping three skills and an MCP server costs three skill lines and a set of tool names. <LessonLink id="I7.1" /> covers the packaging; the rent is the rent of the parts.
+
+**How much does a subagent cost me?** Nothing at startup, and less than you would think while running. A subagent loads `CLAUDE.md` and the same skill and MCP setup, but into its own separate window. Its file reads never touch yours; only its final response comes back. <LessonLink id="I6.1" /> is the module.
+
+**Does auto memory count against me the same way `CLAUDE.md` does?** Yes, and you do not curate it. Claude writes it, per repository, on your machine. The first 200 lines or 25KB load, whichever comes first. <LessonLink id="B3.2" /> covers the split between what you write and what Claude records.
+
+**Are these token numbers exact?** No, and they are not meant to be. They are the official docs' own illustrative figures, and yours will differ with your setup. The proportions are the durable part: system prompt and `CLAUDE.md` dominate, listings are cheap, and everything after your first prompt dwarfs all of it.
+
+**Does startup reload after `/compact`?** Yes, with one exception. The system prompt, `CLAUDE.md`, memory, and MCP tools all come back automatically. The skill listing does not.
 
 ## Where next
 
-{/* @@TODO@@ Cross-links: prerequisites recap + forward teasers (see §1.6). */}
+You now have the frame the rest of this level is measured against. Every feature from here has a cost, every module states it, and the answer is always some version of: an index up front, a body on demand, and `CLAUDE.md` paying full price for everything you put in it.
+
+<LessonLink id="I2.2" /> is the direct sequel, and the one to read if your audit turned up a `CLAUDE.md` well past 200 lines. It covers the refactor path: `.claude/rules/`, path-scoped loading, and imports.
+
+<LessonLink id="B2.4" /> is worth rereading now that startup is visible to you, since `/clear` and `/compact` behave differently toward it than toward the conversation.

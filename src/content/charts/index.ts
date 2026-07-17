@@ -2,6 +2,7 @@ import { agenticLoopDiagram } from './agentic-loop-diagram'
 import { beginnerWorkflowMap } from './beginner-workflow-map'
 import { clearCompactNewTree } from './clear-compact-new-tree'
 import { commandBeltReference } from './command-belt-reference'
+import { contextCostLedger } from './context-cost-ledger'
 import { contextWindowSimulator } from './context-window-simulator'
 import { demo } from './demo'
 import { dotClaudeDirectoryMap } from './dot-claude-directory-map'
@@ -16,6 +17,7 @@ const charts: Record<string, ChartDef> = {
   [beginnerWorkflowMap.id]: beginnerWorkflowMap,
   [clearCompactNewTree.id]: clearCompactNewTree,
   [contextWindowSimulator.id]: contextWindowSimulator,
+  [contextCostLedger.id]: contextCostLedger,
   [commandBeltReference.id]: commandBeltReference,
   [toolBeltMap.id]: toolBeltMap,
   [intermediateStackMap.id]: intermediateStackMap,

@@ -1,0 +1,12 @@
+One-line descriptions of the skills available, so Claude knows what it can
+invoke. The skills themselves stay out of context until one is actually used.
+
+This is progressive disclosure, and it is why a skill library scales where a
+`CLAUDE.md` of the same content would not: you pay for the index, not the
+shelf. Installing ten more skills adds ten more lines here, not ten more
+procedures.
+
+Two details worth knowing. A skill marked `disable-model-invocation: true` is not
+in this list at all and costs nothing until you invoke it by name. And this
+listing is the one piece of startup that does **not** come back after `/compact`:
+only the skills you actually invoked survive.

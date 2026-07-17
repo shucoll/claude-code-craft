@@ -531,7 +531,7 @@ export const curriculum: Level[] = [
           {
             id: 'what-loads-at-startup',
             dottedId: 'I2.1',
-            title: 'What loads at startup',
+            title: 'What loads at startup (and what it costs)',
             type: 'core',
             order: 1,
             estimatedMinutes: 12,
@@ -539,7 +539,8 @@ export const curriculum: Level[] = [
             verifiedAgainstDocsAt: '2026-07-16',
             prerequisites: ['I1.3'],
             references: ['B2.2'],
-            docsSources: ['https://code.claude.com/docs/en/features-overview', 'https://code.claude.com/docs/en/costs', 'https://code.claude.com/docs/en/context-window'],
+            docsSources: ['https://code.claude.com/docs/en/context-window', 'https://code.claude.com/docs/en/costs', 'https://code.claude.com/docs/en/mcp', 'https://code.claude.com/docs/en/features-overview'],
+            interactive: [{ kind: 'diagram', spec: 'context-cost-ledger' }],
             content: () => import('./lessons/intermediate/what-loads-at-startup.mdx'),
           },
           {

@@ -8,6 +8,7 @@ export const chartIds: readonly string[] = [
   'clear-compact-new-tree',
   'command-belt-reference',
   'context-window-simulator',
+  'context-cost-ledger',
   'demo',
   'tool-belt-map',
   'intermediate-stack-map',

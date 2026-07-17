@@ -1,0 +1,12 @@
+Your project's conventions, build commands, and architecture notes, loaded in
+full at the start of every conversation and shared with everyone who clones the
+repo.
+
+At 1,800 tokens it is the biggest line item you actually control, and the one
+that grows without anyone deciding to grow it. Every line you add is a line that
+loads while you are doing unrelated work.
+
+The docs put the target at **under 200 lines**. Past that, the fix is not to
+delete your conventions but to move them somewhere that loads on demand:
+path-scoped rules in `.claude/rules/` that load only when a matching file is
+touched, or a skill that loads only when invoked.

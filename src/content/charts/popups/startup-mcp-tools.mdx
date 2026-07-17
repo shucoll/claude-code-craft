@@ -1,0 +1,13 @@
+The names of your MCP servers' tools, so Claude knows what exists. The full
+schemas stay deferred and load only when a task needs one.
+
+120 tokens is the whole startup cost of being connected, and it is why the old
+advice to connect servers sparingly no longer holds the way it did. The docs are
+direct about it: adding more MCP servers has minimal impact on your context
+window.
+
+The behavior is configurable. `ENABLE_TOOL_SEARCH=auto` loads schemas up front
+when they fit within 10% of the window and defers the rest; `ENABLE_TOOL_SEARCH=false`
+loads everything eagerly, which is what every server used to do by default. If
+you have read older advice about MCP servers flooding your context, that setting
+is the world it was written for.
