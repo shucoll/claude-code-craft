@@ -6,7 +6,7 @@ type: "core"
 order: 3
 estimatedMinutes: 13
 volatility: "evolving"
-verifiedAgainstDocsAt: "2026-07-16"
+verifiedAgainstDocsAt: "2026-07-17"
 prerequisites: ["I4.2"]
 references: ["I1.2", "B2.4"]
 docsSources: ["https://code.claude.com/docs/en/hooks-guide"]
@@ -14,42 +14,176 @@ docsSources: ["https://code.claude.com/docs/en/hooks-guide"]
 
 # Hook recipes
 
-## The problem
+You have the lifecycle from <LessonLink id="I4.1" /> and the I/O contract from <LessonLink id="I4.2" />. This is where hooks stop being a concept and become part of your toolchain: five hooks that have been written enough times to be worth copying rather than inventing. Each one is a config block you can paste, a procedure to prove it works, and the ways it fails so you know what you are signing up for.
 
-{/* @@TODO@@ 2–4 sentence scenario the learner recognizes; the pain this solves. */}
+Everything here goes in a settings file's `hooks` key. Project-wide hooks (auto-format, path protection) belong in `.claude/settings.json` so the team inherits them; personal conveniences (notifications) go in `~/.claude/settings.json`. The scope choice is the one from <LessonLink id="I1.3" />.
 
-## The concept
+## Recipe 1: auto-format after every edit
 
-{/* @@TODO@@ What it is, plain language, one analogy maximum. */}
+Run your formatter on every file Claude writes, so formatting never drifts and Claude never has to remember to do it.
 
-## How it works
+**Config** (`.claude/settings.json`):
 
-{/* @@TODO@@ Mechanics: what happens under the hood; files/config; what loads into context and when. */}
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path' | xargs npx prettier --write"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
 
-## Walkthrough
+`PostToolUse` fires after the edit lands, the `Edit|Write` matcher keeps it off reads and Bash calls, and the command pulls the written path off stdin and hands it to Prettier. Swap Prettier for `gofmt`, `black`, `rustfmt`, or whatever your project uses.
 
-{/* @@TODO@@ One fully worked example — real commands, real file contents, representative output. */}
+**Test it.** Ask Claude to edit a badly-formatted file. Then check the file on disk: it should be formatted even though you never asked Claude to format it. Run `/hooks` and confirm the entry sits under `PostToolUse`.
 
-## Use-case scenarios
+**Failure modes.**
+- **The formatter reformats a file Claude just wrote, so Claude's in-memory copy is now stale.** Usually harmless, but if the next edit depends on exact line numbers it can misfire. Keep formatters to whitespace and style, not structural rewrites.
+- **`npx prettier` is slow to cold-start and this fires on every edit.** In a burst of edits the latency adds up. Point the command at a locally installed binary rather than `npx`, or scope the matcher tighter.
+- **The formatter runs on file types it does not understand and errors.** A `PostToolUse` error is non-blocking so nothing breaks, but the transcript fills with noise. Filter by extension in the command, or configure the formatter to ignore unknown types.
 
-{/* @@TODO@@ 3–5 short "You want X → do Y because Z" scenarios; include one near-miss. */}
+## Recipe 2: protect files and paths
 
-## When to use / when not to use
+Make sensitive files impossible for Claude to edit: `.env`, lockfiles, `migrations/`, anything under `.git/`. You built this hook in full in <LessonLink id="I4.2" />, so here it is as the consolidated recipe with its operational edges.
 
-{/* @@TODO@@ Two-column guidance; include the context/token/complexity cost. */}
+**Config** (`.claude/settings.json`), calling the `protect-files.sh` script from I4.2:
 
-## Pitfalls
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/protect-files.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
 
-{/* @@TODO@@ 3–6 real mistakes, each with the observable symptom and the fix. */}
+**Test it.** Ask Claude to add a line to `.env`. The edit should be denied and Claude should report the reason. Then ask it to edit an ordinary source file and confirm that still works, so you know the matcher is not blocking everything.
 
-## Try It
+**Failure modes.**
+- **A write that goes through Bash instead of Edit/Write slips past.** The matcher is `Edit|Write`, so `echo SECRET >> .env` run as a Bash command is not caught. To close that hole, add a second `PreToolUse` hook on the `Bash` matcher that inspects `tool_input.command` for the protected paths.
+- **Path matching is substring-based, so it over- or under-matches.** `*".env"*` also blocks `.env.example`. Decide whether you want that, and tighten the patterns (anchor to the basename, check for exact names) if not.
+- **A denied edit that Claude keeps retrying.** If you blocked with a bare exit `2` and no reason, Claude has nothing to route around. Return the JSON `deny` with a `permissionDecisionReason`, per <LessonLink id="I4.2" />.
 
-{/* @@TODO@@ Hands-on 5–15 min exercise with self-verifiable success criteria. */}
+## Recipe 3: re-inject context after compaction
 
-## FAQ
+When the window fills and Claude compacts the conversation, details get summarized away. This is the <LessonLink id="B2.4">compaction memory-loss</LessonLink> problem, and a hook fixes it structurally instead of you re-pasting the same reminders.
 
-{/* @@TODO@@ The mustAnswer questions not covered above, answered directly. */}
+**Config** (`.claude/settings.json`):
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Stack: Bun, not npm. Run bun test before done. Sprint: auth refactor. Never edit migrations/ by hand.'"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+`SessionStart` with the `compact` matcher fires right after a compaction, and anything the command prints to stdout is added back into Claude's context. The `compact` matcher is what keeps this from firing on every normal launch, where it would be redundant with `CLAUDE.md`.
+
+**Test it.** Run `/compact` in a working session. After it finishes, ask Claude what the current sprint is or which package manager to use. It should answer from the injected text, not guess. Compare against a session without the hook, where the same question after a compaction may come back wrong.
+
+**Failure modes.**
+- **The static text goes stale.** Hardcoded sprint names rot. Replace the `echo` with a command that produces live state: `git log --oneline -5`, or a script that reads your current branch and open tickets.
+- **It only fires on `compact`, not `resume`.** Resuming a session from disk does not replay this. If you want context on resume too, add a second matcher (or use `startup|resume|compact`) and accept that it now costs on every launch.
+- **This duplicates `CLAUDE.md`.** For context you want on every session, `CLAUDE.md` is the right home and this hook is redundant. Reserve the hook for the specifically-after-compaction reminder, or for dynamic state a static file cannot hold.
+
+## Recipe 4: notify when Claude needs input
+
+Get a desktop notification when Claude is waiting on you, so you can step away from the terminal. This is the side-effect-free hook you built in <LessonLink id="I4.1" />; here it is as a recipe with the setup gotchas that trip people up.
+
+**Config** (`~/.claude/settings.json`, macOS shown):
+
+```json
+{
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "osascript -e 'display notification \"Claude Code needs your attention\" with title \"Claude Code\"'"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+On Linux use `notify-send`; on Windows, a PowerShell `MessageBox`. Narrow the empty matcher to `permission_prompt` for only approval requests, or `idle_prompt` for only the finished-and-waiting case.
+
+**Test it.** Ask Claude to do something needing approval, switch to another window, and wait for the notification. Then set the matcher to `idle_prompt` and confirm it fires when Claude finishes but not when it asks permission.
+
+**Failure modes.**
+- **On macOS, nothing appears and there is no error.** `osascript` routes through Script Editor, which needs notification permission. Run `osascript -e 'display notification "test"'` once, then enable notifications for Script Editor in System Settings.
+- **It fires too often.** The empty matcher catches every notification type, including MCP elicitation and auth events. Scope it to the one or two types you care about.
+
+## Recipe 5: audit-log configuration changes
+
+Record every time a settings or skills file changes during a session, for compliance or just to know when your config shifted under you.
+
+**Config** (`~/.claude/settings.json`):
+
+```json
+{
+  "hooks": {
+    "ConfigChange": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -c '{timestamp: now | todate, source: .source, file: .file_path}' >> ~/claude-config-audit.log"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+`ConfigChange` fires when an external process or your editor modifies a config file mid-session. The command reshapes the event JSON into one compact line and appends it to a log. The matcher filters by type: `user_settings`, `project_settings`, `local_settings`, `policy_settings`, or `skills`.
+
+**Test it.** With Claude Code running, edit `.claude/settings.json` in another editor and save. Then `cat ~/claude-config-audit.log`: a new line should record the change with a timestamp and the file path.
+
+**Failure modes.**
+- **It only sees external edits, not changes Claude makes through its own tools.** `ConfigChange` is for files modified outside the session. Edits Claude performs are visible through `PostToolUse` on the write tools instead.
+- **The log grows unbounded.** Nothing rotates it. Point it at a logrotate-managed path, or prune it periodically.
+- **You wanted to block a change, not just log it.** Logging is passive. To reject an unauthorized config edit, exit `2` or return `{"decision": "block"}` from the hook, the decision control from <LessonLink id="I4.2" />.
 
 ## Where next
 
-{/* @@TODO@@ Cross-links: prerequisites recap + forward teasers (see §1.6). */}
+<LessonLink id="I4.4" /> is the escalation past shell hooks: when a recipe needs judgment a script cannot express (does this edit weaken test coverage?), a prompt or agent hook makes the call, at a cost worth weighing.
+
+<LessonLink id="I4.5" /> is the resolver for the whole module: when a rule keeps getting ignored, is the fix a better instruction, a skill, or one of these hooks?
+
+<LessonLink id="I8.2" /> arms three of these recipes for real inside the PulseBoard project: auto-format, path protection, and a Stop hook that gates completion on passing tests.
