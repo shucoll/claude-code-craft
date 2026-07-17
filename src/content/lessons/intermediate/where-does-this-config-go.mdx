@@ -16,20 +16,95 @@ docsSources: ["https://code.claude.com/docs/en/settings", "https://code.claude.c
 
 ## The confusion
 
-{/* @@TODO@@ State exactly what people mix up and why the confusion exists. */}
+You have something you want Claude to do, or never do. There are five plausible homes for it, and the reason this is hard is that most of them *sort of* work. Write "never touch the migrations" in `CLAUDE.md` and it holds most days. Put your allow rules in user settings and they follow you around, including into projects where you did not want them.
+
+So config drifts. A rule sits in `CLAUDE.md` that Claude follows four times out of five. An absolute path from someone's laptop gets committed and breaks the next clone. A team convention lives in one person's home directory, which is the same as not existing.
+
+<LessonLink id="I1.3" /> gave you the map of where these files are. This lesson gives you the decision about which one to open.
 
 ## Side-by-side
 
-{/* @@TODO@@ Compare the options on: what it does, when it runs/loads, cost, who controls it, persistence. */}
+The five homes, and the one question that separates them:
 
-## Decision tree
+| Home | What it holds | Who gets it | Interpreted, or obeyed? |
+|---|---|---|---|
+| `CLAUDE.md` | instructions, in prose | the team, committed | Claude reads and interprets it |
+| `.claude/settings.json` | permissions, hooks, env, plugins | the team, committed | the harness obeys it |
+| `.claude/settings.local.json` | the same keys, personal | you, this project, gitignored | the harness obeys it |
+| `~/.claude/settings.json` | the same keys, everywhere | you, every project | the harness obeys it |
+| Managed settings | the same keys, as policy | everyone, unoverridable | the harness obeys it |
 
-{/* @@TODO@@ The resolver logic as a flowchart (static clickable diagram in Phase 1). */}
+That last column is the split most people miss. Four of these five are **configuration**: the harness reads them and acts, and Claude's opinion never enters into it. `CLAUDE.md` is the odd one out. It is **prose delivered to Claude as context**, which Claude reads and tries to follow. The docs are blunt about the difference: settings rules are enforced regardless of what Claude decides, while `CLAUDE.md` shapes behavior without being a hard enforcement layer.
+
+If you want to see where each of these physically sits, the directory map in <LessonLink id="I1.3" /> is the reference.
+
+## Which home, in two questions
+
+**Question one: does Claude need to understand it, or does the harness need to obey it?**
+
+- Guidance you would give a new teammate, that Claude should weigh and apply with judgment: `CLAUDE.md`.
+- A boundary that must hold whether or not Claude agrees, or a value the harness needs: settings.
+
+**Question two: who is it for?**
+
+- The team, in this project: commit it (`CLAUDE.md`, `.claude/settings.json`).
+- You, in this project: keep it local (`CLAUDE.local.md`, `.claude/settings.local.json`).
+- You, in every project: your home directory (`~/.claude/CLAUDE.md`, `~/.claude/settings.json`).
+- Your organization: managed settings, which you do not write and cannot override.
+
+Both families use the same three scopes, so the two questions compose. Answer the first to pick the family, the second to pick the file, and you are done.
+
+As an if/then ladder, in the order worth checking:
+
+- **If it must hold every time, no exceptions** → a settings rule, not an instruction. A `deny` cannot be talked out of.
+- **If it must hold even against a determined or confused agent** → a rule is a speed bump; a hook is the wall. That is <LessonLink id="I4.1">Module I4</LessonLink>.
+- **If it is advice, context, or a convention** → `CLAUDE.md`.
+- **If it names a path, port, or value only your machine has** → local, never committed.
+- **If you would want it in the next project too** → your home directory.
+- **If your organization decided it** → managed, and the decision is not yours.
 
 ## Scenario walkthroughs
 
-{/* @@TODO@@ 5–8 rapid-fire scenarios, each stated then resolved with the recommended option + reasoning. */}
+**"Run `npm test` before committing."** → `CLAUDE.md`, committed. It is guidance Claude should know and apply, and the whole team benefits. Nothing here needs enforcing.
+
+**"My API key lives at `/Users/me/.keys/dev.env`."** → `.claude/settings.local.json`, under `env`. It is a value the harness needs, so it is settings; and it exists only on your machine, so it is local. Commit this and you hand your teammates a path that does not exist for them.
+
+**"Never touch the migrations."** → `.claude/settings.json`, as `deny: ["Edit(**/migrations/**)"]`. Write it in `CLAUDE.md` and it is advice that Claude can miss under context pressure, which is a bad way to learn that it missed. A deny rule is machinery. (For a guarantee that survives a determined agent or a prompt injection, <LessonLink id="I4.1">a PreToolUse hook</LessonLink> is the real answer; the rule is the right move today.)
+
+**"Use 2-space indentation."** → `CLAUDE.md`, committed. Pure guidance with nothing to obey. This is the shape `CLAUDE.md` is best at.
+
+**"Stop asking everyone for `npm test`."** → `.claude/settings.json`, `allow: ["Bash(npm test)"]`. Enforcement plus team, so the committed settings file. Clone the repo, get the policy.
+
+**"I want `gh pr create` allowed, but only for me."** → `.claude/settings.local.json`. Same key, personal scope, because your teammates did not agree to that.
+
+**"I always want the dark theme."** → `~/.claude/settings.json`. Configuration, about you, in every project.
+
+**"Nobody at this company may use bypassPermissions."** → managed settings, deployed by IT. You cannot write this one, and you cannot override it either. Advanced covers deploying them.
 
 ## Edge cases
 
-{/* @@TODO@@ Situations where two options are both defensible, and what tips the balance. */}
+**When it is genuinely both personal and team-relevant.** Your team runs `npm test`; your machine needs `npm test -- --runInBand` because of a local database. Both are true, so write both: the team's command in `CLAUDE.md`, your variation in `CLAUDE.local.md`. Local instructions load after the project's and are read last, so yours lands as the refinement rather than the contradiction.
+
+**When belt and suspenders is correct.** "Never touch the migrations" deserves the deny rule *and* a `CLAUDE.md` line. That is not redundancy doing nothing. The rule stops the action; the sentence stops the attempt, and it tells Claude why the wall is there so it proposes something useful instead of repeatedly walking into it.
+
+**When the answer is neither.** If your "preference" is really a multi-step procedure you have now explained three times, no settings file is the right home and `CLAUDE.md` will bloat carrying it. That is a skill, and it is <LessonLink id="I3.1">Module I3</LessonLink>.
+
+**When the instruction keeps getting ignored.** The reflex is to rewrite it more forcefully. Sometimes the fix is a different mechanism entirely, not better prose. <LessonLink id="I4.5" /> is the resolver for that specific frustration, once you know hooks.
+
+## FAQ
+
+**Does `CLAUDE.md` have scopes like settings do?** Yes, the same ladder: `~/.claude/CLAUDE.md` for you everywhere, `./CLAUDE.md` for the team, `./CLAUDE.local.md` for you in this project. They are concatenated rather than overriding each other, ordered so the closest file is read last. Gitignore `CLAUDE.local.md`.
+
+**Where does auto memory fit?** It does not, because you do not choose its home. Claude writes it itself, per repository, on your machine only. <LessonLink id="B3.2" /> covers the split between what you write and what Claude records.
+
+**Why did my `CLAUDE.md` instruction not stick?** It is context, not enforcement, so there is no guarantee of compliance. Check `/context` to confirm it loaded at all, then make it more specific, then look for a conflicting instruction elsewhere. If it must happen every time, it was never an instruction problem.
+
+**Can I put permissions in `CLAUDE.md`?** No. `CLAUDE.md` is prose Claude reads; permissions are keys the harness parses. Writing "deny edits to migrations" in `CLAUDE.md` produces advice, not a rule.
+
+**What if managed settings conflict with mine?** Managed wins, always, including over CLI flags. Run `/status` to see whether they are in effect before you spend an afternoon on it.
+
+## Where next
+
+That closes Module I1. You can read what Claude is doing by tier, turn the prompts into a written policy, find every file that policy could live in, and now decide which one any given piece of it belongs in.
+
+The thread running under all of it, which the next module picks up: everything you just placed in those files gets loaded, and all of it costs context before you type a word. <LessonLink id="I2.1" /> makes that budget visible and teaches you to spend it on purpose. <LessonLink id="B3.1" /> is worth a reread first if `CLAUDE.md` felt thin here, since this lesson assumed it.
