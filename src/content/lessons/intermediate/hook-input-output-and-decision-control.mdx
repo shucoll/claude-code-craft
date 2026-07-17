@@ -6,7 +6,7 @@ type: "core"
 order: 2
 estimatedMinutes: 15
 volatility: "evolving"
-verifiedAgainstDocsAt: "2026-07-16"
+verifiedAgainstDocsAt: "2026-07-17"
 prerequisites: ["I4.1"]
 references: ["I1.1", "I1.2"]
 docsSources: ["https://code.claude.com/docs/en/hooks"]
@@ -16,40 +16,265 @@ docsSources: ["https://code.claude.com/docs/en/hooks"]
 
 ## The problem
 
-{/* @@TODO@@ 2–4 sentence scenario the learner recognizes; the pain this solves. */}
+The notification hook from <LessonLink id="I4.1" /> fired a side effect and got out of the way. It never looked at what Claude was doing, and it never changed the outcome. Most of the hooks worth writing do both. A hook that protects your migration files has to see which file is about to be edited, and then it has to actually stop the edit. A hook that skips the approval dialog for `npm test` has to read the command and answer the prompt on your behalf.
+
+For any of that, a hook needs two things the notification hook never used: a way to know what is about to happen, and a way to answer back. That is the contract this lesson is about. It is the heaviest mechanics in the module, and everything in <LessonLink id="I4.3">the recipes</LessonLink> is an application of it.
 
 ## The concept
 
-{/* @@TODO@@ What it is, plain language, one analogy maximum. */}
+Think of a decision hook as a short exchange, not a trigger. When the event fires, Claude Code hands your command a JSON description of what is happening on **stdin**: which tool, what arguments, which session. Your command reads it, decides, and answers back on one of two channels.
+
+The first channel is the **exit code**, a blunt one-word reply. Exit `0` and the event proceeds; exit `2` and it is blocked. That is all an exit code can say, and for many hooks it is enough.
+
+The second channel is **structured JSON on stdout**, a full sentence instead of a word. A JSON reply can block with a reason Claude gets to read, approve a prompt, inject context into the conversation, or even rewrite the tool's arguments before it runs. When you need more than yes or no, you print JSON.
+
+So the mental model is: JSON in, describing the event; exit code or JSON out, carrying your decision. Simple hooks read nothing and just exit. Decision hooks read stdin and print JSON. The rest of this lesson is the shape of each side.
 
 ## How it works
 
-{/* @@TODO@@ Mechanics: what happens under the hood; files/config; what loads into context and when. */}
+### Input: the JSON on stdin
+
+Every hook, on every event, receives a JSON object on stdin with a common core:
+
+```json
+{
+  "session_id": "abc123",
+  "transcript_path": "/Users/you/.claude/projects/.../transcript.jsonl",
+  "cwd": "/Users/you/my-project",
+  "permission_mode": "default",
+  "hook_event_name": "PreToolUse"
+}
+```
+
+Each event then adds its own fields. A `PreToolUse` hook also gets what the tool is and what it was called with, which is what lets it decide:
+
+```json
+{
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Edit",
+  "tool_input": { "file_path": "/Users/you/my-project/.env", "new_string": "..." }
+}
+```
+
+`PostToolUse` gets the same plus a `tool_response`, the result of the call, since by then the tool has already run. You read these fields with `jq`. `jq -r '.tool_input.file_path'` pulls the path a hook needs to check; the whole object arrives by reading stdin, so a command that decides must start by consuming it (`input=$(cat)`), not ignore it the way the notification hook did.
+
+### Output channel one: exit codes
+
+If a hook just exits, the exit code is its whole answer:
+
+| Exit code | Meaning |
+|---|---|
+| `0` | Success. If the hook printed JSON on stdout, Claude Code parses it (below); plain text is logged. |
+| `2` | Blocking error. Whatever the hook wrote to **stderr** is fed back to Claude, and the event is blocked. |
+| anything else | Non-blocking error. stderr is shown in the transcript as a hook error, and execution continues. |
+
+Exit `2` is the quick way to block. What "blocked" means depends on the event: on `PreToolUse` the tool call is refused, on `Stop` the turn is not allowed to end (Claude keeps working), on `UserPromptSubmit` the prompt is dropped. In every case, the stderr text becomes Claude's explanation of what happened, so even the blunt channel can carry one line of reason.
+
+### Output channel two: structured JSON
+
+When exit `2` is too blunt, print a JSON object on stdout and exit `0`. There are a few top-level fields that work on any event:
+
+- `continue: false` stops Claude entirely, with `stopReason` as the message.
+- `systemMessage` shows the user a warning line.
+- `suppressOutput: true` hides the hook's stdout from the transcript.
+
+The real control lives under `hookSpecificOutput`, keyed by the event. For `PreToolUse`, this is the richest set in the system:
+
+```json
+{
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "deny",
+    "permissionDecisionReason": "Migrations are protected. Edit the schema and generate a new migration instead."
+  }
+}
+```
+
+`permissionDecision` takes four values:
+
+| Value | Effect |
+|---|---|
+| `"allow"` | the call proceeds with no permission prompt |
+| `"deny"` | the call is blocked |
+| `"ask"` | the user gets the normal permission dialog |
+| `"defer"` | fall back to the model's normal decision |
+
+`permissionDecisionReason` is the sentence Claude reads when you deny, which is the difference that matters: an exit-`2` block tells Claude only that something stopped it, while a JSON deny with a reason tells it *why*, so it can adjust its approach instead of retrying blindly. Two more fields sharpen it further: `additionalContext` injects a note into the conversation regardless of the decision, and `updatedInput` rewrites the tool's arguments before it runs (force a flag, redirect a path), turning the hook from a gate into an editor.
+
+Other events expose their own `hookSpecificOutput`. `PermissionRequest` (the dialog itself) takes a `decision.behavior` of `allow` or `deny`, which is how a hook answers a permission prompt for you. `SessionStart` takes `additionalContext` to load state. The pattern is constant: name the event in `hookEventName`, then set that event's decision fields.
+
+### How multiple hooks on one event combine
+
+Configure several hooks on the same event and they all run, **in parallel**, not one after another. Identical handlers are deduplicated automatically. Then their answers are merged by two rules:
+
+- **Context accumulates.** Every hook's `additionalContext` is collected and Claude sees all of it.
+- **The most restrictive decision wins.** If one hook says `allow` and another says `deny`, the call is denied. A `deny`, or any exit `2`, cannot be overridden by another hook voting `allow`.
+
+Because they run concurrently, do not write two hooks on one event where one depends on the other's side effect having happened first. If order matters, it is one hook doing both steps.
 
 ## Walkthrough
 
-{/* @@TODO@@ One fully worked example — real commands, real file contents, representative output. */}
+Two worked examples, the two things decision hooks are for: stopping something that should never happen, and waving through something that always should.
+
+### Example one: block edits to protected files
+
+The rule "never modify the migrations" is the case no `CLAUDE.md` instruction can guarantee. As a `PreToolUse` hook it becomes machinery. Save this as `.claude/hooks/protect-files.sh`:
+
+```bash
+#!/bin/bash
+# protect-files.sh: block edits to sensitive paths
+input=$(cat)
+file_path=$(echo "$input" | jq -r '.tool_input.file_path // empty')
+
+protected=(".env" "package-lock.json" ".git/" "migrations/")
+
+for pattern in "${protected[@]}"; do
+  if [[ "$file_path" == *"$pattern"* ]]; then
+    jq -n --arg p "$file_path" '{
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "deny",
+        permissionDecisionReason: ("Blocked: \($p) is a protected path. Do not edit it directly.")
+      }
+    }'
+    exit 0
+  fi
+done
+exit 0
+```
+
+Make it executable (`chmod +x .claude/hooks/protect-files.sh`), then register it in `.claude/settings.json` on `PreToolUse`, scoped to the editing tools:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/protect-files.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Now walk the exchange. Claude tries to edit `.env`. Before the tool runs, Claude Code sends the script the `PreToolUse` JSON with `tool_input.file_path` set to the `.env` path. The script reads stdin, matches `.env`, and prints a `deny` with a reason. The edit never happens, and Claude receives the reason, so instead of trying again it can say "that file is protected" and route around it.
+
+The script could have skipped the JSON and just done `echo "protected" >&2; exit 2`. That also blocks the edit. The reason to prefer the JSON version is the sentence in `permissionDecisionReason`: it is what makes the block legible to Claude instead of an opaque failure it might retry.
+
+### Example two: auto-approve a known-safe prompt
+
+The opposite problem. `npm test` is safe, but the permission dialog interrupts you every time. In <LessonLink id="I1.2" /> you solved this statically with an allow rule. A hook solves it dynamically, deciding per call. The event is `PermissionRequest`, which fires as the dialog is about to appear. Save `.claude/hooks/auto-approve-npm.sh`:
+
+```bash
+#!/bin/bash
+# auto-approve-npm.sh: approve safe npm subcommands, defer the rest
+input=$(cat)
+command=$(echo "$input" | jq -r '.tool_input.command')
+subcommand=$(echo "$command" | awk '{print $2}')
+
+case "$subcommand" in
+  test|lint|build)
+    jq -n '{
+      hookSpecificOutput: {
+        hookEventName: "PermissionRequest",
+        decision: { behavior: "allow" }
+      }
+    }'
+    ;;
+  *)
+    exit 0   # no decision: the user sees the normal dialog
+    ;;
+esac
+```
+
+Register it on `PermissionRequest`, with an `if` clause so it is only consulted for `npm` commands in the first place:
+
+```json
+{
+  "hooks": {
+    "PermissionRequest": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(npm *)",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/auto-approve-npm.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+`npm test` now runs without a prompt, because the hook answered the dialog with `allow`. `npm publish` falls through to the `*` case, where exiting `0` with no output means "no decision," and you get the dialog as usual. The hook narrowed the friction to the commands you trust, and did it by reading the actual command rather than a fixed pattern.
 
 ## Use-case scenarios
 
-{/* @@TODO@@ 3–5 short "You want X → do Y because Z" scenarios; include one near-miss. */}
+- **You want every prompt to start with the current branch and open PR.** A `UserPromptSubmit` hook that prints those as `additionalContext`. The turn begins already knowing the state you would otherwise have to paste.
+
+- **You want a tool call to always carry a flag.** A `PreToolUse` hook that returns `permissionDecision: "allow"` with `updatedInput` rewriting the command to add `--dry-run`. The hook is an editor here, not a gate.
+
+- **You want "done" to require passing tests.** A `Stop` hook that runs the suite and, on failure, blocks (exit `2` with the failures on stderr, or a JSON `decision: "block"`). Claude cannot end the turn until it is green. This is armed in full in <LessonLink id="I4.3" />.
+
+- **You want two independent checks on every edit.** Two `PreToolUse` hooks on `Edit|Write`, one for protected paths and one for secrets. They run in parallel, and if either denies, the edit is blocked. No coordination needed, because most-restrictive-wins does it for you.
+
+- **Near miss: you want a hook to improve a weak commit message.** Rewriting prose for quality is judgment, not a decision a script can compute from `tool_input`. `updatedInput` is for mechanical rewrites (a flag, a path), not for asking "is this good." That job wants a <LessonLink id="I4.4">prompt hook</LessonLink> or a skill.
 
 ## When to use / when not to use
 
-{/* @@TODO@@ Two-column guidance; include the context/token/complexity cost. */}
+Use the **exit code** when the answer is a plain allow or block and you have nothing to say about it: a quick gate, a fire-and-exit side effect. Use **structured JSON** the moment you need more than yes or no: a reason Claude should read, an approval on a `PermissionRequest`, context injected with `additionalContext`, or arguments rewritten with `updatedInput`. Reaching for JSON when an exit code would do is harmless but verbose; reaching for an exit code when you needed to give Claude a reason is the actual mistake, because the block lands with no explanation.
+
+Do not use decision output for anything requiring judgment the script cannot compute. If deciding needs the model to read and weigh (is this refactor risky, is this message clear), a shell hook is the wrong shape and the escalation is <LessonLink id="I4.4" />.
+
+The cost is the same as any hook: execution time on the event, and now the added step of parsing stdin. A `PreToolUse` hook runs before potentially every tool call, so a slow `jq` pipeline or a heavy check there is felt on each one. Read stdin once, decide quickly, exit.
 
 ## Pitfalls
 
-{/* @@TODO@@ 3–6 real mistakes, each with the observable symptom and the fix. */}
+**Not reading stdin.** The symptom is a decision hook that behaves as if it got no input, because it did not consume stdin. A command that needs `tool_input` must start by reading it (`input=$(cat)`); the JSON is on stdin, not in an argument or an environment variable.
+
+**A `hookEventName` that does not match the event.** The symptom is a JSON output that is silently ignored and the tool proceeds anyway. The `hookSpecificOutput.hookEventName` must equal the event the hook is registered on; a `PreToolUse` hook printing `hookEventName: "PostToolUse"` gets no decision applied.
+
+**Blocking with exit `2` when you wanted Claude to understand why.** The symptom is Claude retrying the same blocked action, because all it received was "something stopped me." Print a JSON `deny` with `permissionDecisionReason` (or at least write the reason to stderr) so the block is legible and Claude routes around it.
+
+**Expecting a second hook to loosen a deny.** The symptom is an `allow` hook that seems to do nothing because another hook on the same event denies. Most-restrictive-wins is not overridable; you cannot add a hook to permit what another hook blocks. Fix the hook that denies, or scope its matcher so it does not fire on the case you want allowed.
+
+**`jq` is not installed.** The symptom is every decision hook erroring out. The Bash examples parse JSON with `jq`; install it (`brew install jq`, `apt-get install jq`) or the hooks cannot read their input.
 
 ## Try It
 
-{/* @@TODO@@ Hands-on 5–15 min exercise with self-verifiable success criteria. */}
+**Environment:** a git repo with a `.env` file (or any file you can name as protected), and `jq` installed.
+
+1. Create `.claude/hooks/protect-files.sh` from the walkthrough, `chmod +x` it, and register the `PreToolUse` hook in `.claude/settings.json`.
+2. Ask Claude in plain words to add a line to `.env`. Confirm the edit is blocked and that Claude reports the reason from `permissionDecisionReason`, rather than just failing.
+3. Now change the script to `echo "protected" >&2; exit 2` instead of printing JSON. Trigger the same edit. It is still blocked, but notice Claude gets only the terse stderr line, not your full reason. Restore the JSON version.
+4. Run `/hooks` and confirm the hook is listed on `PreToolUse` with your matcher.
+
+**Success looks like:** the same edit blocked two ways, and a clear sense of what the JSON channel buys you over the exit code: a reason Claude can act on. You have written a hook that reads the event and decides the outcome.
 
 ## FAQ
 
-{/* @@TODO@@ The mustAnswer questions not covered above, answered directly. */}
+**What does a hook receive as input?** A JSON object on stdin: common fields (`session_id`, `cwd`, `hook_event_name`, `permission_mode`) plus event-specific fields, for `PreToolUse` the `tool_name` and `tool_input`, for `PostToolUse` also the `tool_response`. Read it with `jq`.
+
+**What do exit codes 0 and 2 mean?** `0` is success, and any stdout is parsed as JSON output. `2` is a blocking error: stderr is fed to Claude and the event is blocked, where "blocked" depends on the event (deny the tool on `PreToolUse`, keep working on `Stop`, drop the prompt on `UserPromptSubmit`). Other codes are non-blocking errors that let execution continue.
+
+**How does JSON output block, approve, or inject?** Under `hookSpecificOutput`, keyed by `hookEventName`. Block with `permissionDecision: "deny"` and a `permissionDecisionReason`; approve a dialog with `PermissionRequest` and `decision.behavior: "allow"`; inject with `additionalContext`; rewrite arguments with `updatedInput`.
+
+**How do multiple hooks on one event combine?** They run in parallel, identical handlers deduplicated. All `additionalContext` is accumulated; for decisions the most restrictive wins, so any `deny` or exit `2` blocks regardless of what the others say.
+
+**Exit code or JSON, which should I default to?** Exit code for a plain allow/block with nothing to explain. JSON whenever you need a reason, an approval, injected context, or rewritten input.
 
 ## Where next
 
-{/* @@TODO@@ Cross-links: prerequisites recap + forward teasers (see §1.6). */}
+<LessonLink id="I4.3" /> is the cookbook that puts this contract to work: five production-tested hooks (auto-format, protect paths, re-inject context after compaction, notify, audit), each ready to paste in.
+
+<LessonLink id="I4.4" /> is the escalation for the near-miss above: when the decision needs judgment a shell script cannot compute, a prompt hook or an agent hook makes the call, at a cost worth weighing.
+
+<LessonLink id="I1.2" /> is the permission model this decision output plugs into: `allow`, `deny`, and `ask` are the same verbs your permission rules use, now answered dynamically per call.
