@@ -14,42 +14,95 @@ docsSources: ["https://code.claude.com/docs/en/output-styles"]
 
 # Output styles
 
-## The problem
-
-{/* @@TODO@@ 2–4 sentence scenario the learner recognizes; the pain this solves. */}
-
 ## The concept
 
-{/* @@TODO@@ What it is, plain language, one analogy maximum. */}
+You find this feature in `/config`, see a setting called Output style, and reasonably conclude it is where you configure Claude. So your project's conventions go in it, and then either they follow you into every unrelated project or Claude quietly stops behaving like a software engineer. Both outcomes are the feature working as designed on the wrong input.
+
+Output styles change **how Claude responds, not what Claude knows.** Role, tone, default format. They are the answer to re-prompting for the same voice every turn ("explain your reasoning as you go", "always lead with a diagram"), and to using Claude Code as something other than a coding tool.
+
+Anything about your project, your conventions, or your codebase is <LessonLink id="B3.1">`CLAUDE.md`</LessonLink>'s job. The two are not competing for the same slot: an output style edits the system prompt, and `CLAUDE.md` arrives as a user message after it.
 
 ## How it works
 
-{/* @@TODO@@ Mechanics: what happens under the hood; files/config; what loads into context and when. */}
+An output style appends its instructions to the end of Claude Code's system prompt. That placement explains most of its behavior, including the parts that surprise people.
 
-## Walkthrough
+**Four built-ins.** *Default* is the existing system prompt, tuned for software engineering. *Proactive* executes immediately and makes reasonable assumptions rather than pausing on routine decisions (stronger autonomous-execution guidance than auto mode, and it changes nothing about permissions, so you still get prompts before tools run). *Explanatory* adds educational "Insights" as it works. *Learning* goes further and leaves `TODO(human)` markers for you to fill in.
 
-{/* @@TODO@@ One fully worked example — real commands, real file contents, representative output. */}
+**Selecting one.** Run `/config` and pick under **Output style**; your choice saves to `.claude/settings.local.json`. You can set the `outputStyle` field in any settings file directly instead:
 
-## Use-case scenarios
+```json
+{
+  "outputStyle": "Explanatory"
+}
+```
 
-{/* @@TODO@@ 3–5 short "You want X → do Y because Z" scenarios; include one near-miss. */}
+The standalone `/output-style` command was removed in v2.1.91. If you find it in a tutorial, the tutorial is old.
 
-## When to use / when not to use
+**Changes need a new session.** The system prompt is read once at session start, so a style change lands after `/clear` or on your next session, not on your next message.
 
-{/* @@TODO@@ Two-column guidance; include the context/token/complexity cost. */}
+**A custom style removes the coding instructions by default.** `keep-coding-instructions` defaults to `false`, so a custom style drops Claude Code's built-in software engineering instructions: how to scope changes, write comments, verify work. That is correct when Claude is not doing software engineering. It is a silent downgrade when you only wanted a different voice. Set it to `true` whenever you are still coding.
 
-## Pitfalls
+**The cost** is small and mostly cached. The added instructions grow the system prompt, and prompt caching absorbs that after the first request in a session. Output tokens are the real variable: *Explanatory* and *Learning* produce longer responses by design, and a custom style costs whatever you told it to produce.
 
-{/* @@TODO@@ 3–6 real mistakes, each with the observable symptom and the fix. */}
+## Which mechanism, though
+
+Five features shape Claude's behavior and are easy to confuse. The separating question is *what does it modify, and when*.
+
+| Feature | How it works | Reach for it when |
+|---|---|---|
+| **Output style** | modifies the system prompt | you want a different role, tone, or response format every turn |
+| **`CLAUDE.md`** | adds a user message after the system prompt | Claude should always know your project's conventions |
+| **`--append-system-prompt`** | appends to the system prompt, removing nothing | you want a one-off addition for a single invocation |
+| **Skills** | load task-specific instructions when invoked or relevant | you have a reusable procedure |
+| **Subagents** | run a helper with its own system prompt, model, and tools | you want a separately scoped worker for a focused task |
+
+**When not to reach for an output style:** anything project-specific, anything that is a procedure rather than a manner, and anything you want enforced. A style is instructions in a system prompt, so it carries the same lack of guarantee as `CLAUDE.md`, and <LessonLink id="I1.4" /> is the decision for the enforcement cases. If you are on the fence between this and <LessonLink id="I3.1">a skill</LessonLink>, ask whether it should apply to *every* turn. Styles have no trigger and no off switch mid-session; skills have both.
+
+## Writing one
+
+A custom style is a markdown file: frontmatter, then the instructions to append. It goes in `~/.claude/output-styles/` for you everywhere, or `.claude/output-styles/` for this project, matching the scopes from <LessonLink id="I1.3" />. The filename becomes the style name unless `name` says otherwise.
+
+```markdown
+---
+name: Diagrams first
+description: Lead every explanation with a diagram
+keep-coding-instructions: true
+---
+
+When explaining code, architecture, or data flow, start with a Mermaid diagram
+showing the structure, then explain in prose.
+
+## Diagram conventions
+
+Use `flowchart TD` for control flow and `sequenceDiagram` for request paths.
+Keep diagrams under 15 nodes.
+```
+
+`keep-coding-instructions: true` is doing real work there. The style changes how Claude explains, and nothing about how it codes, so the built-in engineering instructions stay.
+
+The four frontmatter fields:
+
+| Field | Purpose | Default |
+|---|---|---|
+| `name` | style name, if not the filename | the filename |
+| `description` | shown in the `/config` picker | none |
+| `keep-coding-instructions` | keep the built-in engineering instructions | `false` |
+| `force-for-plugin` | plugins only: apply automatically when enabled, overriding the user's choice | `false` |
 
 ## Try It
 
-{/* @@TODO@@ Hands-on 5–15 min exercise with self-verifiable success criteria. */}
+**Environment:** any repo, or an empty scratch directory. Nothing here writes to your code.
 
-## FAQ
+1. Run `/config`, set Output style to **Explanatory**, then `/clear`.
+2. Ask Claude something with a real answer: `Walk me through how this project handles configuration.` Notice the Insights, and that its actual behavior is unchanged.
+3. Create `.claude/output-styles/diagrams-first.md` with the example above. Select it in `/config` and `/clear` again.
+4. Ask the same question. You should get a diagram first.
+5. Now delete the `keep-coding-instructions: true` line, `/clear`, and ask Claude to make a small code change.
 
-{/* @@TODO@@ The mustAnswer questions not covered above, answered directly. */}
+**Success looks like:** step 5 feels subtly worse. Claude still codes, but the built-in guidance about scoping changes and verifying work is gone. Put the line back.
 
 ## Where next
 
-{/* @@TODO@@ Cross-links: prerequisites recap + forward teasers (see §1.6). */}
+That closes Module I2. Startup context has a budget, `CLAUDE.md` has a ceiling and a refactor path when it hits one, and the system prompt has one adjustable slot.
+
+Everything so far has been about what Claude knows and how it says things. <LessonLink id="I3.1" /> starts the half of this level about what Claude can *do*: the procedure bucket from <LessonLink id="I2.2" />'s sort, which no amount of scoping ever fixed.
