@@ -6,7 +6,7 @@ type: "core"
 order: 3
 estimatedMinutes: 12
 volatility: "evolving"
-verifiedAgainstDocsAt: "2026-07-16"
+verifiedAgainstDocsAt: "2026-07-17"
 prerequisites: ["I3.2"]
 references: ["I2.1"]
 docsSources: ["https://code.claude.com/docs/en/skills"]
@@ -14,42 +14,146 @@ docsSources: ["https://code.claude.com/docs/en/skills"]
 
 # Skill patterns
 
-## The problem
+<LessonLink id="I3.1" /> was what a skill is. <LessonLink id="I3.2" /> was building one that works. This is the distance between a skill that works and one that is good: three patterns that show up again and again in skills worth keeping, and a clinic for the failure that sinks more skills than any other, a description that fires at the wrong times or not at all.
 
-{/* @@TODO@@ 2–4 sentence scenario the learner recognizes; the pain this solves. */}
+Each pattern is a problem, the shape that solves it, and a worked example. Take what you need; a skill can use all three or none.
 
-## The concept
+## Pattern: inject live context
 
-{/* @@TODO@@ What it is, plain language, one analogy maximum. */}
+**Problem.** A skill that reasons about your repository is only as good as the state it can see. Tell Claude "summarize my changes" and it works from whatever files happen to be open, not your actual diff. You want the skill to run against real, current state every time, without you pasting it in.
 
-## How it works
+**Pattern.** A `` !`<command>` `` line runs a shell command before the skill is sent to Claude, and its output replaces the line. Claude never sees the command, only the data it produced. This is preprocessing, not a tool call: it happens before Claude reads anything, so it sits outside the permission system that `allowed-tools` governs. You met it in passing in <LessonLink id="I3.2" />; here are the rules that make it reliable.
 
-{/* @@TODO@@ Mechanics: what happens under the hood; files/config; what loads into context and when. */}
+- The inline form is recognized only when `!` starts a line or follows whitespace. `KEY=!`cmd`` is left as literal text, so the command does not run.
+- For multiple commands, open a fenced block with ` ```! ` instead of one inline call per line.
+- Substitution runs once over the file. Command output is inserted as plain text and not re-scanned, so a command cannot emit another placeholder for a later pass.
 
-## Walkthrough
+**Example.** A standup skill that reports what you did, built entirely from live git state:
 
-{/* @@TODO@@ One fully worked example — real commands, real file contents, representative output. */}
+```markdown
+---
+description: Summarize my recent work for a standup update. Use when I ask for a standup, a status update, or what I did today.
+---
 
-## Use-case scenarios
+## Branch and recent commits
+```!
+git branch --show-current
+git log --since="1 day ago" --pretty=format:"%h %s"
+```
 
-{/* @@TODO@@ 3–5 short "You want X → do Y because Z" scenarios; include one near-miss. */}
+## Uncommitted work
 
-## When to use / when not to use
+!`git status --short`
 
-{/* @@TODO@@ Two-column guidance; include the context/token/complexity cost. */}
+## Your task
 
-## Pitfalls
+Write a three-line standup: what I finished, what is in progress, and anything
+blocked. Base it only on the git state above.
+```
 
-{/* @@TODO@@ 3–6 real mistakes, each with the observable symptom and the fix. */}
+By the time Claude reads the task, the branch name, yesterday's commits, and the working-tree status are already inlined. The skill cannot go stale, because it rebuilds its own context on every run.
+
+## Pattern: run it in a subagent
+
+**Problem.** Some skills are heavy. A skill that researches a question across the codebase reads twenty files to answer it. Run that on the main thread and all twenty file reads land in your window, burying the conversation you actually care about under research you needed only once. This is the cost <LessonLink id="I2.1" /> measured: everything a procedure reads is rent on the main context.
+
+**Pattern.** Add `context: fork` to the frontmatter and the skill runs in its own isolated context. The `SKILL.md` body becomes the prompt that drives a subagent, which does the work in a separate window and returns only its final answer. The twenty file reads happen over there and never touch your thread. Pick the worker with the `agent` field: `Explore` and `Plan` for read-only investigation, `general-purpose` (the default) or a custom subagent otherwise.
+
+One constraint. A forked skill must contain an actual task, not just guidelines. `context: fork` on a skill that only says "use these API conventions" sends the subagent guidance with nothing to do, and it returns empty.
+
+**Example.** Research that stays off the main thread:
+
+```markdown
+---
+name: deep-research
+description: Research a topic across the codebase. Use when I ask how something works and want a thorough answer.
+context: fork
+agent: Explore
+---
+
+Research $ARGUMENTS thoroughly:
+
+1. Find relevant files with Glob and Grep.
+2. Read and analyze the code.
+3. Summarize the findings with specific file references.
+```
+
+`/deep-research how does auth work` spins up an Explore agent, which reads whatever it needs and hands back a summary. Your window gains the summary, not the reading. This is a preview of <LessonLink id="I6.1" />, where subagents get their full treatment; as a skill recipe it is usable now.
+
+## Pattern: control who sees it
+
+**Problem.** Not every skill should be triggerable by everyone in every way. A deploy skill should never fire because Claude judged your code ready. A skill that only holds background knowledge, how some legacy system behaves, is something Claude should read when relevant but not something you would ever type as a command. And a skill checked into a shared repo may need muting on your machine without editing a file the whole team shares.
+
+**Pattern.** Two frontmatter fields set the direction, and a settings entry overrides both without touching the file.
+
+| Frontmatter | You can invoke | Claude can invoke | In context |
+|---|---|---|---|
+| (default) | yes | yes | description always listed, body on invoke |
+| `disable-model-invocation: true` | yes | no | description not listed at all |
+| `user-invocable: false` | no | yes | description always listed |
+
+`disable-model-invocation: true` is the one for anything with side effects, the deploy case. `user-invocable: false` is the one for background knowledge, the legacy-system case: Claude reads it when relevant, but it never clutters your `/` menu.
+
+When the `SKILL.md` is not yours to edit, the `skillOverrides` setting controls visibility from your own `.claude/settings.local.json` instead. Each skill maps to `"on"`, `"name-only"` (list the name, drop the description to save budget), `"user-invocable-only"` (hidden from Claude, still typable), or `"off"` (hidden entirely). The `/skills` menu writes it for you: highlight a skill, press `Space` to cycle, `Enter` to save.
+
+**Example.** Mute a noisy project skill and trim another to its name, without editing either:
+
+```json
+{
+  "skillOverrides": {
+    "legacy-context": "name-only",
+    "deploy": "off"
+  }
+}
+```
+
+To gate skills by permission rather than visibility, deny the `Skill` tool wholesale or name specific ones with `Skill(deploy *)`, the permission syntax from <LessonLink id="I1.2" />.
+
+## Troubleshooting: descriptions that misfire
+
+Every skill lives or dies on its description, because that is the only thing Claude weighs when deciding relevance. Two symptoms cover almost every complaint, and they pull in opposite directions.
+
+### It never triggers
+
+You ask for the thing the skill does, in plain words, and nothing happens. Typing `/name` works, so the skill is installed and valid. The description is the problem. Work through these in order:
+
+1. **It lacks the words you actually say.** A description reading "Handles version control operations" will not match "write me a commit message." Put the phrases a real user would type into the description. Lead with the primary use case.
+2. **It collides with another skill.** Two skills whose descriptions overlap leave Claude unable to tell which you meant, so it picks neither. Make each distinctive: name the situation only this skill handles.
+3. **It got cut short.** Claude Code fits every skill's name and description into a listing budget of about 1% of the context window. With many skills, descriptions are trimmed to fit, dropping the keywords at the end first. Run `/doctor` for an estimate of the listing's cost and its biggest contributors. The fixes: put the key use case first (each entry is capped at 1,536 characters regardless of budget), set low-priority skills to `"name-only"` in `skillOverrides` to free room, or raise the budget with `skillListingBudgetFraction`.
+4. **The YAML is malformed.** A broken frontmatter block loads the body with empty metadata, so `/name` still works but there is no description to match against. Run with `--debug` to see the parse error.
+
+### It triggers too often
+
+The opposite: the skill fires on requests you never meant for it. The description is too broad, matching more than the skill is for. Two fixes, depending on what you want:
+
+1. **Narrow the description.** Name the specific situation instead of the general area. "Deploy to production" is better than "handle deployments," which a routine question about deploy config could match.
+2. **Take away automatic invocation.** If you only ever want to run it by hand, `disable-model-invocation: true` removes it from Claude's matching entirely, and the command still works.
+
+### The tuning loop
+
+Reading a description and guessing is how descriptions stay wrong. Test it instead. Collect a handful of realistic prompts, run each in a **fresh session** with the skill available and again with it disabled, and compare. Fresh matters: leftover context from writing the skill masks gaps in the description, so a skill that "works" in the session you built it in can fail cold. The `skill-creator` plugin automates this, generating should-trigger and should-not-trigger prompts, measuring the hit rate, and proposing description edits when the skill activates on the wrong requests.
 
 ## Try It
 
-{/* @@TODO@@ Hands-on 5–15 min exercise with self-verifiable success criteria. */}
+**Environment:** a git repo with at least one commit from today, or any commit you can point `git log` at.
 
-## FAQ
+1. Build the standup skill from the first pattern at `~/.claude/skills/standup/SKILL.md`.
+2. In that repo, ask in plain words:
 
-{/* @@TODO@@ The mustAnswer questions not covered above, answered directly. */}
+```prompt
+Give me a standup update.
+```
+
+Confirm it fires and reports your real branch and commits, not a guess.
+3. Now break it on purpose. Change the description to something vague like `description: Helps with daily work.` and ask the same question in a fresh session. It should stay silent.
+4. Fix it: restore a description that names what you would say (`Use when I ask for a standup or a status update`). Ask again. It fires.
+
+**Success looks like:** the skill went from triggering, to silent, to triggering again, and the only thing that changed was the description. You have watched the one field that decides whether a skill is ever found.
 
 ## Where next
 
-{/* @@TODO@@ Cross-links: prerequisites recap + forward teasers (see §1.6). */}
+<LessonLink id="I3.4" /> closes the module by settling where an instruction belongs in the first place: a skill, `CLAUDE.md`, or a slash command. It is the resolver for the level's most common misconfiguration.
+
+<LessonLink id="I6.1" /> is where `context: fork` becomes a first-class tool rather than a skill recipe, with subagents you design and reuse.
+
+<LessonLink id="I2.1" /> is the cost model underneath the subagent pattern: the reason moving a heavy procedure off the main thread is worth doing is the rent every read pays on your window.
