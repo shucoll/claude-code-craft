@@ -585,7 +585,7 @@ export const curriculum: Level[] = [
             order: 1,
             estimatedMinutes: 11,
             volatility: 'evolving',
-            verifiedAgainstDocsAt: '2026-07-16',
+            verifiedAgainstDocsAt: '2026-07-17',
             prerequisites: ['I2.1'],
             references: ['B2.3', 'I2.1'],
             docsSources: ['https://code.claude.com/docs/en/skills'],

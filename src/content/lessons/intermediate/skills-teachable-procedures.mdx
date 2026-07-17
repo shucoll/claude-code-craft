@@ -6,7 +6,7 @@ type: "core"
 order: 1
 estimatedMinutes: 11
 volatility: "evolving"
-verifiedAgainstDocsAt: "2026-07-16"
+verifiedAgainstDocsAt: "2026-07-17"
 prerequisites: ["I2.1"]
 references: ["B2.3", "I2.1"]
 docsSources: ["https://code.claude.com/docs/en/skills"]
@@ -16,40 +16,163 @@ docsSources: ["https://code.claude.com/docs/en/skills"]
 
 ## The problem
 
-{/* @@TODO@@ 2–4 sentence scenario the learner recognizes; the pain this solves. */}
+There is a procedure you have explained to Claude more than once. How you write a commit message. The checklist you run before opening a PR. The five steps of cutting a release in this repo. Each time it comes up you re-type it, or you scroll back to find where you pasted it last, or you dig it out of a document.
+
+You already met the tidier-looking trap. In <LessonLink id="I2.2" /> you sorted an overgrown `CLAUDE.md` into three buckets: rules that always apply, rules that apply sometimes, and procedures. The first two had homes. The procedure bucket did not, because a procedure in `CLAUDE.md` pays <LessonLink id="I2.1">startup rent</LessonLink> in every session, including the ones where you are nowhere near a release, and it dilutes the instructions that do apply today.
+
+A skill is where that bucket goes.
 
 ## The concept
 
-{/* @@TODO@@ What it is, plain language, one analogy maximum. */}
+A skill is a folder Claude can open when it becomes relevant. The minimum is a single file, `SKILL.md`, holding two things: a description of when to use it, and the instructions to follow once it is in use.
+
+At startup Claude reads a one-line index of every skill you have, built from those descriptions. It reads none of the bodies. When something you ask lines up with a description, Claude opens that folder and follows what is inside. The rest stay closed.
+
+Think of a reference shelf. The spines are always in view, so you know what is there. You pull a book down only when the task calls for it, and the shelf is cheap to own precisely because you are not reading every book at once.
+
+Two properties fall out of that, and the rest of this module is built on them:
+
+- **The description is the entire trigger.** It is the only part Claude weighs when deciding whether a skill is relevant. Write it well and the skill fires when it should. Write it vaguely and the skill never fires, or fires constantly. Tuning descriptions is its own craft, covered in <LessonLink id="I3.3" />.
+- **The body costs nothing until it opens.** This is <LessonLink id="I2.1">progressive disclosure</LessonLink> again, the same mechanism that keeps startup small. A skill you installed and never triggered is one line in an index, not a page of instructions in your window.
 
 ## How it works
 
-{/* @@TODO@@ Mechanics: what happens under the hood; files/config; what loads into context and when. */}
+### Anatomy: frontmatter and body
+
+Every `SKILL.md` has two parts, split by `---` markers: YAML frontmatter, then a markdown body.
+
+```markdown
+---
+description: Summarizes uncommitted changes and flags anything risky. Use when the user asks what changed, wants a commit message, or asks to review their diff.
+---
+
+## Current changes
+
+!`git diff HEAD`
+
+## Instructions
+
+Summarize the changes above in two or three bullet points, then list any
+risks you notice such as missing error handling, hardcoded values, or tests
+that need updating. If the diff is empty, say there are no uncommitted changes.
+```
+
+The **frontmatter** configures the skill. Only `description` is really needed, and it does the heavy lifting: this is the text Claude reads in the index when deciding relevance. Notice it says both what the skill does and when to reach for it. There are more frontmatter fields, for arguments, tool permissions, and who is allowed to invoke it, and <LessonLink id="I3.2" /> works through them while building a skill from scratch.
+
+The **body** is the procedure. It is plain markdown, the same instructions you would otherwise type into chat. The `` !`git diff HEAD` `` line is a small piece of magic worth flagging now: it runs a shell command and drops the output into the body before Claude sees it, so the skill arrives already carrying your real diff. That is one of the patterns in <LessonLink id="I3.3" />; here just note that a skill body can pull in live state, not only static text.
+
+### The folder name is the command
+
+A skill lives in a directory, and the directory name is what you type to run it. A skill at `.claude/skills/summarize-changes/SKILL.md` is invoked with `/summarize-changes`. The frontmatter `name` field, if you set one, is only a display label for listings; it does not change the command. The command comes from the folder.
+
+That connects to a change from <LessonLink id="B2.3" />. Custom slash commands and skills are now the same system. A file at `.claude/commands/deploy.md` and a skill at `.claude/skills/deploy/SKILL.md` both give you `/deploy` and behave the same way. Old `commands/` files keep working; skills are the richer form, because a folder can also hold supporting files and frontmatter that a bare command file cannot.
+
+### Where skills live
+
+Where you put the folder decides who can use it. The locations map onto the <LessonLink id="I1.3">`.claude` directory tour</LessonLink> you already took.
+
+| Location | Path | Applies to |
+|---|---|---|
+| Personal | `~/.claude/skills/<name>/SKILL.md` | all your projects |
+| Project | `.claude/skills/<name>/SKILL.md` | this project only, and checked into git |
+| Plugin | `<plugin>/skills/<name>/SKILL.md` | wherever the plugin is enabled |
+
+Personal skills follow you everywhere. Project skills ride in the repo, so a teammate who clones it gets them too, which is what makes a skill a way to share a procedure and not just store one. Plugins bundle skills with other components, and <LessonLink id="I7.1" /> is where that comes together.
+
+### Two ways it runs, and live editing
+
+A skill runs one of two ways. Claude loads it automatically when your request matches the description, or you invoke it directly by typing `/name`. The two invocation paths, and a third, get their full treatment in <LessonLink id="I3.2" />.
+
+Editing takes effect immediately. Claude Code watches your skill directories, so a change to a `SKILL.md` is live in the current session without a restart. The one exception is creating a top-level skills directory that did not exist when the session started; that needs a restart so the new directory can be watched.
 
 ## Walkthrough
 
-{/* @@TODO@@ One fully worked example — real commands, real file contents, representative output. */}
+Take the skill from the anatomy section and follow what actually loads, and when.
+
+**At session start.** Claude Code scans your skill locations and builds a listing: every skill's name and description, nothing else. The `summarize-changes` skill contributes one entry to that listing, roughly the length of its description line. Its body, the diff injection and the instructions, is not in your context at all. This is what <LessonLink id="I2.1" /> measured when it put skill listings on the cheap side of the ledger.
+
+**When you ask "what did I change?"** Claude reads that request against the listing. The description says *use when the user asks what changed*, the request matches, and Claude opens the folder. Now the body loads. The `` !`git diff HEAD` `` line runs first and its output replaces the placeholder, so the instructions arrive with your working tree already inlined. Claude follows them: a short summary, then a list of risks.
+
+**When you type `/summarize-changes`.** Same body, same behavior, but you skipped the relevance judgment by naming the skill outright. Useful when you know you want it and would rather not phrase a request that happens to match.
+
+**Confirm it for yourself.** Run `/context` in that session. The skill shows up as a small entry in the Skills row before you invoke it, and the row reflects the listing, not the bodies. Invoke the skill, and the body enters the conversation as a message that stays for the rest of the session. A skill you never trigger never leaves the listing.
 
 ## Use-case scenarios
 
-{/* @@TODO@@ 3–5 short "You want X → do Y because Z" scenarios; include one near-miss. */}
+- **You keep writing commit messages the same way.** Put the format and rules in a skill. It triggers when you ask for a commit message, and it is one line of startup cost the rest of the time. This is the skill <LessonLink id="I3.2" /> builds.
+- **Your PR checklist has six steps you always forget one of.** A skill body is a natural home for a checklist. Invoke it by name before you open the PR.
+- **Onboarding a new service means running four setup commands in order.** A skill that carries the commands, and can inject their output as it goes, beats a doc nobody opens.
+- **Near miss: "our API always returns errors in this shape."** That is a fact about your codebase, not a procedure you run. It applies to any code Claude writes, ambiently, with no trigger. That belongs in `CLAUDE.md` or a scoped rule, not a skill. Sorting these two apart is the job of <LessonLink id="I3.4" />.
 
-## When to use / when not to use
+## When to use, when not
 
-{/* @@TODO@@ Two-column guidance; include the context/token/complexity cost. */}
+Reach for a skill when you have a **repeatable procedure**: a sequence of steps, a checklist, a generation task you invoke by name or want Claude to run when it recognizes the moment. The cost is one line in the startup listing, and the full body only when it runs, which is why a shelf of well-scoped skills scales where a long `CLAUDE.md` does not.
+
+Do not reach for a skill when the instruction is an **always-on fact or convention** with no trigger, when you need a rule **enforced** rather than followed (a skill is instructions, so it carries the same lack of a guarantee as `CLAUDE.md`, and <LessonLink id="I1.4" /> is the enforcement answer), or when a one-off request would do. The full decision among skill, `CLAUDE.md`, and slash command is <LessonLink id="I3.4" />.
 
 ## Pitfalls
 
-{/* @@TODO@@ 3–6 real mistakes, each with the observable symptom and the fix. */}
+**A vague description.** The symptom is a skill that never fires, or one that barges in on unrelated requests. The description is the only signal Claude has, so a description that does not name the situations you would actually say is a skill Claude cannot match. Tuning this is the clinic in <LessonLink id="I3.3" />; for now, write the description to include the words you would really type.
+
+**Leaving the procedure in `CLAUDE.md` anyway.** The symptom is a startup cost that grows every time you teach Claude a new routine. The same text that costs one index line as a skill costs its full length in every session when it sits in `CLAUDE.md`, including every session that never touches it.
+
+**A bloated body.** Once a skill loads, its body stays in context for the rest of the session, so every line is a recurring cost while it is active, not a one-time read. Keep the body to the procedure. Long reference material goes in supporting files that load only when the skill points Claude at them, which <LessonLink id="I3.2" /> covers.
 
 ## Try It
 
-{/* @@TODO@@ Hands-on 5–15 min exercise with self-verifiable success criteria. */}
+**Environment:** any git repo with an uncommitted change. Nothing here touches your code; you are adding one file under `~/.claude`.
+
+1. Create the folder and the file:
+
+```bash
+mkdir -p ~/.claude/skills/summarize-changes
+```
+
+2. Save this as `~/.claude/skills/summarize-changes/SKILL.md`:
+
+```markdown
+---
+description: Summarizes uncommitted changes and flags anything risky. Use when the user asks what changed, wants a commit message, or asks to review their diff.
+---
+
+## Current changes
+
+!`git diff HEAD`
+
+## Instructions
+
+Summarize the changes above in two or three bullet points, then list any
+risks you notice such as missing error handling, hardcoded values, or tests
+that need updating. If the diff is empty, say there are no uncommitted changes.
+```
+
+3. In that repo, make a small edit to any file, start `claude`, and run `/context` before typing anything. Find the skill in the Skills row and note how small it is.
+4. Ask, in plain words:
+
+```prompt
+What did I change?
+```
+
+Claude should load the skill on its own and answer with a summary and a short risk list.
+
+5. Run `/context` again. The skill's body is now in the conversation, on top of the listing entry that was there at rest.
+
+**Success looks like:** you can point to the moment the skill went from one line in a listing to a loaded procedure, and it happened because your request matched the description, not because you named the skill.
 
 ## FAQ
 
-{/* @@TODO@@ The mustAnswer questions not covered above, answered directly. */}
+**What is the smallest possible skill?** One folder, one `SKILL.md`, one `description` line, and a body. Everything else, arguments, tool permissions, supporting files, is optional and additive.
+
+**Do I have to restart after editing a skill?** No for edits. Changing a `SKILL.md` is live in the current session. Yes only when you create a brand-new top-level skills directory that did not exist at startup, so Claude Code can begin watching it.
+
+**Then what is the difference between a skill and a slash command now?** Mechanically, little. Custom commands were merged into skills, so both produce a `/name` you can type. A skill is the fuller form: a folder that can carry supporting files, arguments, and frontmatter, and that Claude can also load on its own from the description. Which of skill, `CLAUDE.md`, and command a given instruction belongs in is <LessonLink id="I3.4" />.
+
+**How does Claude know which skill to pick?** From the descriptions in the listing, weighed against your request. Nothing in the bodies is visible to that decision. Good matching is a property of good descriptions, which is why <LessonLink id="I3.3" /> spends half its length on writing them.
+
+**How large can a skill get before it costs me?** The listing entry stays cheap regardless. The body is what you pay for, and only while the skill is active, since it persists in context once loaded. The guidance is to keep `SKILL.md` short and move bulk into supporting files that load on demand.
 
 ## Where next
 
-{/* @@TODO@@ Cross-links: prerequisites recap + forward teasers (see §1.6). */}
+<LessonLink id="I3.2" /> is the direct sequel: build a real skill end to end, wire up arguments and supporting scripts, invoke it three ways, and scope what it is allowed to do.
+
+<LessonLink id="I2.1" /> is worth a second look now that a skill has a shape. The line it drew, an index up front and a body on demand, is the same line you just watched a skill fall on.
