@@ -16,40 +16,238 @@ docsSources: ["https://code.claude.com/docs/en/memory", "https://code.claude.com
 
 ## The problem
 
-{/* @@TODO@@ 2–4 sentence scenario the learner recognizes; the pain this solves. */}
+<LessonLink id="I2.1" />'s audit ends the same way for most people: `CLAUDE.md` is the largest thing you control, and it is well past the 200-line target.
+
+The symptom is not a token warning. It is Claude ignoring an instruction that is demonstrably in context. You wrote "always run migrations through the wrapper script" four months ago, `/context` confirms the file loaded, and Claude keeps reaching for `psql` anyway.
+
+The file is not too large for the window. Four hundred lines is a few thousand tokens against two hundred thousand. It is too large to be *followed*: nine tenths of it is irrelevant to the task at hand, and the line that matters is buried between deploy procedures and PR etiquette. The docs put it plainly, that longer files consume more context and reduce adherence.
 
 ## The concept
 
-{/* @@TODO@@ What it is, plain language, one analogy maximum. */}
+Two different problems hide inside "my `CLAUDE.md` is too big", and they have different fixes.
+
+**It is disorganized.** All of it belongs in every session, but it is one undifferentiated wall. The fix is **imports**: split it across files and `@`-reference them.
+
+**It is always loaded.** Most of it is relevant only to part of the tree. The fix is **scoping**: a rule with a `paths:` glob, or a per-directory `CLAUDE.md`, both of which load only when Claude touches matching code.
+
+Only the second is a context fix. Imports rearrange what loads without changing whether it loads, and the docs say so directly: splitting into imports helps organization but does not reduce context, since imported files load at launch.
+
+**Imports split. Rules scope.** Reaching for imports to solve bloat is the standard wrong turn, and it feels like progress because the file gets shorter.
 
 ## How it works
 
-{/* @@TODO@@ Mechanics: what happens under the hood; files/config; what loads into context and when. */}
+Four mechanisms, and the only question that separates them is *when does this enter context*.
+
+| Mechanism | Lives in | Loads | Cuts startup? |
+|---|---|---|---|
+| `@path` import | referenced from `CLAUDE.md` | at launch, always | no |
+| Rule without `paths:` | `.claude/rules/*.md` | at launch, always | no |
+| Rule with `paths:` | `.claude/rules/*.md` | when Claude reads a matching file | yes |
+| Per-directory `CLAUDE.md` | beside the code | on demand, when Claude reads there | yes |
+
+### Rules
+
+A rule is a markdown file in `.claude/rules/`, one topic per file. All `.md` files are discovered recursively, so subdirectories are fine:
+
+```text
+your-project/
+├── .claude/
+│   ├── CLAUDE.md
+│   └── rules/
+│       ├── code-style.md
+│       ├── testing.md
+│       └── security.md
+```
+
+A rule with no frontmatter loads at launch with the same priority as `.claude/CLAUDE.md`. That buys you organization, not budget. The scoping happens when you add a `paths:` field:
+
+```markdown
+---
+paths:
+  - "src/api/**/*.ts"
+---
+
+# API Development Rules
+
+- All API endpoints must include input validation
+- Use the standard error response format
+- Include OpenAPI documentation comments
+```
+
+That rule is absent from context until Claude reads a file under `src/api/`. Then it appears, alongside the file that triggered it.
+
+Globs take brace expansion and multiple patterns:
+
+```markdown
+---
+paths:
+  - "src/**/*.{ts,tsx}"
+  - "tests/**/*.test.ts"
+---
+```
+
+Personal rules live in `~/.claude/rules/` and apply everywhere. They load before project rules, which gives project rules the higher priority.
+
+### Imports
+
+`@path/to/import` pulls another file in. Relative paths resolve against the file containing the import, not your working directory, and imports can nest four hops deep.
+
+```text
+See @README for project overview and @package.json for available npm commands.
+
+# Additional Instructions
+- git workflow @docs/git-instructions.md
+```
+
+Import parsing skips code spans and fenced blocks, so `` `@README` `` in backticks stays literal text while `@README` outside them loads the file.
+
+Two places imports earn their keep. If your repo already has an `AGENTS.md` for other tools, `@AGENTS.md` at the top of `CLAUDE.md` keeps one source of truth. And because a gitignored `CLAUDE.local.md` only exists in the worktree where you made it, importing `@~/.claude/my-project-instructions.md` gets your personal instructions into every worktree at once.
+
+### Per-directory files
+
+Claude walks up from your working directory, loading every `CLAUDE.md` and `CLAUDE.local.md` it passes. They are concatenated rather than overriding each other, ordered root-first, so the file closest to where you launched is read last. Within a directory, `CLAUDE.local.md` lands after `CLAUDE.md`.
+
+Files in *subdirectories* below you are the exception: they load on demand, when Claude reads a file in that directory.
+
+Which means where you start Claude is itself a scoping decision:
+
+| Start from | Loads at launch | Good for |
+|---|---|---|
+| Repo root | root only; subdirectories on demand | work spanning packages |
+| A subdirectory | that directory plus every ancestor | work scoped to one package |
 
 ## Walkthrough
 
-{/* @@TODO@@ One fully worked example — real commands, real file contents, representative output. */}
+Here is a 400-line root `CLAUDE.md` in a monorepo, abbreviated to its section headers:
+
+```markdown
+# Our Project
+## Build commands            (12 lines, every session needs these)
+## Code style                (20 lines, applies everywhere)
+## API conventions           (60 lines, only true under packages/api)
+## Frontend conventions      (55 lines, only true under packages/web)
+## Database migrations       (85 lines, a step-by-step procedure)
+## PR and review etiquette   (40 lines, applies everywhere)
+## Deploy runbook            (130 lines, a step-by-step procedure)
+```
+
+Sort those seven sections by the table above, and they fall into three piles.
+
+**Stays in `CLAUDE.md`** (build commands, code style, PR etiquette). Always relevant, always loaded. That is 72 lines, comfortably under target.
+
+**Becomes a scoped rule** (API conventions, frontend conventions). True only for part of the tree:
+
+```bash
+mkdir -p .claude/rules
+```
+
+```markdown
+---
+paths:
+  - "packages/api/**/*.ts"
+---
+
+# API conventions
+
+- Every endpoint validates input before touching the database.
+- Errors use the standard response shape in `src/errors.ts`.
+- Queries go through Knex in `src/db/`. Never raw SQL in a route handler.
+```
+
+**Becomes a skill** (migrations, deploy runbook). Neither is a convention; both are procedures you follow start to finish, occasionally. A procedure in `CLAUDE.md` is 215 lines you carry every session to use once a month. <LessonLink id="I3.1">Skills</LessonLink> cost one index line until invoked.
+
+The result: 400 lines down to 72 at startup, with nothing deleted. The API conventions arrive when Claude opens an API file, which is also the moment they are worth reading.
+
+Note what did not happen. Nothing moved into an import. An import would have produced a tidy 30-line `CLAUDE.md` full of `@` references and an identical startup cost.
 
 ## Use-case scenarios
 
-{/* @@TODO@@ 3–5 short "You want X → do Y because Z" scenarios; include one near-miss. */}
+**A monorepo where each team owns its conventions.** Root `CLAUDE.md` for repo-wide rules, one `CLAUDE.md` per package beside its code. Start Claude from `packages/api/` and you get the root plus that package, with nothing from `packages/web/` in context. Directory owners maintain their own file, and it versions alongside the code it describes.
+
+**One convention scattered across many paths.** Migrations live in four packages. A per-directory file would mean four copies drifting apart. A single path-scoped rule with `**/migrations/**` covers all of them from one place.
+
+**Someone else's package keeps loading.** You start from the root, so every subdirectory's `CLAUDE.md` loads the moment Claude reads there, including the team whose code you never touch. `claudeMdExcludes` skips them by glob:
+
+```json
+{
+  "claudeMdExcludes": [
+    "**/packages/admin-dashboard/**",
+    "**/packages/legacy-*/**"
+  ]
+}
+```
+
+Put it in `.claude/settings.local.json` if the exclusion is yours rather than the team's. The list is static, so if you want a different scope today than tomorrow, start Claude from the package instead.
+
+**The near-miss: a shared standard across repositories.** Reflex says import it from your home directory. That works for you and nobody else, and it is invisible to teammates. `.claude/rules/` takes symlinks, so a shared checkout can be linked in and committed:
+
+```bash
+ln -s ~/company-standards/security.md .claude/rules/security.md
+```
+
+When the standard needs its own version history, it has outgrown both and wants to be a <LessonLink id="I7.1">plugin</LessonLink>.
 
 ## When to use / when not to use
 
-{/* @@TODO@@ Two-column guidance; include the context/token/complexity cost. */}
+| Reach for | When |
+|---|---|
+| `CLAUDE.md` | it is true everywhere, every session, and short |
+| Path-scoped rule | it is true for a slice of the tree, wherever that slice lives |
+| Per-directory `CLAUDE.md` | that directory's owners should maintain it themselves |
+| Import | you have one source of truth to reuse (`AGENTS.md`, worktrees) |
+| Skill | it is a procedure rather than a convention |
+
+**Not for scoping**: imports, and rules with no `paths:`. Both load at launch.
+
+**Not worth it at all**: a 90-line `CLAUDE.md`. Every mechanism here costs a file to find, a glob to get right, and a place for conventions to go stale unread. Under the 200-line target, the file is doing its job.
+
+**The real cost** is governance rather than tokens. Conventions drift, files go stale, and nobody owns the root. That cost lands once your tree is large enough to need this, and it is why the docs' end state for a big organization is a plugin owned by a platform team rather than files scattered across packages.
 
 ## Pitfalls
 
-{/* @@TODO@@ 3–6 real mistakes, each with the observable symptom and the fix. */}
+**Splitting into imports and expecting startup to drop.** The symptom is a satisfying refactor and an unchanged `/context`. Imported files load at launch. Re-sort by *when it should load*, not by *what it is about*.
+
+**Writing rules without `paths:`.** The symptom is the same one. A rule with no frontmatter is `.claude/CLAUDE.md` in a different file. Organization is a fine reason to want that, as long as you know it is what you bought.
+
+**Path-scoped rules that never fire.** The symptom is a rule you are sure exists and Claude never follows. Rules trigger when Claude *reads a matching file*, not on every tool use, so a session that never opens `src/api/` never sees the API rule. Verify with `/context` after Claude reads a file in that path, and check the glob: a `[` that cannot parse as a bracket expression matches nothing at all.
+
+**Conventions contradicting each other.** The symptom is Claude following the rule inconsistently, which reads like the model being unreliable. Files are concatenated, not overridden, so a root file and a package file that disagree both arrive and Claude may pick either. Review the whole set when you add to it.
+
+**Nested `CLAUDE.md` vanishing after `/compact`.** The symptom is Claude following a package convention for an hour, then stopping. Project-root `CLAUDE.md` is re-read from disk and re-injected after compaction. Nested files are not; they come back the next time Claude reads a file in that directory.
 
 ## Try It
 
-{/* @@TODO@@ Hands-on 5–15 min exercise with self-verifiable success criteria. */}
+**Environment:** your own repo, the one whose `CLAUDE.md` failed the audit in <LessonLink id="I2.1" />. This edits a tracked file, so commit or branch first.
+
+1. Open `CLAUDE.md` and put every section into one of three buckets: **always** (true everywhere, every session), **sometimes** (true for part of the tree), **procedure** (steps you follow occasionally). Count the lines in each.
+2. Move one **sometimes** section into `.claude/rules/`, with a `paths:` glob naming where it is true. Delete it from `CLAUDE.md`.
+3. Start a fresh session, run `/context`, and confirm your rule is not there.
+4. Ask Claude to read a file the glob matches, then run `/context` again:
+
+```prompt
+Read one of the API route files. Don't change anything.
+```
+
+5. If a **procedure** bucket section is over ~50 lines, note it. It is a skill, and <LessonLink id="I3.1" /> is the next module.
+
+**Success looks like:** the rule is absent from a fresh session's `/context`, present after Claude reads a matching file, and your `CLAUDE.md` is shorter by the lines you moved. If your rule shows up in step 3, your `paths:` frontmatter is missing or malformed.
 
 ## FAQ
 
-{/* @@TODO@@ The mustAnswer questions not covered above, answered directly. */}
+**When does one `CLAUDE.md` stop scaling?** At the 200-line target, though the real signal is qualitative: when most of the file is irrelevant to most of your sessions. A 300-line file in a single-purpose service can be fine. A 150-line file covering four packages already wants splitting.
+
+**Do imports ever reduce context?** No. They are expanded and loaded at launch alongside the `CLAUDE.md` that references them. They buy one source of truth and a navigable structure.
+
+**Rule or per-directory `CLAUDE.md`?** Where the file should live decides it. Rules keep every convention in one central `.claude/rules/`, and suit a rule covering scattered paths. Per-directory files sit beside the code, and suit a package whose owners maintain their own conventions.
+
+**Are rules enforced?** No. Rules are `CLAUDE.md` content with a loading condition attached: context Claude reads and interprets, with the same lack of guarantee. For something that must hold every time, <LessonLink id="I1.4" /> has the decision and <LessonLink id="I4.1">a hook</LessonLink> is the mechanism.
+
+**How do I debug what actually loaded?** `/context` is the first stop, and `/memory` lists your instruction files and opens them. For the awkward cases, the `InstructionsLoaded` hook logs exactly which files loaded, when, and why.
+
+**Anything else to know about trimming?** Two small things. `/doctor` proposes trims for a checked-in `CLAUDE.md`, cutting content Claude can derive from the codebase and keeping what it cannot. And block-level HTML comments are stripped before the file enters context, so `<!-- maintainer note -->` is free to leave for humans.
 
 ## Where next
 
-{/* @@TODO@@ Cross-links: prerequisites recap + forward teasers (see §1.6). */}
+The sort you just did has a third bucket this lesson keeps pointing at and never opens. Conventions scope with rules; procedures do not, because they are not true in a place, they are true at a moment. <LessonLink id="I3.1" /> is the mechanism for those, and it opens the next module.
+
+<LessonLink id="B3.1" /> is the file this lesson has been refactoring, if the fundamentals feel thin. <LessonLink id="I2.3" /> is a short detour to the one remaining thing you can configure about how Claude talks rather than what it knows.
