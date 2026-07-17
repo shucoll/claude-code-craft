@@ -6,7 +6,7 @@ type: "resolver"
 order: 4
 estimatedMinutes: 10
 volatility: "evolving"
-verifiedAgainstDocsAt: "2026-07-16"
+verifiedAgainstDocsAt: "2026-07-17"
 prerequisites: ["I3.2"]
 references: ["B3.1", "I2.1", "I2.2"]
 docsSources: ["https://code.claude.com/docs/en/skills", "https://code.claude.com/docs/en/memory", "https://code.claude.com/docs/en/features-overview"]
@@ -16,20 +16,59 @@ docsSources: ["https://code.claude.com/docs/en/skills", "https://code.claude.com
 
 ## The confusion
 
-{/* @@TODO@@ State exactly what people mix up and why the confusion exists. */}
+Three features look like they do the same job: tell Claude how to do something. "Always run the linter before committing" could go in <LessonLink id="B3.1">`CLAUDE.md`</LessonLink>, in a skill, or in a `/precommit` command, and all three would, in some sense, work. So people file by habit, and end up with procedures bloating `CLAUDE.md` and paying <LessonLink id="I2.1">startup rent</LessonLink> in every session, facts buried in skills that never trigger, and commands duplicating skills they also wrote.
+
+One fact collapses the choice from three to two. The custom slash command is no longer a separate thing: it has been merged into skills. A file at `.claude/commands/precommit.md` and a skill at `.claude/skills/precommit/SKILL.md` both produce `/precommit`, and if you have both, the skill wins. So there is no real decision between "a skill" and "a slash command." A slash command is how you invoke a skill.
+
+That leaves two homes, and they separate on a single question: **does this apply on its own, or only when something triggers it?**
+
+- **`CLAUDE.md`** holds ambient facts and conventions. It is always loaded, so it applies to every turn without being asked, and it costs its full length in every session.
+- **A skill** holds a procedure. It is indexed at startup and loaded only when triggered, by relevance or by command, so it costs one line until you need it.
 
 ## Side-by-side
 
-{/* @@TODO@@ Compare the options on: what it does, when it runs/loads, cost, who controls it, persistence. */}
+| | `CLAUDE.md` | Skill | Custom slash command (legacy) |
+|---|---|---|---|
+| **Holds** | facts, conventions, standing rules | a procedure, checklist, or generation task | same as a skill |
+| **Loads** | always, at startup | index at startup, body on trigger | same as a skill |
+| **Cost** | full text every session | one index line until invoked | one index line until invoked |
+| **Triggered by** | nothing, it is always on | judged relevance or `/command` | `/command` |
+| **Best for** | "how things always are here" | "the steps I run for X" | nothing new: use a skill |
+| **Shared via** | checked into the repo | project folder in the repo, or personal | `.claude/commands/` in the repo |
+| **Status** | current | current | still works, superseded by skills |
 
-## Decision tree
+The legacy column earns its place only because you may inherit `.claude/commands/` files from an older config. They keep working and take the same frontmatter, but they cannot hold a folder of supporting files, and Claude cannot load them from a description the way it can a skill. For anything new, the column does not apply.
 
-{/* @@TODO@@ The resolver logic as a flowchart (static clickable diagram in Phase 1). */}
+## The decision ladder
+
+This ladder is one branch of the master decision tree in <LessonLink id="I7.3" />, which places every mechanism in the level; here it settles the three that overlap most.
+
+1. **Is it a fact or a standing convention that should apply without you asking?** ("We use tabs." "API errors return `{error, code}`.") It goes in `CLAUDE.md`. If it applies only to certain files, make it a path-scoped rule instead, per <LessonLink id="I2.2" />, so it loads only when those files are touched.
+
+2. **Is it a procedure, a sequence of steps or a generation task you invoke?** It is a skill. Then one more split:
+   - **Safe to run whenever it is relevant?** A skill with a good description, so Claude can load it on its own.
+   - **Has side effects you want to time yourself?** ("Ship it": run tests, build, deploy.) A skill with `disable-model-invocation: true`, invoked only as `/command`.
+
+3. **Is it neither a fact nor a procedure but a way of responding?** Tone, role, default format. That is an <LessonLink id="I2.3">output style</LessonLink>, not any of these three.
+
+4. **Do you need it enforced, not merely followed?** All three homes are instructions, and instructions can be ignored. Guaranteed behavior is a <LessonLink id="I1.4">hook</LessonLink>.
 
 ## Scenario walkthroughs
 
-{/* @@TODO@@ 5–8 rapid-fire scenarios, each stated then resolved with the recommended option + reasoning. */}
+Three of these are fragments lifted straight from an overgrown `CLAUDE.md`, the exact material <LessonLink id="I2.2" /> told you to move out. Each gets its correct home.
+
+- **"To cut a release: bump the version, update the changelog, tag, and push."** A procedure. Move it to a skill. In `CLAUDE.md` those forty lines were rent on every session, including the ones nowhere near a release. As a skill they cost one index line until you run `/release`.
+
+- **"Always use our logger, never `console.log`."** A standing convention with no trigger. It stays in `CLAUDE.md`. There is nothing to invoke; it should shape every line Claude writes, which is what always-loaded content does.
+
+- **"When I say ship it, run the tests, build, and deploy to staging."** A procedure with side effects. A skill with `disable-model-invocation: true`, invoked as `/ship`. You never want Claude deploying because your code read as ready, so the command is the only way in.
+
+- **A 250-line house style guide for API design.** Too large to sit in `CLAUDE.md`'s always-loaded budget, but it is reference material Claude should apply when writing endpoints. A skill holding the guide, set `user-invocable: false` so Claude reads it when relevant without it cluttering your `/` menu.
+
+- **An inherited `.claude/commands/changelog.md`.** It still works, so there is no urgency. Migrate it to a skill folder when you want something it cannot give you: supporting files, or auto-invocation from a description.
 
 ## Edge cases
 
-{/* @@TODO@@ Situations where two options are both defensible, and what tips the balance. */}
+**Procedures short enough to live in either home.** A three-line routine you always want applied ("before finishing, run the type-checker and report failures") is defensible in `CLAUDE.md` as a rule or as a tiny skill. At three lines the cost difference is nothing, so decide on trigger semantics: if it should apply to every relevant turn on its own, `CLAUDE.md` is simpler; if you want to invoke it deliberately, or you expect it to grow past a few lines, start it as a skill. The tiebreaker is which way it will drift, since a skill scales and a `CLAUDE.md` entry does not.
+
+**The legacy-command migration question.** `.claude/commands/*.md` files are supported indefinitely, so migrating is a want, not a must. Convert one when you hit a wall a flat command file cannot clear: supporting files alongside the command, or letting Claude trigger it from relevance instead of only an explicit `/name`. Until then, a working command is not a problem to fix. If you do migrate and leave both in place, remember the skill takes precedence over a command of the same name.
