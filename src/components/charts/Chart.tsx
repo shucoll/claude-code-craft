@@ -5,6 +5,7 @@ import { ChartCardView } from './ChartCardView'
 import { FlowView } from './FlowView'
 import { GridView } from './GridView'
 import { GuidedFlow } from './GuidedFlow'
+import { LedgerView } from './LedgerView'
 
 const COLS: Record<number, string> = {
   1: 'sm:grid-cols-1',
@@ -63,6 +64,8 @@ export function Chart({ def, onActivate }: ChartProps) {
             )
           ) : row.kind === 'bar' ? (
             <BarView row={row} onActivate={onActivate} />
+          ) : row.kind === 'ledger' ? (
+            <LedgerView row={row} onActivate={onActivate} />
           ) : row.kind === 'grid' ? (
             <GridView row={row} onActivate={onActivate} />
           ) : (

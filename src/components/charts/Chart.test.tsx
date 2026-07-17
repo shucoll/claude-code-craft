@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { Chart } from './Chart'
 import type { ChartDef } from '../../content/charts/types'
 
@@ -74,6 +74,25 @@ test('renders a flow row as a FlowView (nodes + edge label)', async () => {
   expect(await screen.findByText('Node X')).toBeInTheDocument()
   expect(screen.getByText('Node Y')).toBeInTheDocument()
   expect(screen.getByText('go')).toBeInTheDocument()
+})
+
+test('renders a ledger row as a LedgerView (derived shares + free space)', () => {
+  const ledgerDef: ChartDef = {
+    id: 'l',
+    rows: [
+      {
+        kind: 'ledger',
+        windowTokens: 100_000,
+        entries: [{ id: 'md', title: 'CLAUDE.md', tokens: 25_000 }],
+      },
+    ],
+  }
+  render(<Chart def={ledgerDef} onActivate={() => {}} />)
+  expect(screen.getByText('CLAUDE.md')).toBeInTheDocument()
+  expect(screen.getByText('Free space')).toBeInTheDocument()
+  const bar = screen.getByRole('group', { name: 'Bar' })
+  expect(within(bar).getByText('25%')).toBeInTheDocument()
+  expect(within(bar).getByText('75%')).toBeInTheDocument()
 })
 
 test('renders a guided flow row as a GuidedFlow (mode toggle present)', () => {

@@ -33,6 +33,7 @@ export type {
   ChartDef,
   ChartCard,
   ChartBarSegment,
+  LedgerEntry,
   ChartRow,
   GridColumns,
   ChartTone,

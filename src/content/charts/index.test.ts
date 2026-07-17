@@ -34,6 +34,7 @@ function targetsOf(chartId: string): ChartCard[] {
     if (row.kind === 'flow') return row.nodes
     if (row.kind === 'bar') return row.segments
     if (row.kind === 'grid') return row.items
+    if (row.kind === 'ledger') return row.entries
     return []
   })
 }

@@ -19,7 +19,7 @@ interface ChartDef {
 
 ### Rows
 
-Each row is one of five kinds:
+Each row is one of six kinds:
 
 **Cards row:**
 ```typescript
@@ -50,6 +50,12 @@ Renders a horizontal stacked bar — see "Bars (proportions)" below.
 { kind: 'grid', items: ChartCard[]; label?: string; columns?: 2 | 3 | 4; caption?: string }
 ```
 Renders an unordered wrapping grid of cards — see "Grids (reference material)" below.
+
+**Ledger row:**
+```typescript
+{ kind: 'ledger', entries: LedgerEntry[]; windowTokens: number; label?: string; caption?: string }
+```
+Renders a cost breakdown in absolute tokens as a stacked bar — see "Ledgers (cost breakdowns)" below.
 
 ### Cards
 
@@ -351,6 +357,58 @@ Segments below 8% omit their in-bar percent label; the legend always shows it.
 Stack several bars with `connector` rows between them to show a before/after
 (see `context-window-simulator`, which shows a filled window, then the same
 window after compaction).
+
+## Ledgers (cost breakdowns)
+
+A `bar` row is a snapshot of **proportions**: `percent` is inherently relative to
+the whole. That is the wrong model when the lesson's subject is what each feature
+**costs** — a CLAUDE.md, an MCP server's tool definitions, a skill index — because
+a cost survives the feature being switched off and a percent does not. Use a
+`ledger` row.
+
+```typescript
+{ kind: 'ledger'; entries: LedgerEntry[]; windowTokens: number; label?: string; caption?: string }
+```
+
+- `entries` — the features and what each one costs, in absolute tokens.
+- `windowTokens` — the full context window. Free space is computed from it rather
+  than authored, so the arithmetic can't drift out of sync with the entries.
+- `label` / `caption` — as on a `bar` row; `caption` is where the "representative
+  numbers, not exact" disclaimer goes.
+
+```typescript
+interface LedgerEntry extends ChartCard {
+  tokens: number        // absolute cost; the source of truth, shares are derived
+  toggleable?: boolean  // fixed overhead vs. optional; defaults to false
+  defaultOn?: boolean   // initial state of a toggleable entry; defaults to true
+}
+```
+
+Entries are `ChartCard`s, so they take the same `tone` palette and the same
+`target` (lesson or popup) as cards, and an inert entry simply omits `target`.
+
+**Never author percents here.** `LedgerView`
+(`src/components/charts/LedgerView.tsx`) derives each entry's share as
+`tokens / windowTokens`, appends a synthetic inert `free-space` entry for the
+remainder, and delegates the rendering to `BarView` — so a ledger gets the bar's
+legend, its 8% in-bar label threshold, and its activation behaviour for free.
+Shares are rounded to whole percents for display; widths are normalized by
+`BarView`, so rounding never distorts the stack.
+
+Free space is `windowTokens - sum(tokens of entries that are on)`, **clamped at
+zero**: overflow is only reachable through bad data, and the clamp makes a
+mistuned ledger render as a full bar instead of a negative-width segment. An
+entry with `defaultOn: false` is off, so it is excluded from that sum and does
+not appear in the stack.
+
+**Phase-2 readiness:** `toggleable` and `defaultOn` have no behaviour today — the
+fallback renders whatever is on and draws no toggle UI. They are the data a
+future click-through simulator will consume: toggle a feature, recompute the
+shares, restack. Because the entries carry absolute `tokens` rather than
+percents, that upgrade is a change to `LedgerView` alone — the chart data, the
+lesson MDX, the `<ChartEmbed>` call, and the `Chart.tsx` dispatch are all
+untouched. Author `toggleable: true` on the entries a learner should be able to
+switch off (an MCP server), and leave fixed rent (CLAUDE.md) non-toggleable.
 
 ## Flowcharts (branching)
 

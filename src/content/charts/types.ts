@@ -42,6 +42,22 @@ export interface ChartBarSegment extends ChartCard {
   percent: number
 }
 
+/**
+ * One line of a `ledger` row: a feature and what it costs. Structurally a
+ * `ChartCard` (so it activates through the same lesson/popup targets) plus an
+ * absolute token cost. Unlike `ChartBarSegment.percent`, `tokens` survives a
+ * feature being toggled off, which is what makes the Phase 2 simulator a
+ * rendering change rather than a data rewrite.
+ */
+export interface LedgerEntry extends ChartCard {
+  /** Absolute cost. The source of truth; shares are derived. */
+  tokens: number
+  /** Fixed overhead (CLAUDE.md) vs optional (an MCP server). Defaults to false. */
+  toggleable?: boolean
+  /** Initial state for a toggleable entry. Defaults to true. */
+  defaultOn?: boolean
+}
+
 export type FlowNodeRole = 'default' | 'question' | 'leaf'
 
 export interface FlowNode {
@@ -78,6 +94,7 @@ export type ChartRow =
   | { kind: 'flow'; nodes: FlowNode[]; edges: FlowEdge[]; direction?: FlowDirection; guided?: boolean }
   | { kind: 'bar'; segments: ChartBarSegment[]; label?: string; caption?: string }
   | { kind: 'grid'; items: ChartCard[]; label?: string; columns?: GridColumns; caption?: string }
+  | { kind: 'ledger'; entries: LedgerEntry[]; windowTokens: number; label?: string; caption?: string }
 
 export interface ChartDef {
   id: string
