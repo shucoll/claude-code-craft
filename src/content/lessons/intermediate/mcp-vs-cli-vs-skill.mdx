@@ -6,30 +6,84 @@ type: "resolver"
 order: 4
 estimatedMinutes: 10
 volatility: "stable"
-verifiedAgainstDocsAt: "2026-07-16"
+verifiedAgainstDocsAt: "2026-07-20"
 prerequisites: ["I5.1", "I3.1"]
 references: ["I1.1", "I2.1"]
-docsSources: ["https://code.claude.com/docs/en/mcp", "https://code.claude.com/docs/en/features-overview"]
+docsSources: ["https://code.claude.com/docs/en/mcp", "https://code.claude.com/docs/en/features-overview", "https://code.claude.com/docs/en/costs"]
 ---
 
 # MCP server vs CLI tool via Bash vs skill
 
 ## The confusion
 
-{/* @@TODO@@ State exactly what people mix up and why the confusion exists. */}
+You connect the GitHub MCP server, and partway through setting up the token it occurs to you that `gh` has been installed on this machine for two years. Claude can already run it. `gh pr view 456` works right now, costs nothing, and needs no server.
+
+So why does the GitHub MCP server exist, and did you just add a moving part to do something that already worked?
+
+The question is sharper than it looks, because the ecosystem answers it badly. Server directories list an integration for every service whether or not that service has a perfectly good CLI, and the implicit message is that connecting is the modern way to do it. The docs are less enthusiastic than the directories: their cost guidance names `gh`, `aws`, `gcloud`, and `sentry-cli` as more context-efficient than MCP servers, because a CLI adds no per-tool listing at all.
+
+One clarification collapses most of the confusion. This is not a three-way race. **MCP and a CLI are two ways for Claude to reach a service. A skill is not a third way; it is knowledge about using either one.** The real fork is MCP or CLI, and a skill is what you add to whichever you pick when Claude needs to be told how your team uses it.
 
 ## Side-by-side
 
-{/* @@TODO@@ Compare the options on: what it does, when it runs/loads, cost, who controls it, persistence. */}
+| | MCP server | CLI via Bash | Skill |
+|---|---|---|---|
+| **What it is** | a connection exposing typed tools | a program Claude already can run | instructions Claude reads |
+| **Provides** | access | access | knowledge, not access |
+| **Returns** | structured data | text you parse | nothing; it shapes how the others are used |
+| **Auth** | handled by the server, OAuth included | whatever the CLI already has | none |
+| **Startup context** | tool names only, schemas deferred | zero | one description line |
+| **Permission rules** | per tool: `mcp__github__create_pr` | per command text: `Bash(gh pr view *)` | governed by the tool it invokes |
+| **Setup** | add, authenticate, verify, maintain | already done, if installed | write one file |
+| **Fails by** | server down, token expired, tools missing | flag drift, parsing surprises | never triggering |
 
-## Decision tree
+Two rows do most of the deciding.
 
-{/* @@TODO@@ The resolver logic as a flowchart (static clickable diagram in Phase 1). */}
+**Returns.** An MCP tool hands back structured data with named fields. A CLI hands back text, and although `--json` closes much of that gap on the good ones, plenty of CLIs give you formatted output that Claude has to interpret. When results feed something downstream, structure is worth real money.
+
+**Permission rules.** Both can be scoped, but not with equal reliability. An MCP rule names a tool identity: `mcp__github__create_pr` is either called or it is not. A Bash rule matches command text, and as <LessonLink id="I1.2" /> established, command text has many spellings. `Bash(gh pr view *)` does not stop `gh` reached through a shell variable or an alias. Against honest mistakes both work; against anything cleverer, tool identity is the sturdier thing to write a rule about.
+
+## The decision ladder
+
+Work down in order; the first match is your answer. This is one branch of the master tree in <LessonLink id="I7.3" />, narrowed to the access question.
+
+1. **Is there a good CLI for this service, already installed and already authenticated?** Then start there. It costs no startup listing, no server to maintain, and no second credential to rotate. If Claude uses it awkwardly, that is a knowledge gap, so go to step 5 rather than reaching for a server.
+
+2. **Is auth the hard part?** A service behind OAuth, or one whose CLI wants a credential you would rather not scatter across machines, is where an MCP server earns its place. The server does the token dance once and refreshes it for you, which is a genuine capability rather than a convenience.
+
+3. **Does the result feed something structured?** If Claude is building a dashboard, reconciling records, or correlating two systems, typed fields beat parsed text, and the parsing you avoid is parsing that would otherwise fail quietly on an edge case.
+
+4. **Does a CLI exist at all?** Plenty of internal services, design tools, and databases have no command-line surface worth the name. With no CLI there is no fork, and MCP is how Claude reaches it.
+
+5. **Is the real problem that Claude does not know how you use the tool?** Wrong flags, wrong table, wrong repository conventions. Neither a server nor a CLI fixes that. Write a skill (<LessonLink id="I3.1" />) holding your query patterns, your flags, your conventions, and attach it to whichever access path you already have.
+
+If steps 1 through 4 leave you genuinely balanced, take the CLI. It is the option with fewer parts, and reversing it later costs one `claude mcp add`.
 
 ## Scenario walkthroughs
 
-{/* @@TODO@@ 5–8 rapid-fire scenarios, each stated then resolved with the recommended option + reasoning. */}
+**"Should I run the GitHub MCP server when I have `gh`?"**
+Usually not. `gh` is installed, authenticated against your account, covers PRs, issues, releases, and workflow runs, and speaks `--json` on nearly every subcommand. You get zero startup listing and no token to rotate. The server becomes the better answer under specific conditions: you want per-tool permission rules with real teeth, you are working across many repositories where `gh`'s auth model gets awkward, or you need structured output feeding a pipeline. For one developer reviewing PRs on one machine, the CLI wins on every axis that matters, and connecting the server is the move that felt modern rather than the one that helped.
+
+**"Our internal deploy service has a REST API and no CLI."**
+MCP, by step 4. There is no fork here. Writing a small MCP server wrapping that API gives Claude typed tools, and it is reusable by every client on the team rather than being a pile of `curl` invocations Claude reconstructs from memory each time. The alternative is teaching Claude to build HTTP requests by hand, which works right up until an endpoint changes.
+
+**"Claude keeps querying the wrong table."**
+A skill, and neither of the other two. The access already works; the database is reachable however you reached it. What is missing is your data model: which table is canonical, which one is the deprecated copy nobody deleted, the join everyone gets wrong. That is knowledge, so it goes in a skill. Adding an MCP server to fix this would change the access path and leave the actual problem untouched, and you would then be debugging a server while still querying the wrong table.
+
+**"I want Claude to check Sentry while it debugs."**
+MCP, by step 2. `sentry-cli` exists, but it is oriented around releases and source maps rather than reading and correlating issues, and the auth story favors the server. The stronger reason is step 3: asking which deployment introduced a spike means correlating errors against releases, which is structured work on structured data.
+
+**"I connected six servers during a spike and use two."**
+Neither, and this is a pruning problem rather than a choice problem. The four you do not use cost startup latency and add to the pile of tool names Claude searches when picking. Run `/mcp`, disconnect them, and re-add if a real need returns. Deciding well once does not survive never revisiting the decision, which <LessonLink id="I5.3" /> makes the case for.
 
 ## Edge cases
 
-{/* @@TODO@@ Situations where two options are both defensible, and what tips the balance. */}
+**Both, for different halves of the job.** The split is common enough to plan for: MCP for the half that is auth-gated or structured, the CLI for the half that is routine and local. On a GitHub workflow, `gh` handles the everyday reads (`gh pr list`, `gh pr view`) at zero listing cost, while the MCP server handles the operations you want under a named permission rule, like creating a PR or merging. You are not paying twice, because the costs are different in kind: the CLI costs nothing at startup, and the server's tools are a small set you deliberately chose. Split on the axis of *what needs a rule you can trust*, not on which one you set up first.
+
+**A skill on top of an MCP server.** The pairing the docs call out directly: MCP provides the connection, a skill teaches Claude to use it well. A database server exposes `query` and `get_schema`; a skill holds your schema conventions, the tables that matter, and the query patterns your team uses. Without the skill Claude has access and no judgment, which produces technically valid queries against the wrong tables. This is the same fix as the third scenario, arrived at from the other direction.
+
+**A CLI that exists but is bad.** Not every CLI is `gh`. Some are thin wrappers with unstable output, no JSON mode, and flags that change between minor versions. "A CLI exists" is not the test; "a CLI I would rely on for parsing" is. A brittle CLI plus a skill documenting its quirks is a maintenance burden that an MCP server may genuinely relieve.
+
+**The service ships an official MCP server and a CLI.** Increasingly common, and the vendor is not neutral about which one you use. Judge on the same ladder rather than on which one their docs lead with. An official server is better maintained than one you would write, which raises its floor, but it does not change what your workflow needs.
+
+**When you would be writing the server yourself.** Wrapping an internal API in an MCP server is real work: a service to maintain, deploy, and version. Worth it when several people or several tools will use it. For a single script you run occasionally, a Bash command plus a skill gets you there this afternoon. Reach for the server when the integration outlives the task that prompted it.
