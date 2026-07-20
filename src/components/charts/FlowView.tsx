@@ -5,6 +5,11 @@ import { layoutFlow, NODE_WIDTH, type FlowLayout, type NodeSize } from './flowLa
 
 type FlowRow = Extract<ChartRow, { kind: 'flow' }>
 
+/** Widest the diagram may render, regardless of how much room the page has. */
+const MAX_WIDTH = 1344
+/** Breathing room kept between the diagram and the edges of the content region. */
+const GUTTER = 32
+
 interface FlowViewProps {
   row: FlowRow
   onActivate: (card: ChartCard) => void
@@ -53,20 +58,26 @@ export function FlowView({ row, onActivate }: FlowViewProps) {
     }
   }, [row, sizes])
 
-  // Fit-to-width: scale the diagram down when it is wider than its container so
-  // it never overflows the lesson column; re-fit on resize.
+  // Fit-to-width: the graph is wider than the prose column, so it is allowed to
+  // spill past the column and is scaled to fit the *content region* — the
+  // scrollable <main>, whose width already excludes the sidebar. Measuring that
+  // (rather than the column or the viewport) is what keeps the diagram centered
+  // and fully visible whether or not the sidebar is open. The scaled graph is
+  // centered on the column's axis, which is the content region's axis too.
   useLayoutEffect(() => {
     if (!layout) return
     const el = containerRef.current
     if (!el) return
+    // The nearest scroll container is <main>; fall back to the column itself.
+    const region = el.closest('main') ?? el
     const fit = () => {
-      const avail = el.clientWidth
+      const avail = Math.min(MAX_WIDTH, region.clientWidth - GUTTER)
       setScale(avail > 0 && layout.width > avail ? avail / layout.width : 1)
     }
     fit()
     if (typeof ResizeObserver === 'undefined') return
     const ro = new ResizeObserver(fit)
-    ro.observe(el)
+    ro.observe(region)
     return () => ro.disconnect()
   }, [layout])
 
@@ -110,8 +121,20 @@ export function FlowView({ row, onActivate }: FlowViewProps) {
   const titleById = new Map(row.nodes.map((n) => [n.id, n.title]))
 
   return (
-    <div ref={containerRef} role="group" aria-label="Flowchart" className="w-full">
-      <div className="mx-auto" style={{ width: layout.width * scale, height: layout.height * scale }}>
+    <div
+      ref={containerRef}
+      role="group"
+      aria-label="Flowchart"
+      className="relative w-full"
+      style={{ height: layout.height * scale }}
+    >
+      {/* The scaled graph is often wider than this column; it is taken out of
+          flow and centered on the column's axis so it spills evenly on both
+          sides without ever forcing a horizontal scroll. */}
+      <div
+        className="absolute left-1/2 top-0 -translate-x-1/2"
+        style={{ width: layout.width * scale, height: layout.height * scale }}
+      >
         <div
           className="relative origin-top-left"
           style={{ width: layout.width, height: layout.height, transform: `scale(${scale})` }}

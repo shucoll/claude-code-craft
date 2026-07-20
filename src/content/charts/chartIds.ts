@@ -15,4 +15,6 @@ export const chartIds: readonly string[] = [
   'permission-rule-shapes',
   'dot-claude-directory-map',
   'hook-lifecycle-clickable',
+  'claude-code-system-map',
+  'mechanism-decision-tree',
 ]

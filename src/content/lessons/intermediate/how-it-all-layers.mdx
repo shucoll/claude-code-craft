@@ -4,52 +4,102 @@ slug: "how-it-all-layers"
 title: "How it all layers"
 type: "core"
 order: 3
-estimatedMinutes: 13
+estimatedMinutes: 14
 volatility: "evolving"
-verifiedAgainstDocsAt: "2026-07-16"
+verifiedAgainstDocsAt: "2026-07-20"
 prerequisites: ["I1.4", "I2.3", "I3.4", "I4.5", "I5.4", "I6.4", "I7.1"]
 references: ["I1.4", "I2.1", "I3.4", "I4.5", "I5.4", "I6.4"]
 docsSources: ["https://code.claude.com/docs/en/features-overview"]
+interactive:
+  - kind: "diagram"
+    spec: "claude-code-system-map"
+  - kind: "decision-tree"
+    spec: "mechanism-decision-tree"
 ---
 
 # How it all layers
 
-## The problem
+Six modules taught six mechanisms, each in its own frame. They do not run in separate frames. They run in one session, in a fixed order, and knowing that order turns six features into one system you can reason about.
 
-{/* @@TODO@@ 2–4 sentence scenario the learner recognizes; the pain this solves. */}
+Two traces and one table, then the map.
 
-## The concept
+## Trace one: startup
 
-{/* @@TODO@@ What it is, plain language, one analogy maximum. */}
+Between pressing enter on `claude` and seeing a prompt, a specific sequence runs.
 
-## How it works
+**1. Settings resolve.** Managed settings, then project `.claude/settings.json`, then `.claude/settings.local.json`, then your user settings. This happens first because its output decides everything after it: which plugins are enabled, which permission rules apply, which model runs, whether an agent replaces the main thread. <LessonLink id="I1.3" /> has the resolution order in full.
 
-{/* @@TODO@@ Mechanics: what happens under the hood; files/config; what loads into context and when. */}
+**2. Instructions load.** The `CLAUDE.md` hierarchy, every level of it, in full text. Imported files come with it. Nothing here is lazy and nothing is summarized.
 
-## Walkthrough
+**3. Tool definitions register.** The built-in belt, plus every tool from every connected MCP server, each with its complete JSON schema. Servers connect at this point, so a slow one is felt at startup.
 
-{/* @@TODO@@ One fully worked example — real commands, real file contents, representative output. */}
+**4. The skill index loads.** Names and descriptions only. Skill bodies stay on disk until one triggers, which is what makes a large skill library affordable.
 
-## Use-case scenarios
+**5. Subagent definitions register.** Built-ins and yours, as a roster Claude can select from. Their system prompts do not load into your window.
 
-{/* @@TODO@@ 3–5 short "You want X → do Y because Z" scenarios; include one near-miss. */}
+**6. Hooks arm.** Matchers are registered against events. No hook has run yet.
 
-## When to use / when not to use
+Plugins do not appear as a step because they are not one. An enabled plugin contributes at steps 2 through 6 alongside everything else, which is why <LessonLink id="I7.1" />'s cost warning is not a separate kind of cost.
 
-{/* @@TODO@@ Two-column guidance; include the context/token/complexity cost. */}
+By the time the prompt appears, all of it is resident, and every turn for the rest of the session pays for it.
 
-## Pitfalls
+<ChartEmbed id="context-cost-ledger" />
 
-{/* @@TODO@@ 3–6 real mistakes, each with the observable symptom and the fix. */}
+## Trace two: a single turn
 
-## Try It
+You type "add rate limiting to the upload endpoint."
 
-{/* @@TODO@@ Hands-on 5–15 min exercise with self-verifiable success criteria. */}
+**The prompt is intercepted first.** `UserPromptSubmit` hooks run before Claude sees anything. One can inject text into the prompt or block it outright. Whatever survives is what Claude reads.
 
-## FAQ
+**Claude decides how to answer.** Three of the six mechanisms are options here, and Claude picks among them from what is resident: a skill whose description matches loads its body now; a task that looks like broad search or restricted work goes to a subagent; anything else becomes direct tool calls. This is the one step driven by Claude's judgment rather than by configuration, which is why the mechanisms depending on it are the ones that occasionally do not fire.
 
-{/* @@TODO@@ The mustAnswer questions not covered above, answered directly. */}
+**Every tool call passes the same gate.** `PreToolUse` hooks run first and can allow, deny, or defer. If no hook decided, permission rules apply, in the order `deny`, then `ask`, then `allow`. If nothing matches, you get the prompt. A hook denial and a rule denial look identical to Claude; they differ in who authored them and how specifically they can be targeted.
+
+**The tool runs, then `PostToolUse` hooks run.** A formatter rewrites the file, a validator inspects it, and either can send feedback that Claude reads on its next step. This is the only mechanism that reacts to what Claude just did.
+
+**Claude loops** until it considers the work finished, each result joining the conversation and enlarging it.
+
+**`Stop` hooks fire last.** A non-zero exit here refuses the ending and sends Claude back to work, which is how "done" gets a definition that is not Claude's opinion.
+
+Three of those steps are unconditional (prompt hooks, the permission gate, stop hooks) and one is discretionary (how Claude chooses to answer). Sorting the mechanisms by which kind of step they live on is most of the skill this level teaches.
+
+<ChartEmbed id="claude-code-system-map" />
+
+## The master table
+
+Each of the level's four resolvers settled a local question. Side by side, the distinctions they drew are the same three repeated: is it guaranteed, what does it cost, and when does it load.
+
+| Mechanism | Guaranteed? | Resident cost | Loads when | Owns |
+|---|---|---|---|---|
+| **Permission rule** | yes | negligible | startup | what Claude may not touch |
+| **Hook** | yes | negligible | armed at startup, fires on events | actions that must happen, and quality gates |
+| **CLAUDE.md** | no, it is instruction | full text, every turn | startup | standing facts about this project |
+| **Skill** | no, description-triggered | description only | body loads on trigger | procedures repeated on some tasks |
+| **MCP server** | n/a, it is capability | all tool schemas | startup | reaching an external system |
+| **CLI through Bash** | n/a, it is capability | none | on invocation | reaching an external system cheaply |
+| **Subagent** | no, description-triggered | roster entry | its own window, on delegation | volume isolation and capability limits |
+| **Output style** | yes, it is the system prompt | replaces rather than adds | startup | how responses are shaped |
+
+Two columns carry most of the decisions. **Guaranteed** separates the mechanisms that do not care whether Claude agrees (hooks, permission rules, output styles) from the ones that are suggestions with good odds (CLAUDE.md, skills, subagents). **Resident cost** separates what you pay for continuously from what you pay for on use.
+
+The pairs that get confused match on one column and differ on the other. A hook and a CLAUDE.md rule can express the same intent, but only one is enforcement, which is <LessonLink id="I4.5" />. A skill and a CLAUDE.md section can hold the same words, but only one is resident on every turn, which is <LessonLink id="I3.4" />. An MCP server and a CLI reach the same service, differing almost entirely in resident cost, which is <LessonLink id="I5.4" />. A subagent and the main thread differ in what they start with, which is <LessonLink id="I6.4" />.
+
+## The master tree
+
+Those four resolvers each described their ladder as one branch of a larger tree. Here it is, walked in one pass.
+
+The question order is the reconciliation. Determinism comes first because it eliminates the most: if something must be guaranteed, only two mechanisms qualify and the rest of the tree stops mattering. External reach comes next, since it is a question about the world rather than about Claude. Context economics comes third. The skill-versus-instruction-versus-prompt distinction comes last, which is where most people start, and why they end up with a `CLAUDE.md` holding six procedures.
+
+<ChartEmbed id="mechanism-decision-tree" />
+
+Walking it for the rate-limiting request: not guaranteed, no external system, no output flood, not a repeated procedure, and rate limits are not a standing project fact. It ends at the prompt, correctly. Most work is not a configuration problem, and a level about configuration is a bad place to forget that.
+
+Two habits keep the tree honest. **Configure on the second occurrence, not the first**, since one instance rarely shows you the shape of the recurring version. And **when two mechanisms both fit, prefer the cheaper resident cost**, because the one you pay for every turn will outlive your memory of why you added it.
 
 ## Where next
 
-{/* @@TODO@@ Cross-links: prerequisites recap + forward teasers (see §1.6). */}
+<LessonLink id="I7.4" /> closes the last gap in the map: agent teams, which are the thing subagents are not, previewed rather than taught.
+
+<LessonLink id="I7.5" /> is the optional self-assessment, where a team policy has to be implemented by choosing mechanisms with the tree above, then packaged as a plugin.
+
+<LessonLink id="I2.1" /> is where the ledger came from, and it reads differently now that each entry has a startup step attached to it.
