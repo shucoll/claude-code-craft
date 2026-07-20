@@ -6,50 +6,252 @@ type: "core"
 order: 1
 estimatedMinutes: 12
 volatility: "volatile"
-verifiedAgainstDocsAt: "2026-07-16"
+verifiedAgainstDocsAt: "2026-07-20"
 prerequisites: ["I3.1", "I4.1", "I5.1"]
 references: ["I1.3", "I2.1"]
-docsSources: ["https://code.claude.com/docs/en/discover-plugins", "https://code.claude.com/docs/en/plugins"]
+docsSources: ["https://code.claude.com/docs/en/discover-plugins", "https://code.claude.com/docs/en/plugins", "https://claude.com/plugins"]
 ---
 
 # Plugins and marketplaces
 
 ## The problem
 
-{/* @@TODO@@ 2–4 sentence scenario the learner recognizes; the pain this solves. */}
+You want Claude to work with your team's GitHub issues. That means an MCP server in `.mcp.json`, a token in the right place, a skill that knows your issue conventions, and a hook that stops it from closing anything without a comment. Four files in three formats, and you looked up two of them.
+
+Then a teammate wants the same setup. You paste the files into Slack, they put one in the wrong directory, and the hook silently never fires.
+
+Everything you built across the last four modules is real configuration, and none of it travels.
 
 ## The concept
 
-{/* @@TODO@@ What it is, plain language, one analogy maximum. */}
+A plugin is a directory of Claude Code configuration that installs as one unit.
+
+Skills, subagents, hooks, MCP servers, language servers, background monitors, and default settings all fit inside it. Installing one puts every piece where it belongs; disabling it removes them all at once. The pieces are the same ones you already know, and nothing new happens at runtime: a plugin's skill is a skill, a plugin's hook is a hook.
+
+A marketplace is a catalog of plugins. Adding one lets you browse it; installing is a separate step you take per plugin.
 
 ## How it works
 
-{/* @@TODO@@ Mechanics: what happens under the hood; files/config; what loads into context and when. */}
+### What a plugin can carry
 
-## Walkthrough
+At the plugin's root:
 
-{/* @@TODO@@ One fully worked example — real commands, real file contents, representative output. */}
+| Path | Carries |
+|---|---|
+| `.claude-plugin/plugin.json` | the manifest: name, description, version |
+| `skills/` | skills, one `SKILL.md` per subdirectory |
+| `agents/` | subagent definitions |
+| `hooks/hooks.json` | hook configuration, same shape as the `hooks` block in settings |
+| `.mcp.json` | MCP server configuration |
+| `.lsp.json` | language server configuration |
+| `monitors/monitors.json` | background watchers that notify Claude as events arrive |
+| `bin/` | executables added to the Bash tool's `PATH` while the plugin is enabled |
+| `settings.json` | default settings applied when enabled |
 
-## Use-case scenarios
+Only `plugin.json` goes inside `.claude-plugin/`. Every other directory sits at the plugin root, which is the most common structural mistake.
 
-{/* @@TODO@@ 3–5 short "You want X → do Y because Z" scenarios; include one near-miss. */}
+Plugin skills are namespaced by the plugin name. A `commit` skill inside `commit-commands` is invoked as `/commit-commands:commit`, so two plugins can ship a skill of the same name without colliding.
+
+### Marketplaces and where they come from
+
+The official Anthropic marketplace, `claude-plugins-official`, is registered the first time you start Claude Code interactively. Everything else you add yourself:
+
+```bash
+/plugin marketplace add anthropics/claude-code
+/plugin marketplace add https://gitlab.com/company/plugins.git
+/plugin marketplace add ./my-marketplace
+```
+
+A GitHub `owner/repo` shorthand, any git URL, or a local path containing `.claude-plugin/marketplace.json`. Append `#v1.0.0` to a git URL to pin a branch or tag. `/plugin market` and `rm` work as shortcuts.
+
+Adding a marketplace installs nothing. It registers the catalog.
+
+### Installation scopes
+
+Installing asks where the plugin belongs, using the scopes from <LessonLink id="I1.3" />:
+
+| Scope | Reaches | Written to |
+|---|---|---|
+| **User** (default) | you, every project | your user settings |
+| **Project** | everyone on this repository | `.claude/settings.json`, committed |
+| **Local** | you, this repository only | `.claude/settings.local.json` |
+
+Project scope is how a team ships a shared setup. A collaborator who trusts the repository folder gets prompted to install what the settings declare, and a plugin from an external source does not load until they do.
+
+You may also see **managed** scope on plugins an administrator installed, which you cannot change.
+
+### The context cost
+
+Every enabled plugin's components pay the rent <LessonLink id="I2.1" /> measured. Skill descriptions sit in the index, subagent definitions are listed, MCP tool definitions load in full, and hooks arm at startup. An MCP-heavy plugin is the expensive case, since tool schemas are the largest single item most sessions carry.
+
+The plugin details pane shows a **Context cost** estimate before you install, and a **Will install** section listing the commands, agents, skills, hooks, and servers it adds. Read both. A plugin you install once and use quarterly costs tokens on every turn in between.
+
+## Walkthrough: add, install, use
+
+Add Anthropic's demo marketplace:
+
+```bash
+/plugin marketplace add anthropics/claude-code
+```
+
+Open the manager:
+
+```bash
+/plugin
+```
+
+Four tabs, cycled with **Tab** and **Shift+Tab**:
+
+| Tab | Shows |
+|---|---|
+| **Discover** | plugins across all your marketplaces |
+| **Installed** | what you have, grouped by scope |
+| **Marketplaces** | your catalogs, with add, update, and remove |
+| **Errors** | plugins that failed to load, and why |
+
+In **Discover**, select `commit-commands` and read its detail pane before pressing Enter. Then install, choosing user scope:
+
+```bash
+/plugin install commit-commands@claude-code-plugins
+```
+
+The marketplace name is `claude-code-plugins` even though you added it as `anthropics/claude-code`. Catalogs name themselves, so take the identifier from the Discover listing rather than from what you typed.
+
+Activate it without restarting:
+
+```bash
+/reload-plugins
+```
+
+Then use it:
+
+```bash
+/commit-commands:commit
+```
+
+Your changes get staged, a message written, and the commit made.
+
+### Managing what you installed
+
+```bash
+/plugin list --enabled
+/plugin disable commit-commands@claude-code-plugins
+/plugin enable commit-commands@claude-code-plugins
+/plugin uninstall commit-commands@claude-code-plugins
+```
+
+Disabling keeps the plugin on disk and stops it loading, which is the right move when you are diagnosing a conflict or trimming context. Uninstalling removes it.
+
+The **Installed** tab groups plugins you have not used in two weeks across at least ten sessions under **Not used recently**, with a **Last used** line in each detail view. That list is where startup and context cost accumulates unnoticed.
+
+Marketplaces are updated separately from plugins:
+
+```bash
+/plugin marketplace update claude-plugins-official
+```
+
+Official Anthropic marketplaces auto-update by default; third-party and local ones do not until you turn it on in the **Marketplaces** tab. Updates land in the background after startup and prompt you to run `/reload-plugins`, so the running session keeps the versions it launched with. Removing a marketplace uninstalls every plugin you got from it.
+
+## Worth having: a tour of the official marketplace
+
+Browse the full catalog at [claude.com/plugins](https://claude.com/plugins). The entries below are the ones that change how a session works rather than adding a command you will forget.
+
+**Code intelligence.** `typescript-lsp`, `pyright-lsp`, `rust-analyzer-lsp`, `gopls-lsp`, and their siblings connect a language server, and each needs its binary already installed. Claude then sees type errors and missing imports automatically after every edit, and fixes them in the same turn instead of discovering them when tests run. It also navigates by definition and reference rather than by grep. This is the category with the clearest payoff for the least configuration.
+
+**External integrations.** `github`, `gitlab`, `linear`, `atlassian`, `notion`, `figma`, `sentry`, `slack`, `vercel`, `supabase`. Each bundles a pre-configured MCP server, so installing one replaces the hand-written `.mcp.json` and OAuth setup from <LessonLink id="I5.1" />. These are also the most context-expensive plugins, for the reason that lesson gave.
+
+**`security-guidance`.** Reviews each change Claude makes for common vulnerabilities and instructs it to fix what it finds in the same session.
+
+**Development workflows.** `commit-commands` for git flows, `pr-review-toolkit` for review agents, `plugin-dev` for building your own, `agent-sdk-dev` for the Agent SDK.
+
+**Output styles.** `explanatory-output-style` and `learning-output-style`, which are the styles from <LessonLink id="I1.4" /> shipped as installables.
+
+The community marketplace is separate and added by hand:
+
+```bash
+/plugin marketplace add anthropics/claude-plugins-community
+/plugin install <name>@claude-community
+```
+
+Its plugins are third-party submissions that passed automated validation and safety screening, each pinned to a specific commit. Screening is not curation, so the trust question below still applies to every one of them.
+
+## Security
+
+A plugin can ship hooks that execute shell commands on your machine and MCP servers that inject text into your context. Both run with your privileges, and neither asks first once the plugin is enabled.
+
+The install bar is: **would I run this repository's code?** Not "does the description sound useful." Anthropic does not control what third-party plugins contain and cannot verify they do what they claim, including in the community marketplace.
+
+Three habits worth keeping:
+
+- **Read the "Will install" section.** A plugin advertising a skill and quietly shipping a `PreToolUse` hook is visible there before you commit to it.
+- **Prefer pinned sources for anything sensitive.** A marketplace added at a tag updates when you decide; one tracking a default branch updates when someone else pushes.
+- **Turn off auto-update for third-party marketplaces.** It defaults off; leaving it off means new code arrives when you choose. Content you never reviewed can otherwise start executing after a background refresh.
+
+Organizations can restrict which marketplaces users may add through managed settings, which is the enforcement version of this argument.
 
 ## When to use / when not to use
 
-{/* @@TODO@@ Two-column guidance; include the context/token/complexity cost. */}
+**Reach for a plugin when:**
+- You want the same skills, agents, or hooks in more than one project
+- Your team should share a setup rather than copy it
+- Someone has already built what you need and you trust them
+- You want versioned updates instead of re-pasted files
+
+**Stay with standalone `.claude/` config when:**
+- The configuration only makes sense in this one repository
+- You are still iterating, since editing a file beats reinstalling a package
+- You want short skill names; `/deploy` stays `/deploy`, while a plugin makes it `/my-plugin:deploy`
+
+**The cost:** every enabled plugin's components load every session whether you invoke them or not, and each installed plugin is code you have accepted responsibility for. Three focused plugins beat twelve you installed while browsing.
 
 ## Pitfalls
 
-{/* @@TODO@@ 3–6 real mistakes, each with the observable symptom and the fix. */}
+- **You install a plugin and its skill does not appear.** Installing does not activate. Run `/reload-plugins`, or restart. If it is still missing, check the **Errors** tab first, then clear the cache with `rm -rf ~/.claude/plugins/cache` and reinstall.
+
+- **You invoke the skill by its bare name and get nothing.** Plugin skills are namespaced. It is `/commit-commands:commit`, not `/commit`. `/help` lists them under the plugin's namespace.
+
+- **You install with `plugin@marketplace` and the marketplace is not found.** The identifier is the catalog's own name, not the path you typed. `/plugin marketplace list` shows the real names. If a plugin is missing from a marketplace you know has it, your copy is stale: `/plugin marketplace update <name>`.
+
+- **You remove a marketplace to tidy up and lose working plugins.** Removal uninstalls everything installed from it. Disable the plugins instead if you want them back later.
+
+- **Your context grows and you blame the codebase.** Enabled plugins bill their components on every turn. Run `/context`, then check the **Not used recently** group in the **Installed** tab.
+
+- **A plugin agent you migrated does not take effect.** Project and user `.claude/agents/` definitions override same-named plugin agents. Remove the original after converting it, or the plugin copy stays shadowed.
+
+- **`/plugin` is not recognized.** Either your version predates it, so update, or you are in an environment without the interactive panel. Cloud sessions and non-interactive setups declare plugins under `enabledPlugins` in `.claude/settings.json` instead.
 
 ## Try It
 
-{/* @@TODO@@ Hands-on 5–15 min exercise with self-verifiable success criteria. */}
+**Environment:** any project, and a session you do not mind adding a plugin to.
+
+1. Run `/context` and record the total.
+2. Run `/plugin marketplace add anthropics/claude-code`, then `/plugin` and browse **Discover**.
+3. Open the detail pane for a plugin with an MCP server and one without. Compare their **Context cost** estimates and read both **Will install** lists.
+4. Install `commit-commands` at user scope, run `/reload-plugins`, then `/context` again. Note what moved.
+5. Make a trivial edit and run `/commit-commands:commit`.
+6. Run `/plugin disable commit-commands@claude-code-plugins`, then `/context` a third time.
+
+**Success looks like:** three context readings that show the plugin's cost arriving and leaving, and a commit made by a skill you did not write.
 
 ## FAQ
 
-{/* @@TODO@@ The mustAnswer questions not covered above, answered directly. */}
+**Can I have a plugin that only some of my team gets?**
+Yes. Install at local scope and it stays in your `.claude/settings.local.json`, which is not committed. Project scope is the shared case. A teammate can also disable a project plugin for themselves alone, which writes an override to their local settings and leaves it installed for everyone else.
+
+**What happens if two plugins ship the same hook event?**
+Both run. Hooks accumulate across sources rather than overriding, so two `PostToolUse` formatters on `Write|Edit` both fire on every edit. <LessonLink id="I4.1" /> is where that ordering behavior is set out.
+
+**Do plugins update themselves?**
+Official Anthropic marketplaces do by default, third-party ones do not until you enable it per marketplace. Updates are fetched in the background after startup and applied on reload or next launch, never mid-turn. `DISABLE_AUTOUPDATER` turns everything off, and `FORCE_AUTOUPDATE_PLUGINS=1` alongside it keeps plugin updates while freezing Claude Code itself.
+
+**Can I try a plugin without installing it?**
+Yes. `claude --plugin-dir ./some-plugin` loads a directory for that session only, and takes precedence over an installed plugin of the same name. Useful for evaluating something you cloned before you trust it enough to install.
+
+**Is there a way to see what a plugin actually contributed?**
+The detail view lists its commands, skills, agents, hooks, MCP servers, and LSP servers, and `claude plugin details` prints the same inventory from your shell.
 
 ## Where next
 
-{/* @@TODO@@ Cross-links: prerequisites recap + forward teasers (see §1.6). */}
+<LessonLink id="I7.2" /> turns this around: the `.claude/` directory you have built across this level becomes a plugin of your own, installable in a second project.
+
+<LessonLink id="I2.1" /> is worth a second read now that plugins are in play, since installing one is the fastest way to spend context without noticing.

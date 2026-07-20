@@ -848,10 +848,10 @@ export const curriculum: Level[] = [
             order: 1,
             estimatedMinutes: 12,
             volatility: 'volatile',
-            verifiedAgainstDocsAt: '2026-07-16',
+            verifiedAgainstDocsAt: '2026-07-20',
             prerequisites: ['I3.1', 'I4.1', 'I5.1'],
             references: ['I1.3', 'I2.1'],
-            docsSources: ['https://code.claude.com/docs/en/discover-plugins', 'https://code.claude.com/docs/en/plugins'],
+            docsSources: ['https://code.claude.com/docs/en/discover-plugins', 'https://code.claude.com/docs/en/plugins', 'https://claude.com/plugins'],
             content: () => import('./lessons/intermediate/plugins-and-marketplaces.mdx'),
           },
           {
