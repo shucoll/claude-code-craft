@@ -6,7 +6,7 @@ type: "core"
 order: 2
 estimatedMinutes: 11
 volatility: "evolving"
-verifiedAgainstDocsAt: "2026-07-16"
+verifiedAgainstDocsAt: "2026-07-20"
 prerequisites: ["I7.1", "I6.2"]
 references: ["I1.3", "I3.2", "I4.3"]
 docsSources: ["https://code.claude.com/docs/en/plugins", "https://code.claude.com/docs/en/plugins-reference"]
@@ -16,40 +16,223 @@ docsSources: ["https://code.claude.com/docs/en/plugins", "https://code.claude.co
 
 ## The problem
 
-{/* @@TODO@@ 2–4 sentence scenario the learner recognizes; the pain this solves. */}
+You start a second project and immediately miss things. The release-notes skill from <LessonLink id="I3.2" />, the format-on-edit hook from <LessonLink id="I4.3" />, the read-only reviewer from <LessonLink id="I6.2" />. All of them live in the first repository's `.claude/`, so you copy the directory across, then spend twenty minutes working out why the hook does nothing.
+
+The hook referenced a script by a path that only existed in the old repository.
 
 ## The concept
 
-{/* @@TODO@@ What it is, plain language, one analogy maximum. */}
+A plugin is your `.claude/` directory made portable: the same components, arranged so they carry their own paths and install as a unit.
+
+The conversion is mostly moving files. What changes is the addressing. Standalone config assumes a project around it, while a plugin has to work from wherever it gets installed, which is a cache directory whose location it does not choose.
 
 ## How it works
 
-{/* @@TODO@@ Mechanics: what happens under the hood; files/config; what loads into context and when. */}
+### The minimal structure
 
-## Walkthrough
+```text
+my-plugin/
+└── .claude-plugin/
+    └── plugin.json
+```
 
-{/* @@TODO@@ One fully worked example — real commands, real file contents, representative output. */}
+The manifest needs one field:
+
+```json
+{
+  "name": "my-plugin"
+}
+```
+
+Everything else in `plugin.json` is optional, and the manifest itself can be omitted when every component sits in its default location. Add the fields that earn their keep:
+
+```json
+{
+  "name": "acme-workflow",
+  "displayName": "Acme Workflow",
+  "description": "Release notes, format-on-edit, and the review board",
+  "version": "1.0.0",
+  "author": { "name": "Platform Team" }
+}
+```
+
+Setting `version` pins the plugin, so people receive updates when you bump it. Leave it out and Claude Code falls back to the git commit SHA, which makes every commit a new version.
+
+Unrecognized top-level fields are ignored rather than rejected, so one manifest can double as another tool's. Wrong types still fail: `keywords` as a string instead of an array is a load error.
+
+### Where each piece goes
+
+| From | To |
+|---|---|
+| `.claude/skills/<name>/SKILL.md` | `skills/<name>/SKILL.md` |
+| `.claude/agents/*.md` | `agents/*.md` |
+| the `hooks` block in `.claude/settings.json` | `hooks/hooks.json` |
+| `.mcp.json` | `.mcp.json` at the plugin root |
+| output styles | `output-styles/` |
+
+Only `plugin.json` belongs inside `.claude-plugin/`. Everything else sits at the plugin root, and putting `skills/` or `hooks/` inside `.claude-plugin/` is the mistake that produces a plugin which installs cleanly and contributes nothing.
+
+The `hooks.json` format is the `hooks` object from your settings file, unchanged. Lift it across as-is.
+
+### The addressing change
+
+Any path in a hook command or an MCP server config has to be rewritten. Inside a plugin, `${CLAUDE_PLUGIN_ROOT}` resolves to wherever the plugin was installed:
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/format.sh" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+`${CLAUDE_PROJECT_DIR}` still points at the user's project, which is right for a hook acting on their files and wrong for reaching a script you shipped. Getting these backwards is the single most common conversion bug, and it fails silently: the hook fires, the command is not found, and nothing visible happens.
+
+`${CLAUDE_PLUGIN_ROOT}` changes on every update, so treat it as read-only and never write state there.
+
+### What namespacing does to your skills
+
+Plugin skills are prefixed by the plugin name. A `deploy` skill becomes `/acme-workflow:deploy`. Muscle memory built on `/deploy` stops working, which is a real cost of converting and the reason to keep genuinely personal shortcuts standalone.
+
+Agents behave differently from skills when both copies exist. A `.claude/agents/` definition overrides a same-named plugin agent, so an unremoved original silently shadows the packaged one. Skills do not override; both remain available under different names.
+
+## Walkthrough: converting your setup
+
+Starting from a project whose `.claude/` holds a skill, the reviewer subagent, and a formatting hook.
+
+**1. Scaffold alongside, not inside.**
+
+```bash
+mkdir -p acme-workflow/.claude-plugin
+```
+
+Keep it next to `.claude/`, not within it, so the copies below have somewhere to land.
+
+**2. Write the manifest** at `acme-workflow/.claude-plugin/plugin.json`, using the fuller example above.
+
+**3. Copy the components.**
+
+```bash
+cp -r .claude/skills acme-workflow/
+cp -r .claude/agents acme-workflow/
+```
+
+**4. Move the hooks.** Create `acme-workflow/hooks/hooks.json` and paste the `hooks` object out of `.claude/settings.json`. Then rewrite every script path to `${CLAUDE_PLUGIN_ROOT}` and copy the scripts themselves into `acme-workflow/scripts/`.
+
+**5. Validate before you trust it.**
+
+```bash
+claude plugin validate ./acme-workflow --strict
+```
+
+Without `--strict` a misspelled field is a warning and the plugin loads anyway. With it, typos fail, which is what you want in CI.
+
+**6. Load it without installing.**
+
+```bash
+claude --plugin-dir ./acme-workflow
+```
+
+That session gets the plugin from your working directory, and a local copy takes precedence over an installed plugin of the same name, so you can test changes without uninstalling. Repeat the flag to load several.
+
+**7. Verify each component.** The skill under its namespaced name, the agent listed in `/context` under Custom Agents, and the hook by triggering an edit. Run `/reload-plugins` after each change rather than restarting.
+
+**8. Remove the originals** from `.claude/`, or the agent keeps loading from there and your plugin copy stays shadowed.
+
+### The lighter path
+
+For something you want everywhere and never intend to publish, skip the marketplace entirely:
+
+```bash
+claude plugin init my-helper --with skills hooks
+```
+
+This scaffolds `~/.claude/skills/my-helper/` with a manifest and starter components. It loads on the next session as `my-helper@skills-dir`, with no install step and no marketplace, because any folder under a skills directory containing `.claude-plugin/plugin.json` is picked up as a plugin. Disable it by name; there is nothing to uninstall.
 
 ## Use-case scenarios
 
-{/* @@TODO@@ 3–5 short "You want X → do Y because Z" scenarios; include one near-miss. */}
+**You want your personal setup on every machine.** Use `claude plugin init` and keep `~/.claude/skills/` in a dotfiles repository. No marketplace, no install step.
+
+**Your team should share a workflow.** A real plugin in its own repository, added as a marketplace and enabled through the project's `.claude/settings.json`, which is the project-scope path from <LessonLink id="I7.1" />.
+
+**You maintain three services with the same deploy procedure.** A plugin, installed at user scope. The alternative is three copies of a skill drifting apart.
+
+**Near-miss: your project has one CLAUDE.md rule and a permission policy.** Neither packages. `CLAUDE.md` is not a plugin component, and permission rules belong in the settings scopes from <LessonLink id="I1.3" />. A plugin here would carry almost nothing.
 
 ## When to use / when not to use
 
-{/* @@TODO@@ Two-column guidance; include the context/token/complexity cost. */}
+The question is not "is this config good enough to package." It is **would I want this in a second project?**
+
+**Package it when:**
+- You would copy it into another repository
+- Teammates need it and currently do not have it
+- It has more than one component, so bundling saves real steps
+- You want versioned updates rather than re-pasted files
+
+**Leave it in `.claude/` when:**
+- It encodes this repository's specifics: its build commands, its directory layout, its conventions
+- You are still changing it weekly, since editing a file beats reloading a package
+- It is one small skill, where namespacing costs more than distribution gains
+- It is `CLAUDE.md` content or permission rules, which are not plugin components
+
+**The cost:** a plugin adds a manifest to maintain, a version to bump, an indirection between the file you edit and the copy that runs, and namespaced skill names for everyone using it. For a single project that overhead buys nothing.
+
+Publishing to a marketplace, dependency management, and distribution at scale are the Advanced level's subject. Local install through `--plugin-dir` or `@skills-dir` is enough to make your own setup portable.
 
 ## Pitfalls
 
-{/* @@TODO@@ 3–6 real mistakes, each with the observable symptom and the fix. */}
+- **The plugin installs and nothing appears.** Component directories ended up inside `.claude-plugin/`. Only `plugin.json` goes there; move `skills/`, `agents/`, and `hooks/` up to the plugin root.
+
+- **The hook fires and nothing happens.** Its command still points at a path from the old project. Rewrite it to `${CLAUDE_PLUGIN_ROOT}` and confirm the script was copied into the plugin, not just referenced.
+
+- **Your agent behaves like the old version.** The original is still in `.claude/agents/` and overriding the plugin's. Delete it.
+
+- **The skill will not run under its old name.** It is namespaced now. `/help` shows the current name under the plugin's prefix.
+
+- **You edit the plugin and see no change.** Either you are running an installed copy rather than your `--plugin-dir` one, or you have not run `/reload-plugins`.
+
+- **A file the plugin needs is missing at runtime.** Plugins are copied into a cache, so anything referenced outside the plugin directory is gone after install. Bundle it or drop the dependency.
 
 ## Try It
 
-{/* @@TODO@@ Hands-on 5–15 min exercise with self-verifiable success criteria. */}
+**Environment:** a project with at least one skill and one hook already in `.claude/`.
+
+1. Create `my-setup/.claude-plugin/plugin.json` with a `name` and a `description`.
+2. Copy your `.claude/skills/` across and move your `hooks` block into `my-setup/hooks/hooks.json`.
+3. Rewrite one hook command to use `${CLAUDE_PLUGIN_ROOT}` and copy its script into the plugin.
+4. Run `claude plugin validate ./my-setup --strict` and fix what it reports.
+5. Start with `claude --plugin-dir ./my-setup`, then invoke your skill by its namespaced name.
+6. Trigger the hook, then break its path on purpose, `/reload-plugins`, and watch it go quiet.
+7. Repair it and confirm it returns.
+
+**Success looks like:** your own skill running from a directory that could be cloned anywhere, and a hook you have now seen fail and recover for a reason you understand.
 
 ## FAQ
 
-{/* @@TODO@@ The mustAnswer questions not covered above, answered directly. */}
+**Do I have to publish it to use it?**
+No. `--plugin-dir` loads a directory for one session, and a plugin under `~/.claude/skills/` loads every session as `@skills-dir`. A marketplace matters when other people need to install it.
+
+**Can a plugin ship a `CLAUDE.md`?**
+Not as a plugin component. Project instructions belong to the project. Ship the equivalent guidance as a skill, which loads when relevant rather than every turn.
+
+**How do people get updates?**
+Set `version` in the manifest and bump it, and installed copies update when the marketplace does. Without a `version`, the git commit SHA stands in and every commit reads as a new version.
+
+**Can I ship a plugin that installs turned off?**
+Yes. `"defaultEnabled": false` in the manifest installs it disabled, and the user enables it from `/plugin`. This suits anything with a cost worth opting into, such as a plugin that connects to an external service.
+
+**What if my plugin needs a value I cannot know, like an API endpoint?**
+Declare it under `userConfig` in the manifest and Claude Code prompts for it at enable time, instead of asking people to hand-edit their settings.
 
 ## Where next
 
-{/* @@TODO@@ Cross-links: prerequisites recap + forward teasers (see §1.6). */}
+<LessonLink id="I7.3" /> steps back from individual mechanisms to one picture of a session: what loads at startup, what fires during a turn, and which mechanism is the right home for a given job.
+
+<LessonLink id="I4.3" /> is where the hooks you just repackaged came from, and re-reading a recipe with `${CLAUDE_PLUGIN_ROOT}` in mind is a fast way to see which of them were portable all along.
