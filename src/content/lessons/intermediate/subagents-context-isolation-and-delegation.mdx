@@ -6,7 +6,7 @@ type: "core"
 order: 1
 estimatedMinutes: 11
 volatility: "evolving"
-verifiedAgainstDocsAt: "2026-07-16"
+verifiedAgainstDocsAt: "2026-07-20"
 prerequisites: ["I2.1"]
 references: ["B2.2", "I2.1"]
 docsSources: ["https://code.claude.com/docs/en/sub-agents", "https://code.claude.com/docs/en/how-claude-code-works"]
@@ -16,40 +16,151 @@ docsSources: ["https://code.claude.com/docs/en/sub-agents", "https://code.claude
 
 ## The problem
 
-{/* @@TODO@@ 2–4 sentence scenario the learner recognizes; the pain this solves. */}
+You ask Claude to find every place a deprecated function is still called. It greps, finds forty hits, reads a dozen files to check which ones are real, and comes back with a tidy answer. The answer takes four sentences. Getting there took thirty tool results, and all thirty are now sitting in your conversation.
+
+Twenty minutes later the session compacts, and the plan you agreed on before the search is the thing that got summarized away. The search output survived; your decisions did not.
+
+<LessonLink id="B2.2" /> named this pressure and <LessonLink id="I2.1" /> measured it. Neither offered a way out beyond spending less. There is a structural way out.
 
 ## The concept
 
-{/* @@TODO@@ What it is, plain language, one analogy maximum. */}
+A subagent is a second Claude with its own context window, working on one task you hand it, returning only what it concluded.
+
+It is a delegate rather than a copy. It does not see your conversation, your earlier tool results, or the files Claude already read. You give it a task, it does the messy work somewhere else, and a summary arrives in your conversation. The forty grep hits and the dozen file reads happen in a window you never look at, and that window is discarded when the task ends.
+
+The asymmetry between what goes in and what comes back is the feature. A subagent takes a paragraph and can return a paragraph, having burned a hundred thousand tokens in between that you never pay for in your own window.
 
 ## How it works
 
-{/* @@TODO@@ Mechanics: what happens under the hood; files/config; what loads into context and when. */}
+### What the subagent starts with
 
-## Walkthrough
+A fresh window, not a copy of yours. Its starting context holds:
 
-{/* @@TODO@@ One fully worked example — real commands, real file contents, representative output. */}
+| Loaded | Detail |
+|---|---|
+| System prompt | the agent's own prompt plus environment details, not Claude Code's full system prompt |
+| Task message | the delegation prompt Claude writes when handing off |
+| `CLAUDE.md` | every level of the hierarchy the main conversation loads |
+| Git status | a snapshot from the start of the parent session |
+| Preloaded skills | full content of any skill the agent definition names |
 
-## Use-case scenarios
+Explore and Plan are the exceptions: they skip `CLAUDE.md` and git status to stay fast and cheap. The main conversation reads their results with full `CLAUDE.md` context, so project rules usually still apply to what happens with the findings. When a rule has to reach the subagent itself, put it in the request: "search the API layer, ignore `vendor/`."
 
-{/* @@TODO@@ 3–5 short "You want X → do Y because Z" scenarios; include one near-miss. */}
+Three things never cross the boundary. Your output style does not shape a subagent's responses, because it runs its own system prompt. Auto memory does not load. And the subagent's context window is sized by its own model, so delegating to a smaller model gives that subagent a smaller window than yours.
 
-## When to use / when not to use
+### What comes back
 
-{/* @@TODO@@ Two-column guidance; include the context/token/complexity cost. */}
+The final report, and nothing else.
+
+Tool calls, file contents, intermediate reasoning, and false starts stay in the subagent's transcript, which is a separate file on disk under `~/.claude/projects/`. Those transcripts survive your main conversation compacting, since they were never in it.
+
+Claude Code scans that final report before Claude reads it. A subagent may have read files, web pages, or command output nobody reviewed, and text from those sources can carry instructions aimed at your conversation. The scan does not remove or reword anything; it defuses text imitating Claude Code's own output and flags reports that mention permission settings. It is a tripwire rather than a filter, which is why restricting what a subagent can reach still matters.
+
+### The built-in subagents
+
+Three do the work you will notice, and Claude reaches for them without being asked.
+
+| Subagent | Tools | Used for |
+|---|---|---|
+| **Explore** | read-only; Write and Edit denied | file discovery, code search, understanding a codebase |
+| **Plan** | read-only; Write and Edit denied | codebase research during plan mode |
+| **general-purpose** | all tools | multi-step work needing both exploration and changes |
+
+When Claude invokes Explore it picks a thoroughness level: **quick** for a targeted lookup, **medium** for balanced exploration, **very thorough** for comprehensive analysis. Explore inherits your session's model rather than running on a fixed cheap one, so exploration never costs more per token than the model you already chose.
+
+Two more helpers exist and invoke themselves: `statusline-setup` when you run `/statusline`, and `claude-code-guide` when you ask a question about Claude Code itself.
+
+Explore and Plan are one-shot. They return no agent ID and cannot be resumed, so continuing a line of investigation means using `general-purpose` or a custom agent instead.
+
+## Walkthrough: the same task, twice
+
+The task: find every caller of a deprecated helper before deleting it.
+
+### Without delegation
+
+```prompt
+Find every place we still call formatLegacyDate and tell me which are real usages
+```
+
+Claude does the work in your window. A run over a mid-sized repository moves through roughly this shape:
+
+```text
+Grep "formatLegacyDate"        → 41 matches across 23 files
+Read src/billing/invoice.ts     → 340 lines
+Read src/reports/monthly.ts     → 512 lines
+Read src/legacy/shim.ts         → 180 lines
+...nine more Read calls
+Grep "formatLegacyDate" --type test → 12 matches
+```
+
+Then four sentences of conclusion. Run `/context` afterwards and the conversation-messages bar has grown by several thousand lines of file content you will never read, ask about, or reference again. It stays there, competing with your actual work, until compaction removes something.
+
+### With delegation
+
+```prompt
+Use a subagent to find every place we still call formatLegacyDate. Report only
+the real usages, grouped by whether they can be deleted or need rewriting.
+```
+
+Claude spawns Explore. The forty-one matches, the twelve file reads, and the test-file sweep all happen in the subagent's window. What lands in yours:
+
+```text
+● Explore(find formatLegacyDate callers)
+  ⎿ Done (14 tool uses · 47.2k tokens · 38s)
+
+  Found 9 real usages across 6 files. 26 of the 41 matches were in
+  comments, changelog entries, or the deprecation shim itself.
+
+  Can be deleted (4): src/reports/monthly.ts:88, ...
+  Need rewriting (5): src/billing/invoice.ts:210 uses the two-argument
+  form, which formatDate doesn't support. ...
+```
+
+Your window grew by that block. The subagent's window grew by 47,000 tokens and then stopped existing.
+
+Both runs answer the question. The difference shows up an hour later, when one session still has room for the refactor and the other is on its second compaction.
 
 ## Pitfalls
 
-{/* @@TODO@@ 3–6 real mistakes, each with the observable symptom and the fix. */}
+- **You delegate something that needed the conversation.** The subagent does not know which approach you rejected twenty minutes ago, and it will confidently redo it. Anything depending on decisions you have accumulated belongs in the main thread, or the relevant decisions have to travel in the request. <LessonLink id="I6.4" /> makes this call properly.
+
+- **You delegate a small task and wait longer than doing it yourself.** A subagent starts cold and spends its first turns gathering context you already had. For a single file read, delegation is pure overhead.
+
+- **You fan out five subagents and your context fills anyway.** Every report returns to your window. Five detailed reports is a real cost, and asking each agent for a summary rather than a full account is the difference between delegation saving context and merely relocating it.
+
+- **You expect the subagent to know your output style or your preferences.** It runs its own system prompt. Formatting instructions live in the request or in the agent's definition.
 
 ## Try It
 
-{/* @@TODO@@ Hands-on 5–15 min exercise with self-verifiable success criteria. */}
+**Environment:** any repository with a function or import used in several places.
+
+1. In a fresh session, run `/context` and note the conversation-messages figure.
+2. Ask Claude to trace every usage of something real, without mentioning subagents. Let it search and read in the main thread.
+3. Run `/context` again. Record the growth.
+4. Run `/clear`, then ask the same question with "use a subagent to" in front of it.
+5. Run `/context` a third time and compare against step 3.
+
+**Success looks like:** two numbers, with the delegated run's growth a fraction of the direct one, and the same answer from both.
 
 ## FAQ
 
-{/* @@TODO@@ The mustAnswer questions not covered above, answered directly. */}
+**Do I have to ask for a subagent, or does Claude use them on its own?**
+Both. Claude delegates automatically when a task matches a subagent's description, which is why searches often go to Explore without you saying anything. Naming a subagent in your prompt makes it likely; <LessonLink id="I6.3" /> covers the full range from a suggestion to a guarantee.
+
+**Can I watch a subagent while it works?**
+Yes. Subagents run in the background by default, appearing in a panel below your prompt where you can open a transcript and follow along. Claude runs one in the foreground when it needs the result before it can continue.
+
+**Does a subagent cost extra tokens?**
+It spends tokens in its own window, and those are billed. What it saves is your context, which is a different resource. A delegated search may cost more tokens in total and still be the cheaper choice, because the tokens it spends leave when it does while the ones it saves would have stayed all session.
+
+**Can a subagent see what a previous subagent found?**
+Not directly. Each invocation starts fresh. Passing findings from one to the next is something Claude does by including them in the second delegation prompt, which is the chaining pattern in <LessonLink id="I6.3" />.
+
+**What if the subagent's summary leaves out something I needed?**
+Ask for it and Claude can resume the same subagent, which still holds its full transcript, rather than starting the search over. Explore and Plan are the exceptions, since they are one-shot.
 
 ## Where next
 
-{/* @@TODO@@ Cross-links: prerequisites recap + forward teasers (see §1.6). */}
+<LessonLink id="I6.2" /> builds your own: a code reviewer with a restricted tool set that can read but not write, which is <LessonLink id="I2.1" />'s context argument and a least-privilege argument arriving at the same design.
+
+<LessonLink id="I6.4" /> answers the question this lesson deliberately left open. Delegation is a context tool rather than a virtue, and some tasks get worse when you hand them off.
