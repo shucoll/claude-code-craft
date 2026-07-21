@@ -6,25 +6,145 @@ type: "milestone"
 order: 6
 estimatedMinutes: 30
 volatility: "stable"
-verifiedAgainstDocsAt: "2026-07-16"
+verifiedAgainstDocsAt: "2026-07-20"
+teaches: ["end-to-end-pipeline", "system-map-from-inside"]
 prerequisites: ["I8.5"]
 references: ["I7.3"]
 ---
 
 # Feature sprint using everything
 
+The environment is complete. Conventions, a permission policy, a GitHub connection, two skills, four hooks, and a review board are all in place. This milestone builds no new machinery. It ships one real feature through the machine you assembled, and the deliverable is two things at once: the feature, and a map of which mechanism fired where.
+
+That map is <LessonLink id="I7.3" /> seen from the inside. You read it there as a diagram. Here you watch it run.
+
 ## Goal for this stage
 
-{/* @@TODO@@ The working artifact this milestone produces. */}
+Build stale-issue triage, a dashboard view listing open issues with no recent activity, end to end through the pipeline: plan, implement, let the gates hold, convene the review board, ship. Introduce nothing new. Alongside the working feature, write down which mechanism did what, so the abstract system map becomes a record of a sprint you actually ran.
+
+**Environment:** the PulseBoard repository with everything from <LessonLink id="I8.1">I8.1</LessonLink> through <LessonLink id="I8.5">I8.5</LessonLink> in place and committed.
 
 ## Steps
 
-{/* @@TODO@@ The build steps for this stage. */}
+### 1. Plan the feature
+
+Start where the Beginner level taught you to, in plan mode, so the shape is agreed before code exists. The feature needs a place to keep issue data, a way to compute staleness, an endpoint, and a view.
+
+```prompt
+Plan a stale-issue triage feature. It should track open issues and surface the ones with no update in a configurable number of days. Consider what needs to persist, where the GitHub fetch belongs, the new endpoint, and the dashboard section. Do not write code yet.
+```
+
+Claude plans against the conventions already loaded from `CLAUDE.md`, so the plan proposes issue storage behind the data module and a test for the new endpoint without being told, because those are house rules now.
+
+### 2. Implement, and watch the environment work
+
+Approve the plan and let Claude build. The interesting part is everything happening around the code without a word from you.
+
+<WhenLang is="javascript">
+
+```prompt
+Build the plan: a migration under migrations/ creating an issues table, a function in data.js that fetches open issues via @octokit/rest and returns the ones stale beyond a cutoff, a GET /api/stale route taking a days query parameter (default 30), and a section on public/index.html listing them.
+```
+
+</WhenLang>
+
+<WhenLang is="python">
+
+```prompt
+Build the plan: a migration under migrations/ creating an issues table, a function in data.py that fetches open issues via requests and returns the ones stale beyond a cutoff, a GET /api/stale route taking a days query parameter (default 30), and a section on public/index.html listing them.
+```
+
+</WhenLang>
+
+As Claude works, the environment acts on its own:
+
+- Opening the data layer loads the path-scoped **data-access rule** from <LessonLink id="I8.1" />, so the GitHub fetch lands in the data module and not in the route.
+- The new file under `migrations/` is **allowed** by the protect hook from <LessonLink id="I8.4" />, because it does not exist yet. The "new yes, edits no" logic waves the new migration through while still freezing the ones already shipped.
+- Every file Claude writes is **auto-formatted** by the `PostToolUse` hook before you see it.
+- If Claude reaches for `.env` to read the token directly, the **permission deny** stops it, and the data module reads the token the sanctioned way instead.
+
+None of that needed a reminder in your prompt. The standards are in the environment, so they apply to a feature written months after you set them.
+
+### 3. Let the gates decide when it is done
+
+When Claude judges the work finished, the `Stop` hook from <LessonLink id="I8.4" /> runs the suite. If the new endpoint has no test, or a test is red, the turn cannot end and Claude goes back to it. Watch this happen at least once: "done" is not Claude's opinion here, it is a green suite.
+
+Boot it and confirm the feature is real before trusting the green check:
+
+<WhenLang is="javascript">
+
+```bash
+npm start
+# in a second terminal:
+curl "localhost:3000/api/stale?days=30"
+# [{"number": 214, "title": "flaky CI on windows", "updatedAt": "..."}, ...]
+```
+
+</WhenLang>
+
+<WhenLang is="python">
+
+```bash
+flask --app app run
+# in a second terminal:
+curl "localhost:5000/api/stale?days=30"
+# [{"number": 214, "title": "flaky CI on windows", "updatedAt": "..."}, ...]
+```
+
+</WhenLang>
+
+### 4. Convene the review board
+
+The suite passing means the code runs, not that it is sound. Send it through the board from <LessonLink id="I8.5" />, in order.
+
+```prompt
+@"code-reviewer (agent)" review the stale-issue feature
+```
+
+The reviewer reads the diff in its own window, never having seen you plan the feature, and reports. Address what it finds. Then close the coverage gaps it flagged:
+
+```prompt
+@"test-writer (agent)" add tests for the cases the reviewer said were uncovered
+```
+
+### 5. Ship it
+
+```prompt
+Commit the stale-issue feature with a message describing it, then push.
+```
+
+The commit runs clean; the push pauses for your confirmation, because `git push` is on the `ask` list from <LessonLink id="I8.1" />. Approve it, and the feature is on GitHub.
+
+### 6. Write the map from inside
+
+Now the second deliverable. Look back over the sprint and name the mechanism behind each moment. This is the table from <LessonLink id="I7.3" />, filled in with a real run:
+
+| Moment in the sprint | Mechanism | Built in |
+|---|---|---|
+| The plan already knew the house rules | `CLAUDE.md` conventions | <LessonLink id="I8.1" /> |
+| The fetch was forced into the data module | path-scoped rule | <LessonLink id="I8.1" /> |
+| Reading GitHub to design the feature | GitHub MCP server | <LessonLink id="I8.2" /> |
+| The new migration was allowed, old ones frozen | `PreToolUse` protect hook | <LessonLink id="I8.4" /> |
+| Every edit came out formatted | `PostToolUse` hook | <LessonLink id="I8.4" /> |
+| A direct `.env` read was refused | permission deny | <LessonLink id="I8.1" /> |
+| The turn could not end on a red suite | `Stop` hook | <LessonLink id="I8.4" /> |
+| Review happened cold, in a window that could not edit | code-reviewer subagent | <LessonLink id="I8.5" /> |
+| The push paused for a human | `ask` rule | <LessonLink id="I8.1" /> |
 
 ## The artifact
 
-{/* @@TODO@@ What "done" looks like; how to verify it works. */}
+At the end of this stage you have:
+
+- A working stale-issue triage feature: a migration, a data-layer function, a `/api/stale` endpoint, a dashboard section, and tests, all shipped to GitHub.
+- The feature built through the full pipeline with no new configuration written.
+- A filled-in map naming which mechanism handled each part of the sprint.
+
+**Done looks like:** `curl /api/stale?days=30` returns stale issues from the tracked repository, the suite is green, the review board has passed the change, and you can point at each mechanism that shaped it without re-reading a lesson.
 
 ## Reasoning recap
 
-{/* @@TODO@@ Why these choices — the transferable lesson behind the build. */}
+This milestone taught nothing new on purpose. Everything that made the sprint smooth was built in an earlier milestone, and the payoff of building the environment first is a feature sprint where the environment does a share of the work silently. You wrote a prompt about issues and staleness; the formatting, the path discipline, the secret protection, the test gate, and the review all happened around it.
+
+That is the argument for treating the environment as a deliverable, made concrete. A configured project is not a tidier version of an unconfigured one. It is one where standards hold without anyone holding them, so attention goes to the feature instead of to the rules the feature has to follow. The system map in <LessonLink id="I7.3" /> described that as a design. You just ran it.
+
+Next milestone, <LessonLink id="I8.7" />: you package this entire environment, the skills, hooks, agents, and MCP config, into a plugin, and install it into a clean clone to prove the whole thing is reproducible by anyone.
