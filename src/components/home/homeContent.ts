@@ -58,7 +58,7 @@ export const TRUST = {
   heading: 'Verified and open source',
   docsTitle: 'Grounded in the official docs',
   docsBody:
-    "Every lesson is built from Anthropic's official Claude Code documentation and links the exact pages it draws on. Claude Code moves fast, so doc changes are tracked and lessons kept current.",
+    "Every lesson is built from Anthropic's official Claude Code documentation and links the exact pages it draws on. Claude Code moves fast, so the lessons most likely to change are flagged as volatile and revised regularly.",
   openTitle: 'Free and open source',
   openBody:
     'No accounts, no paywalls. Read the source, open an issue, or send a fix on GitHub.',

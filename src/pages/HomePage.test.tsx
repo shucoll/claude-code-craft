@@ -21,7 +21,8 @@ function renderHome() {
 test('renders each landing section heading', () => {
   renderHome()
   expect(screen.getByRole('heading', { level: 1, name: /master claude code/i })).toBeInTheDocument()
-  expect(screen.getByRole('heading', { name: /what you'll learn/i })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: /what's inside/i })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: /verified and open source/i })).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: /three pathways/i })).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: /how it works/i })).toBeInTheDocument()
 })
