@@ -109,6 +109,11 @@ export function Sidebar() {
                   className="overflow-hidden"
                 >
                   <div className="mb-2 ml-3 border-l-2 border-border pl-2">
+                    {level.modules.length === 0 && (
+                      <div className="px-2 py-1.5">
+                        <Badge tone="neutral">Coming Soon</Badge>
+                      </div>
+                    )}
                     {level.modules.map((mod) => {
                       const modKey = `${level.id}/${mod.id}`
                       const modOpen = Boolean(openModules[modKey])
