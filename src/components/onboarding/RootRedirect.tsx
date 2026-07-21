@@ -6,6 +6,9 @@ import { getLastLesson, isOnboarded } from '../../lib/onboarding'
 
 export function RootRedirect() {
   const { level } = useLevel()
+  // First-time visitors meet the homepage before onboarding; the homepage itself
+  // stays reachable afterward (see HomePage / the /homepage route).
+  if (!isOnboarded()) return <Navigate to="/homepage" replace />
   const path = resolveLandingPath(curriculum, {
     onboarded: isOnboarded(),
     level,

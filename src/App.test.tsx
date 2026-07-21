@@ -1,9 +1,12 @@
 import { render, screen } from '@testing-library/react'
 import App from './App'
 
-test('a fresh visitor lands on the onboarding level screen (no shell)', () => {
+test('a fresh visitor lands on the homepage (no shell)', () => {
   render(<App />)
-  expect(screen.getByRole('heading', { name: /your claude code level/i })).toBeInTheDocument()
+  // The homepage greets first-time visitors before onboarding; its CTA leads in.
+  const ctas = screen.getAllByRole('link', { name: /get started/i })
+  expect(ctas.length).toBeGreaterThanOrEqual(1)
+  expect(ctas[0]).toHaveAttribute('href', '/onboarding')
   // The app chrome is absent until onboarding completes.
   expect(screen.queryByRole('navigation', { name: /lessons/i })).not.toBeInTheDocument()
 })
