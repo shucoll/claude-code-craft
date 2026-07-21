@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { cn } from '../../lib/cn'
+import { GitHubLink } from '../shell/GitHubLink'
 import { ThemeToggle } from '../shell/ThemeToggle'
 import { EnterButton } from './EnterButton'
 
@@ -32,6 +33,7 @@ export function HomeHeader() {
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
         <span className="font-mono text-lg font-semibold text-foreground">Claude Code Dojo</span>
         <div className="flex items-center gap-2">
+          <GitHubLink />
           <ThemeToggle />
           <div
             className={cn(
