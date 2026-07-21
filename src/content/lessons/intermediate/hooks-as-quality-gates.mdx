@@ -147,7 +147,7 @@ chmod +x .claude/hooks/protect-files.sh
 }
 ```
 
-The `-e "$file_path"` test is the whole trick. When Claude writes a brand-new migration the file does not exist yet, so the guard lets it through; the next time anything tries to edit that same file, it exists, so the guard denies it with a reason Claude can read. That is the "new yes, edits no" rule a static permission deny could not carry, from <LessonLink id="I4.2" />'s decision-control contract.
+The `-e "$file_path"` test is what tells them apart. When Claude writes a brand-new migration the file does not exist yet, so the guard lets it through; the next time anything tries to edit that same file, it exists, so the guard denies it with a reason Claude can read. That is the "new yes, edits no" rule a static permission deny could not carry, from <LessonLink id="I4.2" />'s decision-control contract.
 
 Test all three cases: ask Claude to edit `.env` (denied), to edit an existing file under `migrations/` (denied, with the add-a-new-migration reason), and to create a new file under `migrations/` (allowed). The `$CLAUDE_PROJECT_DIR` in the command is the project root, and it is a different variable from the `${CLAUDE_PLUGIN_ROOT}` you will meet when this becomes a plugin in <LessonLink id="I8.7" />.
 

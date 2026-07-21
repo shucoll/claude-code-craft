@@ -34,7 +34,7 @@ Add the GitHub MCP server at project scope with a committed `.mcp.json` that car
 - **Step 1, is there a good CLI already installed and authenticated?** Yes. For one developer reading PRs, that ends it, and you would reach for `gh`.
 - **Step 3, does the result feed something structured?** This is where PulseBoard leaves the default behind. The connection feeds the skills you build next milestone: `release-notes` reconciles merged pull requests into a formatted document, and `standup-summary` digests recent activity. Both want typed fields rather than text parsed out of `gh` output that changes shape on an edge case.
 
-The honest alternative is worth naming. You could stay on `gh --json` and write a skill that documents the exact commands and flags each procedure uses:
+Here is the honest alternative. You could stay on `gh --json` and write a skill that documents the exact commands and flags each procedure uses:
 
 ```text
 # release-notes skill (the CLI alternative)
