@@ -6,7 +6,8 @@ type: "milestone"
 order: 1
 estimatedMinutes: 20
 volatility: "stable"
-verifiedAgainstDocsAt: "2026-07-16"
+verifiedAgainstDocsAt: "2026-07-20"
+teaches: ["environment-as-deliverable", "permission-policy", "config-before-code"]
 prerequisites: ["I1.4", "I2.3", "I3.4", "I4.5", "I5.4", "I6.4", "I7.4"]
 references: ["I1.2", "I1.3", "I2.2"]
 docsSources: ["https://code.claude.com/docs/en/settings", "https://code.claude.com/docs/en/permissions", "https://code.claude.com/docs/en/memory"]
@@ -14,18 +15,277 @@ docsSources: ["https://code.claude.com/docs/en/settings", "https://code.claude.c
 
 # Environment first
 
+Welcome to the project. Over seven milestones you will build **PulseBoard**, a local dashboard for the health of a GitHub repository: issue and pull-request velocity, stale-issue triage, and generated release notes. It reads one repository through the GitHub API and shows you where the project actually stands.
+
+You are building two things at once, and the second is the point of the module. One is the dashboard. The other is the **configured environment that builds it**: the `CLAUDE.md`, the permission policy, the skills, the hooks, the subagents, the plugin. By the end, that environment is a deliverable in its own right, versioned and installable, and this first milestone establishes the habit the rest depend on: the environment comes before the code.
+
+**Pick your language before you start.** PulseBoard is built twice, once in JavaScript and once in Python, and the whole module follows the one you choose. Use the language switcher (top right) to select **JavaScript** or **Python**; your choice carries through all seven milestones, and every prompt, file, and command below changes to match it.
+
+<WhenLang is="javascript">
+
+You will build PulseBoard as a **Node + Express** server that reads GitHub through `@octokit/rest`, caches what it fetches in **SQLite**, and serves a plain static page for the dashboard. No front-end framework, no build step, nothing to deploy.
+
+</WhenLang>
+
+<WhenLang is="python">
+
+You will build PulseBoard as a **Flask** server that reads GitHub through the `requests` library, caches what it fetches in **SQLite**, and serves a plain static page for the dashboard. No front-end framework, no build step, nothing to deploy.
+
+</WhenLang>
+
 ## Goal for this stage
 
-{/* @@TODO@@ The working artifact this milestone produces. */}
+Stand up the environment before a single line of application code exists: a `CLAUDE.md` that states the stack and conventions, a `.claude/rules/` directory for the conventions that only apply to part of the tree, and a permission policy you design on paper first and then write into `.claude/settings.json`. When this milestone is done you have a repository that contains no app code yet, but already knows how it wants to be built, and it lives in your own GitHub account so the next milestone can connect to it.
+
+**Environment:** a brand-new empty directory (`mkdir pulseboard && cd pulseboard`). Nothing here can break anything you own, so work freely.
 
 ## Steps
 
-{/* @@TODO@@ The build steps for this stage. */}
+### 1. Design the permission policy on paper
+
+Before you write any config, decide the posture. PulseBoard will eventually hold a real GitHub token and talk to the network, so the policy is not busywork. The posture is **deny by default**: nothing runs unattended unless you allowed it, the routine commands are cleared once, and the things you never want touched are blocked outright. You met all three lists in <LessonLink id="I1.2" />; here you author them for a project on purpose rather than growing them by clicking.
+
+Sort every action into one of four buckets:
+
+| Bucket | For | PulseBoard |
+|---|---|---|
+| **allow** | run without asking | your test, start, and format commands; edits to the app's own files |
+| **ask** | fine most of the time, but you want to see it | `git push`, which leaves your machine |
+| **deny** | never, block it outright | reading or editing `.env`; `rm -rf` |
+| **prompt** (the default) | anything not listed | a new file, an unfamiliar command |
+
+The fourth bucket is the posture itself. Leaving something unlisted is a decision: it prompts, and you promote it into `allow` deliberately the first time it comes up. A policy that starts narrow and grows on purpose is safer than one that starts broad to save typing.
+
+One line of the policy cannot be written as a permission rule, and noticing why is worth more than the rule. **Migrations must be protected from being rewritten, but new ones must still be created.** A path deny like `Edit(migrations/**)` cannot tell those apart; it blocks both. That is the boundary from <LessonLink id="I1.2" />: a permission rule cannot carry an exception. So the migration guard waits for <LessonLink id="I8.4" />, where a hook can allow a new file and block edits to an existing one. For now the policy protects `.env`, and the written conventions declare migrations untouchable so the promise is on record before the enforcement exists.
+
+### 2. Write `CLAUDE.md` before any code
+
+Now author the file that tells Claude how to build, before there is anything to derive it from. Everything here is a decision Claude could not guess: the stack you chose, the commands that *will* exist, the conventions you want honored from the first file.
+
+<WhenLang is="javascript">
+
+```markdown
+# PulseBoard
+
+A local dashboard for GitHub project health: issue and PR velocity,
+stale-issue triage, and generated release notes. It runs on your machine
+and reads one GitHub repository through the GitHub API.
+
+## Stack
+- Node + Express (HTTP server)
+- @octokit/rest for GitHub API access
+- SQLite via better-sqlite3 (caches fetched data; synchronous API)
+- Static front end in public/ (plain HTML/CSS/JS, no framework)
+
+## Commands
+- `npm start` runs the dashboard on http://localhost:3000
+- `npm test` runs the test suite (node:test + supertest)
+- `npm run format` formats the code with Prettier
+
+## Conventions
+- One responsibility per file: routes in server.js, all GitHub and SQLite
+  access in data.js.
+- No route touches GitHub or the database directly; it goes through data.js.
+- The GitHub token is read from process.env. Never hardcode it, never commit it.
+- Every new endpoint ships with a test in tests/.
+- Schema changes are files under migrations/, and are never edited once shipped.
+```
+
+</WhenLang>
+
+<WhenLang is="python">
+
+```markdown
+# PulseBoard
+
+A local dashboard for GitHub project health: issue and PR velocity,
+stale-issue triage, and generated release notes. It runs on your machine
+and reads one GitHub repository through the GitHub API.
+
+## Stack
+- Flask (HTTP server)
+- requests for GitHub API access
+- SQLite via the sqlite3 standard library (caches fetched data)
+- Static front end in public/ (plain HTML/CSS/JS, no framework)
+
+## Commands
+- `flask --app app run` runs the dashboard on http://localhost:5000
+- `pytest` runs the test suite
+- `ruff format` formats the code
+
+## Conventions
+- One responsibility per file: routes in app.py, all GitHub and SQLite
+  access in data.py.
+- No route touches GitHub or the database directly; it goes through data.py.
+- The GitHub token is read from the environment. Never hardcode it, never commit it.
+- Every new endpoint ships with a test in tests/.
+- Schema changes are files under migrations/, and are never edited once shipped.
+```
+
+</WhenLang>
+
+Keep it to what is true everywhere, every session. The two conventions about `.env` and migrations are the written form of the policy you designed in step 1: the record of intent that step 4's rules and I8.4's hook will enforce.
+
+### 3. Split the slice-specific conventions into `.claude/rules/`
+
+One convention above does not belong in `CLAUDE.md`, because it is only true for part of the tree. The rule that "no route touches GitHub or the database directly" matters when Claude is editing a route or the data layer, and nowhere else. Loading it every session is the bloat <LessonLink id="I2.2" /> warned about. A path-scoped rule loads only when Claude reads a matching file.
+
+<WhenLang is="javascript">
+
+```bash
+mkdir -p .claude/rules
+```
+
+Create `.claude/rules/data-access.md`:
+
+```markdown
+---
+paths:
+  - "server.js"
+  - "data.js"
+---
+
+# Data access
+
+- All GitHub calls and all SQLite queries live in data.js. A route in
+  server.js that reaches for octokit or the database directly is a bug.
+- data.js reads the token from process.env.GITHUB_TOKEN. It never takes the
+  token as an argument and never logs it.
+- Cache GitHub responses in SQLite: a route reads the cache, a refresh writes it.
+```
+
+</WhenLang>
+
+<WhenLang is="python">
+
+```bash
+mkdir -p .claude/rules
+```
+
+Create `.claude/rules/data-access.md`:
+
+```markdown
+---
+paths:
+  - "app.py"
+  - "data.py"
+---
+
+# Data access
+
+- All GitHub calls and all SQLite queries live in data.py. A route in
+  app.py that reaches for requests or the database directly is a bug.
+- data.py reads the token from os.environ["GITHUB_TOKEN"]. It never takes the
+  token as an argument and never logs it.
+- Cache GitHub responses in SQLite: a route reads the cache, a refresh writes it.
+```
+
+</WhenLang>
+
+The `paths:` frontmatter is what earns it a place in `rules/`. The rule is absent from context until Claude opens the data layer, then it arrives alongside the file it governs. The files it names do not exist yet; the rule waits for them.
+
+### 4. Implement the permission policy
+
+Write the buckets from step 1 into `.claude/settings.json`. This is the committed, team-facing file, so a teammate who clones the repo inherits the same posture.
+
+<WhenLang is="javascript">
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm test)",
+      "Bash(npm start)",
+      "Bash(npm run *)",
+      "Edit(server.js)",
+      "Edit(data.js)",
+      "Edit(public/**)",
+      "Edit(tests/**)"
+    ],
+    "ask": [
+      "Bash(git push *)"
+    ],
+    "deny": [
+      "Read(.env)",
+      "Read(.env.*)",
+      "Edit(.env)",
+      "Bash(rm -rf *)"
+    ]
+  }
+}
+```
+
+</WhenLang>
+
+<WhenLang is="python">
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Bash(pytest)",
+      "Bash(pytest *)",
+      "Bash(flask --app app run)",
+      "Bash(ruff *)",
+      "Edit(app.py)",
+      "Edit(data.py)",
+      "Edit(public/**)",
+      "Edit(tests/**)"
+    ],
+    "ask": [
+      "Bash(git push *)"
+    ],
+    "deny": [
+      "Read(.env)",
+      "Read(.env.*)",
+      "Edit(.env)",
+      "Bash(rm -rf *)"
+    ]
+  }
+}
+```
+
+</WhenLang>
+
+The allow list names the app's files rather than opening the whole tree. When a later milestone adds a route file the list does not cover, editing it will prompt, and you promote it then. That friction is the deny-by-default posture working as intended.
+
+Add a `.gitignore` so secrets and the cache never reach the remote:
+
+```text
+.env
+node_modules/
+*.db
+__pycache__/
+```
+
+Then confirm the policy is live. Run `/permissions` and check that every rule appears, each tagged with `settings.json` as its source.
+
+### 5. Make it a repo and put it on GitHub
+
+The environment is the deliverable of this milestone, so commit it and push it to your own account. The project needs to live on GitHub from here on, because the next milestone connects Claude to that repository.
+
+```prompt
+git init and commit everything with a message describing the environment setup. Then create a private GitHub repository named pulseboard under my account and push this to it.
+```
+
+If you do not have the GitHub CLI installed, create the empty repository on github.com instead, then push with the `git remote add` and `git push` commands GitHub shows you.
 
 ## The artifact
 
-{/* @@TODO@@ What "done" looks like; how to verify it works. */}
+At the end of this stage you have:
+
+- A `CLAUDE.md` you wrote before any code, stating stack, commands, and the conventions to honor from the first file.
+- A `.claude/rules/data-access.md` scoped to the data layer, waiting for the files it governs.
+- A `.claude/settings.json` policy: routine commands allowed, `git push` on ask, secrets and `rm -rf` denied.
+- A `.gitignore` that keeps `.env` and the cache out of git.
+- One commit, pushed to a private `pulseboard` repository in your GitHub account.
+
+**Done looks like:** `/permissions` lists your policy from `settings.json`, there is no application code yet, and the repository exists on GitHub with a single commit.
 
 ## Reasoning recap
 
-{/* @@TODO@@ Why these choices — the transferable lesson behind the build. */}
+The lesson of this milestone is that **environment design is engineering, and it comes first**. At the beginner level `CLAUDE.md` was a note to your future self. Here the environment is a system with parts that enforce each other: the written convention in `CLAUDE.md` records the intent, the scoped rule delivers it at the right moment, the permission policy blocks what must never happen, and the hooks and subagents in later milestones enforce the promises a permission rule cannot keep. Building it first is what makes every later milestone cheaper, because each one drops into a project that already knows its own standards.
+
+The permission policy also surfaced a real boundary rather than hiding it. Protecting `.env` is a job a deny rule does completely. Protecting migrations is not, because "new files yes, edits no" is an exception, and a permission rule cannot carry one. Finding that limit here, on paper, is what sends the migration guard to <LessonLink id="I8.4" /> as a hook instead of a rule that would block your own build.
+
+Next milestone, <LessonLink id="I8.2" />: you connect Claude to the repository you just pushed, adding the GitHub MCP server at project scope, and make the honest case for why MCP earns its place here over the `gh` CLI.
