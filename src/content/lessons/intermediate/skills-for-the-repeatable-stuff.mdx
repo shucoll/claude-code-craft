@@ -6,7 +6,8 @@ type: "milestone"
 order: 3
 estimatedMinutes: 25
 volatility: "evolving"
-verifiedAgainstDocsAt: "2026-07-16"
+verifiedAgainstDocsAt: "2026-07-20"
+teaches: ["skills-on-mcp", "skill-arguments", "supporting-file-template"]
 prerequisites: ["I8.2"]
 references: ["I3.2", "I3.3"]
 docsSources: ["https://code.claude.com/docs/en/skills"]
@@ -14,18 +15,133 @@ docsSources: ["https://code.claude.com/docs/en/skills"]
 
 # Skills for the repeatable stuff
 
+The GitHub connection from <LessonLink id="I8.2" /> earns its place the moment you build on it. Two jobs on this project repeat on a schedule and follow the same steps every time: writing release notes from the pull requests that merged, and summarizing recent activity for a standup. Explain either one to Claude by hand and you will explain it again next week, slightly differently.
+
+This milestone turns both into skills. They run against the live repository through the MCP server, take an argument so one skill covers every week, and live in the project so they travel with it.
+
 ## Goal for this stage
 
-{/* @@TODO@@ The working artifact this milestone produces. */}
+Build two project-scoped skills on top of the MCP connection: `release-notes`, which reads the merged pull requests and formats them against a template in a supporting file, and `standup-summary`, which digests recent activity into a few lines. Both take an argument, both pre-approve only the GitHub read tools they use, and both are committed so a teammate gets them by cloning.
+
+**Environment:** the PulseBoard repository with the `github` server connected and `✔ Connected`. These skills read GitHub and change nothing, so you can run them freely while building them.
 
 ## Steps
 
-{/* @@TODO@@ The build steps for this stage. */}
+### 1. Build `release-notes` with a template file
+
+A release-notes procedure has two parts that pull apart cleanly: the steps, which are short and run every time, and the house format, which is long reference material consulted once per run. That split is the supporting-file pattern from <LessonLink id="I3.2" />: steps in `SKILL.md`, format in a file beside it that loads only when the skill points at it.
+
+Create `.claude/skills/release-notes/SKILL.md`:
+
+```markdown
+---
+description: Generate release notes from merged pull requests. Use when I ask for release notes or a changelog for a release.
+argument-hint: "[since]"
+arguments: [since]
+allowed-tools: mcp__github__list_pull_requests mcp__github__search_pull_requests
+---
+
+## Your task
+
+Generate release notes for this project's repository covering everything
+merged since `$since` (a date like 2026-07-01, or a git tag).
+
+1. Use the github server to list the pull requests merged since `$since`,
+   with their number, title, author, and labels.
+2. Group them into the sections defined in [template.md](template.md), using
+   each PR's label to decide the section.
+3. Write the notes in that exact format. Leave out empty sections.
+4. If nothing merged in the window, say so instead of inventing entries.
+```
+
+Then the format it points at, `.claude/skills/release-notes/template.md`:
+
+```markdown
+# Release notes format
+
+Render as Markdown with these sections, in this order. Drop any section
+with no entries.
+
+## Features        (PRs labelled `feature` or `enhancement`)
+## Fixes           (PRs labelled `bug` or `fix`)
+## Other changes   (everything else)
+
+Each entry is one line: `- <title> (#<number>, @<author>)`.
+Lead the list with user-facing changes.
+```
+
+Two decisions carried over from <LessonLink id="I3.2">I3.2</LessonLink>. The `allowed-tools` line names the two read tools this skill calls and nothing else, the least-privilege habit: a skill that only reads pull requests has no reason to hold write access to the repository. And there is no `disable-model-invocation` here, because unlike the committing skill in <LessonLink id="I3.2">I3.2</LessonLink> this one only reads. It is safe to let Claude fire it when you ask for release notes in plain words.
+
+The exact MCP tool names come from your server; open `/mcp`, select `github`, and read its tool list to confirm the names, since a server's surface shifts as it evolves.
+
+### 2. Build `standup-summary` as a digest
+
+The standup skill in <LessonLink id="I3.3" /> was built from local git state with `` !` ``-injected commands. This one is different on purpose: the digest is about activity on GitHub, so it reads the repository through the MCP server rather than your working copy.
+
+Create `.claude/skills/standup-summary/SKILL.md`:
+
+```markdown
+---
+description: Summarize recent repository activity for a standup. Use when I ask for a standup, a status update, or what happened recently.
+argument-hint: "[days]"
+arguments: [days]
+allowed-tools: mcp__github__list_pull_requests mcp__github__list_issues
+---
+
+## Your task
+
+Summarize activity on this project's repository over the last `$days` days
+(default to 1 if `$days` is empty).
+
+Use the github server to gather, for that window:
+
+- pull requests that merged
+- issues that were opened
+- issues that were closed
+
+Then write a short digest, at most six lines: what shipped, what came in,
+and anything that looks blocked or stale. Base it only on what the server
+returned.
+```
+
+The `$days` argument degrades quietly, the behavior from <LessonLink id="I3.2">I3.2</LessonLink>: run the command with no number and the placeholder is empty, which the body reads as its default of one day.
+
+### 3. Run both, and watch the argument and the server
+
+Invoke each by command so you control when it fires, and pass the argument:
+
+```text
+/release-notes 2026-07-01
+```
+
+```text
+/standup-summary 3
+```
+
+Two things to confirm in the output. The tool calls are labelled `github` and carry the `mcp__github__` prefix, which is the connection from <LessonLink id="I8.2">I8.2</LessonLink> doing the work. And the argument landed: the release notes cover only pull requests merged since the date you passed, and the standup spans the number of days you gave it. Run `/release-notes` with no argument to see the empty-window message rather than a fabricated one.
+
+### 4. Commit and push
+
+Both skills are part of the environment, so they belong in the repository.
+
+```prompt
+Commit the two new skills under .claude/skills/ with a message naming them, then push.
+```
 
 ## The artifact
 
-{/* @@TODO@@ What "done" looks like; how to verify it works. */}
+At the end of this stage you have:
+
+- `.claude/skills/release-notes/` with a `SKILL.md` and a `template.md`, generating notes from merged pull requests in your house format.
+- `.claude/skills/standup-summary/` producing a short activity digest.
+- Both taking an argument that scopes the window, both pre-approving only the GitHub read tools, both committed and pushed.
+
+**Done looks like:** `/release-notes 2026-07-01` returns formatted notes drawn from real merged PRs, `/standup-summary 3` returns a digest of the last three days, and both show `mcp__github__` tool calls in their output.
 
 ## Reasoning recap
 
-{/* @@TODO@@ Why these choices — the transferable lesson behind the build. */}
+The transferable move is recognizing when a procedure has stopped being a one-off. A release-notes format explained once is a favor; explained every Friday it is a process, and a process belongs in a file that runs the same way each time. That is the difference between knowledge you hold and infrastructure the project carries.
+
+These two skills also collected the interest on <LessonLink id="I8.2" />'s decision. The reason MCP won there over the `gh` CLI was step 3 of the resolver: structured data feeding something downstream. This is that downstream. `release-notes` groups pull requests by label into a formatted document, which is far steadier over typed fields than over text scraped from CLI output. The connection you argued for is the connection these skills stand on.
+
+Next milestone, <LessonLink id="I8.4" />: you add the hooks that make the project's standards non-negotiable, including the migration guard <LessonLink id="I8.1" /> promised and a Stop-event gate that redefines what "done" means.
