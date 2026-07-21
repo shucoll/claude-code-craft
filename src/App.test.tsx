@@ -4,7 +4,9 @@ import App from './App'
 test('a fresh visitor lands on the homepage (no shell)', () => {
   render(<App />)
   // The homepage greets first-time visitors before onboarding; its CTA leads in.
-  expect(screen.getByRole('link', { name: /get started/i })).toHaveAttribute('href', '/onboarding')
+  const ctas = screen.getAllByRole('link', { name: /get started/i })
+  expect(ctas.length).toBeGreaterThanOrEqual(1)
+  expect(ctas[0]).toHaveAttribute('href', '/onboarding')
   // The app chrome is absent until onboarding completes.
   expect(screen.queryByRole('navigation', { name: /lessons/i })).not.toBeInTheDocument()
 })

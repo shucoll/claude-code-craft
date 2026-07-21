@@ -2,36 +2,9 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLevel, type LevelId } from '../../context/LevelContext'
+import { LEVELS_META } from '../../content/levelsMeta'
 import { cn } from '../../lib/cn'
 import { OnboardingLayout } from './OnboardingLayout'
-
-interface LevelOption {
-  id: LevelId
-  label: string
-  description: string
-  comingSoon?: boolean
-}
-
-const LEVELS: LevelOption[] = [
-  {
-    id: 'beginner',
-    label: 'Beginner',
-    description:
-      'For moving from Claude chat to Claude Code. Learn what it is, how to install it, basic workflows and commands, and complete your first project with Claude Code.',
-  },
-  {
-    id: 'intermediate',
-    label: 'Intermediate',
-    description:
-      "You've used Claude Code with basic prompts but haven't tapped its full potential. Learn concepts like skills, hooks, and MCP servers — how and when to use them — and complete a project that puts them to work.",
-  },
-  {
-    id: 'advanced',
-    label: 'Advanced',
-    description: "Comfortable with Claude Code day-to-day and ready to become a power user.",
-    comingSoon: true,
-  },
-]
 
 function Chevron({ open }: { open: boolean }) {
   return (
@@ -63,7 +36,7 @@ export function LevelScreen() {
 
   return (
     <OnboardingLayout step={1} heading="Your Claude Code Level">
-      {LEVELS.map((lvl) => {
+      {LEVELS_META.map((lvl) => {
         const open = openId === lvl.id
         return (
           <div

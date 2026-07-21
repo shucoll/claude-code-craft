@@ -1,31 +1,41 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { LevelProvider } from '../context/LevelContext'
+import { ThemeProvider } from '../context/ThemeContext'
 import { HomePage } from './HomePage'
 
 vi.mock('../content/curriculum', async () => await import('../test/curriculumFixture'))
 
 function renderHome() {
   return render(
-    <LevelProvider>
-      <MemoryRouter>
-        <HomePage />
-      </MemoryRouter>
-    </LevelProvider>,
+    <ThemeProvider>
+      <LevelProvider>
+        <MemoryRouter>
+          <HomePage />
+        </MemoryRouter>
+      </LevelProvider>
+    </ThemeProvider>,
   )
 }
 
-test("a fresh visitor's CTA points at onboarding", () => {
+test('renders each landing section heading', () => {
   renderHome()
-  expect(screen.getByRole('link')).toHaveAttribute('href', '/onboarding')
+  expect(screen.getByRole('heading', { level: 1, name: /master claude code/i })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: /what you'll learn/i })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: /three pathways/i })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: /how it works/i })).toBeInTheDocument()
 })
 
-test("an onboarded visitor's CTA resumes their last lesson", () => {
-  localStorage.setItem('ccc:onboarded', JSON.stringify(true))
-  localStorage.setItem('ccc:lastLesson', JSON.stringify('/learn/intermediate/workflows/slash-commands'))
+test("a fresh visitor's CTAs point into onboarding", () => {
   renderHome()
-  expect(screen.getByRole('link')).toHaveAttribute(
-    'href',
-    '/learn/intermediate/workflows/slash-commands',
-  )
+  const ctas = screen.getAllByRole('link', { name: /get started/i })
+  expect(ctas.length).toBeGreaterThanOrEqual(1)
+  for (const cta of ctas) expect(cta).toHaveAttribute('href', '/onboarding')
+})
+
+test('the coming-soon pathway is not an interactive control', () => {
+  renderHome()
+  // Beginner + Intermediate are buttons; Advanced (coming soon) is not.
+  expect(screen.queryByRole('button', { name: /start advanced/i })).not.toBeInTheDocument()
+  expect(screen.getByText(/coming soon/i)).toBeInTheDocument()
 })

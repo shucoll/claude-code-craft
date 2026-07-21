@@ -1,30 +1,23 @@
-import { Link } from 'react-router-dom'
-import { curriculum } from '../content/curriculum'
-import { useLevel } from '../context/LevelContext'
-import { resolveLandingPath } from '../lib/landing'
-import { getLastLesson, isOnboarded } from '../lib/onboarding'
+import { Hero } from '../components/home/Hero'
+import { HomeFooter } from '../components/home/HomeFooter'
+import { HomeHeader } from '../components/home/HomeHeader'
+import { HowItWorks } from '../components/home/HowItWorks'
+import { Pathways } from '../components/home/Pathways'
+import { WhatYoullLearn } from '../components/home/WhatYoullLearn'
 
-// Placeholder homepage. UI is intentionally minimal for now — the CTA reuses the
-// shared landing resolver so it routes new visitors into onboarding and returning
-// ones back to their lesson. Visual design lands in a later pass.
+// The public landing page. First-time visitors are routed here (see RootRedirect); it
+// stays reachable after onboarding too. Composed of focused section components.
 export function HomePage() {
-  const { level } = useLevel()
-  const target =
-    resolveLandingPath(curriculum, {
-      onboarded: isOnboarded(),
-      level,
-      lastLesson: getLastLesson(),
-    }) ?? '/onboarding'
-
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center gap-6 p-8 text-center">
-      <h1 className="font-mono text-3xl font-semibold text-foreground">Claude Code Craft</h1>
-      <Link
-        to={target}
-        className="rounded-control border-2 border-ink bg-primary px-6 py-3 font-mono text-lg font-semibold text-primary-foreground shadow-hard hover:bg-primary-hover"
-      >
-        Get started
-      </Link>
-    </main>
+    <div className="min-h-dvh bg-background">
+      <HomeHeader />
+      <main>
+        <Hero />
+        <WhatYoullLearn />
+        <Pathways />
+        <HowItWorks />
+      </main>
+      <HomeFooter />
+    </div>
   )
 }
