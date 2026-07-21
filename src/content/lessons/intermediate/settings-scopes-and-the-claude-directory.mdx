@@ -84,7 +84,7 @@ One question settles nearly every case: **would a teammate cloning this repo wan
 - **No, keep it local:** `.claude/settings.local.json`. Anything about *your machine* or *your preference*: an absolute path only you have, a permission you personally want, an experiment.
 - **No, put it in your home directory:** anything about *you* that should follow you into every project.
 
-The failure mode in each direction is worth naming. Commit something machine-specific and you break a teammate's setup with an absolute path that does not exist for them. Keep something project-defining local and every new teammate re-derives it by hand. And a secret belongs in neither: not in a committed file, and not pasted into a local one either. Environment variable expansion is how secrets stay out of committed config, which <LessonLink id="I5.2">MCP's configuration lesson</LessonLink> walks through properly.
+Each direction has its own failure mode. Commit something machine-specific and you break a teammate's setup with an absolute path that does not exist for them. Keep something project-defining local and every new teammate re-derives it by hand. And a secret belongs in neither: not in a committed file, and not pasted into a local one either. Environment variable expansion is how secrets stay out of committed config, which <LessonLink id="I5.2">MCP's configuration lesson</LessonLink> walks through properly.
 
 ## Verify what actually loaded
 
