@@ -16,6 +16,7 @@ function renderRoot() {
         <PathProbe />
         <Routes>
           <Route path="/" element={<RootRedirect />} />
+          <Route path="/homepage" element={<div>HOMEPAGE</div>} />
           <Route path="/onboarding" element={<div>ONBOARDING</div>} />
           <Route path="/learn/:levelId/:moduleId/:lessonId" element={<div>LESSON</div>} />
         </Routes>
@@ -24,9 +25,9 @@ function renderRoot() {
   )
 }
 
-test('a fresh visitor is sent to onboarding', () => {
+test('a fresh visitor is sent to the homepage', () => {
   renderRoot()
-  expect(screen.getByTestId('path')).toHaveTextContent('/onboarding')
+  expect(screen.getByTestId('path')).toHaveTextContent('/homepage')
 })
 
 test('an onboarded visitor resumes their last lesson', () => {

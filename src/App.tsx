@@ -9,6 +9,7 @@ import { LanguageProvider } from './context/LanguageContext'
 import { LevelProvider } from './context/LevelContext'
 import { ProgressProvider } from './context/ProgressContext'
 import { ThemeProvider } from './context/ThemeContext'
+import { HomePage } from './pages/HomePage'
 import { LessonPage } from './pages/LessonPage'
 
 export default function App() {
@@ -20,6 +21,7 @@ export default function App() {
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<RootRedirect />} />
+                <Route path="/homepage" element={<HomePage />} />
                 <Route path="/onboarding" element={<LevelScreen />} />
                 <Route path="/onboarding/language" element={<LanguageScreen />} />
                 <Route path="/onboarding/intro" element={<IntroScene />} />
