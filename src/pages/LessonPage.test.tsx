@@ -32,7 +32,7 @@ test('renders the lesson MDX content for the route', async () => {
 test('marks the lesson visited on mount', async () => {
   renderAt('/learn/beginner/basics/first-edit')
   await screen.findByRole('heading', { name: /your first edit/i })
-  expect(JSON.parse(localStorage.getItem('ccc:progress')!)['first-edit']).toBe('visited')
+  expect(JSON.parse(localStorage.getItem('ccd:progress')!)['first-edit']).toBe('visited')
 })
 
 test('Mark complete records completion and advances to the next lesson', async () => {
@@ -42,15 +42,15 @@ test('Mark complete records completion and advances to the next lesson', async (
 
   await user.click(screen.getByRole('button', { name: /mark complete/i }))
 
-  expect(JSON.parse(localStorage.getItem('ccc:progress')!)['what-is-cc']).toBe('completed')
+  expect(JSON.parse(localStorage.getItem('ccd:progress')!)['what-is-cc']).toBe('completed')
   // next lesson in the stub curriculum is "Your First Edit"
   expect(await screen.findByRole('heading', { name: /your first edit/i })).toBeInTheDocument()
 })
 
-test('records the lesson path to ccc:lastLesson on visit', async () => {
+test('records the lesson path to ccd:lastLesson on visit', async () => {
   renderAt('/learn/beginner/basics/first-edit')
   await screen.findByRole('heading', { name: /your first edit/i })
-  expect(JSON.parse(localStorage.getItem('ccc:lastLesson')!)).toBe('/learn/beginner/basics/first-edit')
+  expect(JSON.parse(localStorage.getItem('ccd:lastLesson')!)).toBe('/learn/beginner/basics/first-edit')
 })
 
 test('shows a Back button that returns to state.from', async () => {

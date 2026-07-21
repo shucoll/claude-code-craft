@@ -15,7 +15,7 @@ test('markVisited then markCompleted updates status and persists', () => {
   expect(result.current.getStatus('x')).toBe('visited')
   act(() => result.current.markCompleted('x'))
   expect(result.current.getStatus('x')).toBe('completed')
-  expect(JSON.parse(localStorage.getItem('ccc:progress')!).x).toBe('completed')
+  expect(JSON.parse(localStorage.getItem('ccd:progress')!).x).toBe('completed')
 })
 
 test('markVisited does not downgrade a completed lesson', () => {

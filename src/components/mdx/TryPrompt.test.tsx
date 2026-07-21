@@ -4,7 +4,7 @@ import { LanguageProvider } from '../../context/LanguageContext'
 import { TryPrompt } from './TryPrompt'
 
 function renderWithLang(lang: string, ui: ReactNode) {
-  localStorage.setItem('ccc:lang', JSON.stringify(lang))
+  localStorage.setItem('ccd:lang', JSON.stringify(lang))
   return render(<LanguageProvider>{ui}</LanguageProvider>)
 }
 

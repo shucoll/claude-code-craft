@@ -22,7 +22,7 @@ test('reflects completed lessons as a percentage', () => {
   const ids = lessonIds(curriculum)
   const progress = { [ids[0]]: 'completed' as const }
   const expected = String(percentComplete(ids, progress))
-  localStorage.setItem('ccc:progress', JSON.stringify(progress))
+  localStorage.setItem('ccd:progress', JSON.stringify(progress))
   wrap(<ProgressBar />)
   const bar = screen.getByRole('progressbar', { name: /overall progress/i })
   expect(bar).toHaveAttribute('aria-valuenow', expected)

@@ -36,7 +36,7 @@ test('marks the active route lesson with the current glyph', () => {
 })
 
 test('shows the completed glyph for completed lessons', () => {
-  localStorage.setItem('ccc:progress', JSON.stringify({ 'what-is-cc': 'completed' }))
+  localStorage.setItem('ccd:progress', JSON.stringify({ 'what-is-cc': 'completed' }))
   wrap(<Sidebar />)
   const completedLink = screen.getByRole('link', { name: /what is claude code/i })
   expect(completedLink.querySelector('[aria-label="Completed"]')).toBeInTheDocument()

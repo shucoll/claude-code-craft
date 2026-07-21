@@ -1,8 +1,8 @@
 export const STORAGE_KEYS = {
-  theme: 'ccc:theme',
-  lang: 'ccc:lang',
-  progress: 'ccc:progress',
-  onboarded: 'ccc:onboarded',
-  lastLesson: 'ccc:lastLesson',
-  level: 'ccc:level',
+  theme: 'ccd:theme',
+  lang: 'ccd:lang',
+  progress: 'ccd:progress',
+  onboarded: 'ccd:onboarded',
+  lastLesson: 'ccd:lastLesson',
+  level: 'ccd:level',
 } as const

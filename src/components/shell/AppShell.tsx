@@ -42,7 +42,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           >
             <PanelIcon />
           </Button>
-          <span className="font-mono text-lg font-bold">Claude Code Craft</span>
+          <span className="font-mono text-lg font-bold">Claude Code Dojo</span>
         </div>
         <div className="flex items-center gap-3">
           <ProgressBar className="hidden sm:flex" />

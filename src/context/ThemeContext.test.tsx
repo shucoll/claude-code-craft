@@ -13,7 +13,7 @@ test('defaults to light when nothing stored and prefers-color-scheme is light', 
 })
 
 test('reads persisted theme from localStorage', () => {
-  localStorage.setItem('ccc:theme', JSON.stringify('dark'))
+  localStorage.setItem('ccd:theme', JSON.stringify('dark'))
   const { result } = renderHook(() => useTheme(), { wrapper })
   expect(result.current.theme).toBe('dark')
   expect(document.documentElement.classList.contains('dark')).toBe(true)
@@ -24,7 +24,7 @@ test('toggleTheme flips theme and html class and persists', () => {
   act(() => result.current.toggleTheme())
   expect(result.current.theme).toBe('dark')
   expect(document.documentElement.classList.contains('dark')).toBe(true)
-  expect(JSON.parse(localStorage.getItem('ccc:theme')!)).toBe('dark')
+  expect(JSON.parse(localStorage.getItem('ccd:theme')!)).toBe('dark')
 })
 
 test('useTheme throws when used outside provider', () => {

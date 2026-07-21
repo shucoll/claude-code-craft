@@ -1,4 +1,4 @@
-# Claude Code Craft — Design System (MASTER)
+# Claude Code Dojo — Design System (MASTER)
 
 Single source of truth for visual design. Spec:
 `docs/superpowers/specs/2026-06-28-design-system-design.md`.
@@ -8,7 +8,7 @@ precedence over this file for that page.
 ## Principles
 
 - **Token-driven.** Consume semantic tokens only (`bg-background`, `text-primary`,
-  `border-ink`). Never use raw hex or `--ccc-*` primitives in components.
+  `border-ink`). Never use raw hex or `--ccd-*` primitives in components.
 - **Light + dark in parallel.** Each mode has its own values; contrast verified
   per mode (AA: 4.5:1 text, 3:1 UI/large).
 - **Tailwind v4 CSS-first.** All tokens in `src/styles/index.css`. No config file.
@@ -75,7 +75,7 @@ dark-on-coral in dark. Both AA.
 
 ## Contributor checklist
 
-- [ ] Semantic tokens only (no raw hex / `--ccc-*` in components).
+- [ ] Semantic tokens only (no raw hex / `--ccd-*` in components).
 - [ ] Green only for success; coral for brand/actions.
 - [ ] No emoji icons — inline SVG.
 - [ ] Both light and dark verified.

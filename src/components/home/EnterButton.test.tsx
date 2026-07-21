@@ -22,8 +22,8 @@ test('a fresh visitor sees "Get started" pointing at onboarding', () => {
 })
 
 test('an onboarded visitor sees "Continue learning" pointing at their lesson', () => {
-  localStorage.setItem('ccc:onboarded', JSON.stringify(true))
-  localStorage.setItem('ccc:lastLesson', JSON.stringify('/learn/intermediate/workflows/slash-commands'))
+  localStorage.setItem('ccd:onboarded', JSON.stringify(true))
+  localStorage.setItem('ccd:lastLesson', JSON.stringify('/learn/intermediate/workflows/slash-commands'))
   renderButton()
   const link = screen.getByRole('link', { name: /continue learning/i })
   expect(link).toHaveAttribute('href', '/learn/intermediate/workflows/slash-commands')

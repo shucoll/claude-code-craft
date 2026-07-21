@@ -12,9 +12,9 @@ test('a fresh visitor lands on the homepage (no shell)', () => {
 })
 
 test('an onboarded visitor sees the app shell and chrome', async () => {
-  localStorage.setItem('ccc:onboarded', JSON.stringify(true))
+  localStorage.setItem('ccd:onboarded', JSON.stringify(true))
   render(<App />)
-  expect(await screen.findByText('Claude Code Craft')).toBeInTheDocument()
+  expect(await screen.findByText('Claude Code Dojo')).toBeInTheDocument()
   expect(screen.getByRole('navigation', { name: /lessons/i })).toBeInTheDocument()
   expect(screen.getByRole('combobox', { name: /language/i })).toBeInTheDocument()
 })

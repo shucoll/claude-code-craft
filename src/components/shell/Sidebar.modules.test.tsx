@@ -40,7 +40,7 @@ test('only the route module starts expanded; its siblings stay collapsed', () =>
 })
 
 test('the module of the restored lesson is the one that expands on reopen', () => {
-  // Reopening the platform lands on ccc:lastLesson, so a different route must
+  // Reopening the platform lands on ccd:lastLesson, so a different route must
   // expand a different module with no stored sidebar state.
   wrap('/learn/beginner/context/context-window')
 

@@ -30,7 +30,7 @@ test('selecting a language persists it and advances to the intro step', async ()
   const user = userEvent.setup()
   renderScreen()
   await user.click(screen.getByRole('button', { name: 'Python' }))
-  expect(JSON.parse(localStorage.getItem('ccc:lang')!)).toBe('python')
+  expect(JSON.parse(localStorage.getItem('ccd:lang')!)).toBe('python')
   expect(await screen.findByText('INTRO STEP')).toBeInTheDocument()
 })
 

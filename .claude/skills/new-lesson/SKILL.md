@@ -1,6 +1,6 @@
 ---
 name: new-lesson
-description: Use when adding one or more lessons (or a whole module/level) to Claude Code Craft. Scaffolds the MDX with frontmatter-first metadata, auto-assigns the dotted id, registers the module/level in structure.ts, regenerates curriculum.ts, and stubs snippet/prompt keys only where you opt in — then guides filling in content.
+description: Use when adding one or more lessons (or a whole module/level) to Claude Code Dojo. Scaffolds the MDX with frontmatter-first metadata, auto-assigns the dotted id, registers the module/level in structure.ts, regenerates curriculum.ts, and stubs snippet/prompt keys only where you opt in — then guides filling in content.
 ---
 
 # Add a lesson (or module/level)
