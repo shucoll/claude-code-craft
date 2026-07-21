@@ -1,0 +1,4 @@
+# SPA fallback: serve the app shell for any path the static host doesn't have a
+# file for, so client-side routes (e.g. /learn/...) survive a hard refresh or a
+# shared deep link. 200 = rewrite (URL stays put), not a redirect.
+/*    /index.html   200
