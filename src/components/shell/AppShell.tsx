@@ -2,6 +2,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useState, type ReactNode } from 'react'
 import { Button } from '../ui/Button'
 import { LanguageSwitcher } from './LanguageSwitcher'
+import { Logo } from './Logo'
 import { ProgressBar } from './ProgressBar'
 import { Sidebar } from './Sidebar'
 import { ThemeToggle } from './ThemeToggle'
@@ -42,7 +43,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           >
             <PanelIcon />
           </Button>
-          <span className="font-mono text-lg font-bold">Claude Code Dojo</span>
+          <Logo />
         </div>
         <div className="flex items-center gap-3">
           <ProgressBar className="hidden sm:flex" />
