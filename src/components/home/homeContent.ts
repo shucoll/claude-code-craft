@@ -67,4 +67,6 @@ export const TRUST = {
 export const FOOTER = {
   tagline: 'An interactive course for getting the most out of Claude Code.',
   note: 'Built with Claude Code and',
+  disclaimer:
+    'Not affiliated with or endorsed by Anthropic. Claude and Claude Code are trademarks of Anthropic, PBC.',
 } as const

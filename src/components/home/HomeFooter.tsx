@@ -22,6 +22,9 @@ export function HomeFooter() {
         <p className="mt-2 inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
           {FOOTER.note} <HeartIcon />
         </p>
+        <p className="mt-4 max-w-xl text-xs leading-relaxed text-muted-foreground">
+          {FOOTER.disclaimer}
+        </p>
       </div>
     </footer>
   )
