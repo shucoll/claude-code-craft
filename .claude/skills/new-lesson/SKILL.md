@@ -172,9 +172,13 @@ footer.
      teammates in a wiki. It is configuration in the repository". Drop the
      dismissive-picture sentence and state Y plainly ("The connection is
      configuration in the repository: teammates get it by cloning"). Also watch
-     defensive "not busywork / not a straw man / not hiding it" asides that
-     presume the reader's doubt. If a clause only re-states the sentence with
-     attitude, delete it; keep the plain version.
+     defensive / presuming-the-reader asides that add no content: "not
+     busywork", "not a straw man", "not hiding it", "and they are easy to
+     conflate", "that is not a nicety", "a consequence worth naming". And cut
+     self-referential importance tags: "its design is the lesson", "that
+     absence is the feature", "the point of X is". If a clause only re-states
+     the sentence with attitude or announces that something matters, delete it;
+     keep the plain version.
    - **No meta-narration of a section's own format.** Cut sentences that
      describe the shape of what follows rather than teaching it. Banned shapes:
      "No chart here, just an if/then walk", "here's a table", "what follows is",
