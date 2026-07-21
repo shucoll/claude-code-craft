@@ -44,13 +44,11 @@ Bake the acceptance cases straight into the prompt, and require Claude to run te
 <WhenLang is="javascript">
 
 ```prompt
-Add title search to Shelf: GET /items?q=<text> returns items whose title
-contains the text. It must satisfy these cases:
+Add title search to Shelf: GET /items?q=<text> returns items whose title contains the text. It must satisfy these cases:
 - searching "dune" finds "Dune" (case-insensitive)
 - searching "mat" finds "The Matrix" (partial match)
 - searching "zzzzz" returns [] (empty array, not an error)
-Write tests in tests/ for all three cases, implement it, run the tests, and
-show me the output. It isn't done until they pass.
+Write tests in tests/ for all three cases, implement it, run the tests, and show me the output. It isn't done until they pass.
 ```
 
 </WhenLang>
@@ -58,13 +56,11 @@ show me the output. It isn't done until they pass.
 <WhenLang is="python">
 
 ```prompt
-Add title search to Shelf: GET /items?q=<text> returns items whose title
-contains the text. It must satisfy these cases:
+Add title search to Shelf: GET /items?q=<text> returns items whose title contains the text. It must satisfy these cases:
 - searching "dune" finds "Dune" (case-insensitive)
 - searching "mat" finds "The Matrix" (partial match)
 - searching "zzzzz" returns [] (empty array, not an error)
-Write tests in tests/ for all three cases, implement it, run the tests, and
-show me the output. It isn't done until they pass.
+Write tests in tests/ for all three cases, implement it, run the tests, and show me the output. It isn't done until they pass.
 ```
 
 </WhenLang>

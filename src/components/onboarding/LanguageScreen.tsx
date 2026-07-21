@@ -37,7 +37,8 @@ export function LanguageScreen() {
       <p className="text-sm text-muted-foreground">
         <span className="font-semibold text-foreground">Don't see your programming language?</span>{' '}
         The course is language-independent — the concepts and prompts apply to any language. Your
-        selection only flavors the code-snippet examples.
+        selection only flavors the code-snippet examples, and sets the language for the guided
+        project at the end of each level.
       </p>
     </OnboardingLayout>
   )

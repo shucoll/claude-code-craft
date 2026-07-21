@@ -36,9 +36,7 @@ Start with the remaining API work:
 <WhenLang is="javascript">
 
 ```prompt
-Round out the API in server.js and db.js: PUT /items/:id to edit an item's
-title or tag (404 if it doesn't exist), and DELETE /items/:id to remove one
-(404 if missing). Add tests for both, run them, and show the output.
+Round out the API in server.js and db.js: PUT /items/:id to edit an item's title or tag (404 if it doesn't exist), and DELETE /items/:id to remove one (404 if missing). Add tests for both, run them, and show the output.
 ```
 
 </WhenLang>
@@ -46,9 +44,7 @@ title or tag (404 if it doesn't exist), and DELETE /items/:id to remove one
 <WhenLang is="python">
 
 ```prompt
-Round out the API in app.py and db.py: PUT /items/<id> to edit an item's
-title or tag (404 if it doesn't exist), and DELETE /items/<id> to remove one
-(404 if missing). Add tests for both, run them, and show the output.
+Round out the API in app.py and db.py: PUT /items/<id> to edit an item's title or tag (404 if it doesn't exist), and DELETE /items/<id> to remove one (404 if missing). Add tests for both, run them, and show the output.
 ```
 
 </WhenLang>
@@ -93,10 +89,7 @@ Compaction replaces the conversation with a structured summary. Your project-roo
 The frontend is a fresh, self-contained task, and it deserves a clean context rather than one carrying the whole API build. But `/clear` wipes the conversation entirely, and a summary is not always enough to restart from. So before you clear, capture the one paragraph worth keeping, the professional move from <LessonLink id="B4.4" />:
 
 ```prompt
-Before I clear: write a short HANDOFF.md describing where Shelf stands. Include
-the API endpoints and their shapes, how to run the server and the tests, and
-that the next task is wiring public/ to the API: list, add, tag-filter, search,
-edit, delete.
+Before I clear: write a short HANDOFF.md describing where Shelf stands. Include the API endpoints and their shapes, how to run the server and the tests, and that the next task is wiring public/ to the API: list, add, tag-filter, search, edit, delete.
 ```
 
 Put it somewhere that survives a reset, a `HANDOFF.md` file or appended to `CLAUDE.md`. Then clear:
@@ -110,9 +103,7 @@ Put it somewhere that survives a reset, a `HANDOFF.md` file or appended to `CLAU
 In the cleared session, point Claude at the note and start the frontend:
 
 ```prompt
-Read HANDOFF.md and CLAUDE.md, then wire public/index.html and public/app.js to
-the API: list items, add one, filter by tag, search, and delete. Keep it plain
-HTML, CSS, and fetch, no framework.
+Read HANDOFF.md and CLAUDE.md, then wire public/index.html and public/app.js to the API: list items, add one, filter by tag, search, and delete. Keep it plain HTML, CSS, and fetch, no framework.
 ```
 
 If the note was good, the cold session is productive from the first prompt, with none of the previous session's clutter weighing it down. That is the real test of a handoff note: a fresh context becomes useful immediately.

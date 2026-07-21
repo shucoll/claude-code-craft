@@ -99,8 +99,7 @@ Claude can now see the repo, so put it to work on the skeleton. This mirrors the
 <WhenLang is="javascript">
 
 ```prompt
-Read CLAUDE.md. Scaffold the project it describes: an Express server in server.js, a data.js that reads GITHUB_TOKEN and a GITHUB_REPO (owner/name) from the environment and fetches open-issue and open-PR counts through @octokit/rest, caching them in a SQLite table via better-sqlite3. 
-Add a GET /api/summary route that returns those counts, a GET /health route, a public/index.html that shows the two numbers, package.json with the start and test scripts, and one test in tests/ asserting /api/summary returns the two fields. Put GITHUB_TOKEN and GITHUB_REPO in .env. Then run the test.
+Read CLAUDE.md. Scaffold the project it describes: an Express server in server.js, a data.js that reads GITHUB_TOKEN and a GITHUB_REPO (owner/name) from the environment and fetches open-issue and open-PR counts through @octokit/rest, caching them in a SQLite table via better-sqlite3. Add a GET /api/summary route that returns those counts, a GET /health route, a public/index.html that shows the two numbers, package.json with the start and test scripts, and one test in tests/ asserting /api/summary returns the two fields. Put GITHUB_TOKEN and GITHUB_REPO in .env. Then run the test.
 ```
 
 </WhenLang>
@@ -108,14 +107,7 @@ Add a GET /api/summary route that returns those counts, a GET /health route, a p
 <WhenLang is="python">
 
 ```prompt
-Read CLAUDE.md. Scaffold the project it describes: a Flask app in app.py, a
-data.py that reads GITHUB_TOKEN and a GITHUB_REPO (owner/name) from the
-environment and fetches open-issue and open-PR counts through the GitHub REST
-API using requests, caching them in a SQLite table. Add a GET /api/summary
-route that returns those counts, a GET /health route, a public/index.html that
-shows the two numbers, a requirements.txt, and one test in tests/ asserting
-/api/summary returns the two fields. Put GITHUB_TOKEN and GITHUB_REPO in .env.
-Then run the test.
+Read CLAUDE.md. Scaffold the project it describes: a Flask app in app.py, a data.py that reads GITHUB_TOKEN and a GITHUB_REPO (owner/name) from the environment and fetches open-issue and open-PR counts through the GitHub REST API using requests, caching them in a SQLite table. Add a GET /api/summary route that returns those counts, a GET /health route, a public/index.html that shows the two numbers, a requirements.txt, and one test in tests/ asserting /api/summary returns the two fields. Put GITHUB_TOKEN and GITHUB_REPO in .env. Then run the test.
 ```
 
 </WhenLang>
@@ -153,8 +145,7 @@ pytest
 Commit the connection and the scaffold, and push to the repository the server points at.
 
 ```prompt
-Commit .mcp.json and the scaffold with a message describing the GitHub
-connection and the summary view, then push.
+Commit .mcp.json and the scaffold with a message describing the GitHub connection and the summary view, then push.
 ```
 
 Because `git push` is on the `ask` list from <LessonLink id="I8.1">I8.1</LessonLink>, this one stops for your confirmation even though the commit did not. That is the policy working as designed.

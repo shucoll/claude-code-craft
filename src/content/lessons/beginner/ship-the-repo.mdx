@@ -39,9 +39,7 @@ A README should describe what is actually in the repo, not what you meant to bui
 <WhenLang is="javascript">
 
 ```prompt
-Read the codebase and write a README.md: what Shelf is, how to install and run
-it (npm install, npm start), the API endpoints with example curl requests, and
-how to run the tests (npm test). Cover only what the code actually does.
+Read the codebase and write a README.md: what Shelf is, how to install and run it (npm install, npm start), the API endpoints with example curl requests, and how to run the tests (npm test). Cover only what the code actually does.
 ```
 
 </WhenLang>
@@ -49,10 +47,7 @@ how to run the tests (npm test). Cover only what the code actually does.
 <WhenLang is="python">
 
 ```prompt
-Read the codebase and write a README.md: what Shelf is, how to install and run
-it (pip install -r requirements.txt, flask --app app run), the API endpoints
-with example curl requests, and how to run the tests (pytest). Cover only what
-the code actually does.
+Read the codebase and write a README.md: what Shelf is, how to install and run it (pip install -r requirements.txt, flask --app app run), the API endpoints with example curl requests, and how to run the tests (pytest). Cover only what the code actually does.
 ```
 
 </WhenLang>
@@ -80,8 +75,7 @@ c2d1f0a add tagging to Shelf
 A history worth shipping reads like a story a reviewer can follow: one concern per commit, messages that say what changed and why. Yours already mostly does, though the break-and-recover detour from <LessonLink id="B5.3" /> left a pair of commits that only cancel out. Ask Claude to look with you:
 
 ```prompt
-Review our commit history with git log. Each message should describe one change
-and why it happened. Point out anything a reviewer would find confusing.
+Review our commit history with git log. Each message should describe one change and why it happened. Point out anything a reviewer would find confusing.
 ```
 
 Then decide what to leave. One rule governs how freely you can reshape it, from <LessonLink id="B4.3" />: history that has not been shared is yours to clean up, but once it is pushed you revert forward instead of rewriting. Shelf is local and unpushed, so you have room to tidy. The skill to take away is reading your own history the way a reviewer would.

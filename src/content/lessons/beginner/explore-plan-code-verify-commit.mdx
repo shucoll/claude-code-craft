@@ -63,8 +63,7 @@ claude
 Do not ask for a change yet. Enter plan mode with `Shift+Tab` (twice from Manual), so nothing can be edited while you look around, and ask the questions you would ask a senior engineer on their first day:
 
 ```prompt
-give me the tour: what does this project do, how is it structured, where's the
-entry point, and how are tests run here?
+give me the tour: what does this project do, how is it structured, where's the entry point, and how are tests run here?
 ```
 
 Claude reads freely and answers. Follow up until the shape is clear. Because you are in plan mode, you can let it roam without watching every step, and none of your working tree can change.
@@ -74,8 +73,7 @@ Claude reads freely and answers. Follow up until the shape is clear. Because you
 Now name the change, and ask for a plan rather than an edit:
 
 ```prompt
-I want to add a --quiet flag that suppresses the normal progress output.
-What needs to change, and where? Create a plan.
+I want to add a --quiet flag that suppresses the normal progress output. What needs to change, and where? Create a plan.
 ```
 
 Read the plan the way you read a diff: right files, only what you asked, nothing surprising. If it misunderstood, correct it and let it re-plan, which is far cheaper than correcting code:
@@ -95,8 +93,7 @@ Approve the plan. Claude offers you a mode to continue in; pick **review each ed
 This is the stage that separates a session you watched from one you can trust. Do not eyeball the change and call it done. Hand Claude the check and let it close its own loop, per <LessonLink id="B4.1" />:
 
 ```prompt
-run the test suite and show me the output. if anything fails, fix the root cause
-and run it again. also add a test that asserts --quiet produces no progress output.
+run the test suite and show me the output. if anything fails, fix the root cause and run it again. also add a test that asserts --quiet produces no progress output.
 ```
 
 Claude runs the tests, reads the results, fixes what broke, and re-runs, coming back to you with evidence rather than a claim:

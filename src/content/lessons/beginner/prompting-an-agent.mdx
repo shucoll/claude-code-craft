@@ -76,8 +76,7 @@ implement a function that validates email addresses
 Load-bearing:
 
 ```prompt
-write a validateEmail function. example cases: user@example.com is true,
-"invalid" is false, user@.com is false. run the tests after implementing and fix any failures.
+write a validateEmail function. example cases: user@example.com is true, "invalid" is false, user@.com is false. run the tests after implementing and fix any failures.
 ```
 
 The difference is not the examples. It is the last clause. "Run the tests and fix any failures" turns a task you have to inspect into a task that inspects itself. The same move rescues the two most common vague prompts there are:
@@ -102,8 +101,7 @@ in the file that handles widgets, the one on the home page, add a calendar widge
 Load-bearing:
 
 ```prompt
-look at @src/widgets/HotDogWidget.php to learn the widget pattern, then build a
-calendar widget that lets the user pick a month and page through years. no new libraries.
+look at @src/widgets/HotDogWidget.php to learn the widget pattern, then build a calendar widget that lets the user pick a month and page through years. no new libraries.
 ```
 
 Pasting code has a hidden cost you now understand: every pasted line is context you spent manually, and it is stale the moment the file changes. `@` reads the *current* file, on demand, and points to it by name so Claude's plan can talk about it precisely. Pointing is cheaper, fresher, and clearer than describing, all at once.
@@ -113,9 +111,7 @@ Pasting code has a hidden cost you now understand: every pasted line is context 
 Sometimes the truth is that you have not thought it through. The feature is real but underspecified, and forcing yourself to write a precise prompt would just be guessing precisely. For that case there is a move better than a vague prompt *and* better than a fake-precise one: hand the specifying work to Claude.
 
 ```prompt
-I want to build a "saved searches" feature. Interview me in detail using the AskUserQuestion tool.
-Ask about implementation, UI, edge cases, and tradeoffs. Skip the obvious questions,
-dig into the hard parts I might not have considered. When we're done, write the spec to SPEC.md.
+I want to build a "saved searches" feature. Interview me in detail using the AskUserQuestion tool. Ask about implementation, UI, edge cases, and tradeoffs. Skip the obvious questions, dig into the hard parts I might not have considered. When we're done, write the spec to SPEC.md.
 ```
 
 Claude asks about things you had not considered, the spec lands in a file you can read and edit, and, per <LessonLink id="B3.1" />, you can point future sessions at it. The strongest version: once `SPEC.md` is solid, start a *fresh* session to implement it, so the whole context window is spent on building rather than on the interview. This is the opposite failure mode from a vague prompt, handled deliberately instead of accidentally.

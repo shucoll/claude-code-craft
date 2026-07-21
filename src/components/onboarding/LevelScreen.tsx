@@ -9,6 +9,7 @@ interface LevelOption {
   id: LevelId
   label: string
   description: string
+  comingSoon?: boolean
 }
 
 const LEVELS: LevelOption[] = [
@@ -28,6 +29,7 @@ const LEVELS: LevelOption[] = [
     id: 'advanced',
     label: 'Advanced',
     description: "Comfortable with Claude Code day-to-day and ready to become a power user.",
+    comingSoon: true,
   },
 ]
 
@@ -64,14 +66,34 @@ export function LevelScreen() {
       {LEVELS.map((lvl) => {
         const open = openId === lvl.id
         return (
-          <div key={lvl.id} className="rounded-card border-2 border-ink bg-card shadow-hard">
+          <div
+            key={lvl.id}
+            className={cn(
+              'rounded-card border-2 border-ink bg-card shadow-hard',
+              lvl.comingSoon && 'opacity-60',
+            )}
+          >
             <div className="flex items-stretch">
               <button
                 type="button"
                 onClick={() => select(lvl.id)}
-                className="flex min-h-[44px] flex-1 cursor-pointer items-center px-5 py-4 text-left font-mono text-lg font-semibold text-card-foreground hover:bg-muted"
+                disabled={lvl.comingSoon}
+                className={cn(
+                  'flex min-h-[44px] flex-1 items-center px-5 py-4 text-left font-mono text-lg font-semibold text-card-foreground',
+                  lvl.comingSoon
+                    ? 'cursor-not-allowed'
+                    : 'cursor-pointer hover:bg-muted',
+                )}
               >
                 {lvl.label}
+                {lvl.comingSoon && (
+                  <>
+                    {' '}
+                    <span className="ml-2 font-sans text-sm font-medium text-muted-foreground">
+                      (Coming Soon)
+                    </span>
+                  </>
+                )}
               </button>
               <button
                 type="button"
@@ -100,8 +122,8 @@ export function LevelScreen() {
       })}
 
       <p className="text-sm text-muted-foreground">
-        Every level's lessons are open to everyone — your pick just sets where you start. Finish a
-        level and you can move up to the next.
+        Every level's lessons are open to everyone — your pick just sets where you start. You can
+        switch levels anytime.
       </p>
     </OnboardingLayout>
   )
