@@ -34,7 +34,7 @@ test('Skip & Continue completes onboarding and enters the app', async () => {
   const user = userEvent.setup()
   renderScene()
   await user.click(screen.getByRole('button', { name: /skip & continue/i }))
-  expect(JSON.parse(localStorage.getItem('ccc:onboarded')!)).toBe(true)
+  expect(JSON.parse(localStorage.getItem('ccd:onboarded')!)).toBe(true)
   expect(await screen.findByText('LESSON PAGE')).toBeInTheDocument()
 })
 
@@ -45,7 +45,7 @@ test('Skip fast-forwards to the end state without leaving the intro', async () =
   expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /skip & continue/i })).not.toBeInTheDocument()
   expect(screen.queryByText('LESSON PAGE')).not.toBeInTheDocument()
-  expect(localStorage.getItem('ccc:onboarded')).toBeNull()
+  expect(localStorage.getItem('ccd:onboarded')).toBeNull()
 })
 
 test('the crawl finishing collapses the controls to a single Continue', () => {
@@ -60,6 +60,6 @@ test('Continue in the end state completes onboarding and enters the app', async 
   renderScene()
   await user.click(screen.getByRole('button', { name: 'Skip' }))
   await user.click(screen.getByRole('button', { name: 'Continue' }))
-  expect(JSON.parse(localStorage.getItem('ccc:onboarded')!)).toBe(true)
+  expect(JSON.parse(localStorage.getItem('ccd:onboarded')!)).toBe(true)
   expect(await screen.findByText('LESSON PAGE')).toBeInTheDocument()
 })

@@ -1,6 +1,6 @@
 ---
 name: new-language
-description: Use when adding a new language pack to Claude Code Craft. Creates an empty pack (so all existing lessons fall back to the default) and registers it, then guides idiomatic translation of every key.
+description: Use when adding a new language pack to Claude Code Dojo. Creates an empty pack (so all existing lessons fall back to the default) and registers it, then guides idiomatic translation of every key.
 ---
 
 # Add a language pack

@@ -15,9 +15,9 @@ test('lists the available languages and reflects the active one', () => {
   expect(screen.getByRole('option', { name: 'Python' })).toBeInTheDocument()
 })
 
-test('switching the language persists to ccc:lang', async () => {
+test('switching the language persists to ccd:lang', async () => {
   const user = userEvent.setup()
   wrap(<LanguageSwitcher />)
   await user.selectOptions(screen.getByRole('combobox', { name: /language/i }), 'python')
-  expect(JSON.parse(localStorage.getItem('ccc:lang')!)).toBe('python')
+  expect(JSON.parse(localStorage.getItem('ccd:lang')!)).toBe('python')
 })

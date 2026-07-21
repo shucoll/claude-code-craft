@@ -10,7 +10,7 @@ test('defaults to null when nothing is stored', () => {
 })
 
 test('reads a persisted level from localStorage', () => {
-  localStorage.setItem('ccc:level', JSON.stringify('intermediate'))
+  localStorage.setItem('ccd:level', JSON.stringify('intermediate'))
   const { result } = renderHook(() => useLevel(), { wrapper })
   expect(result.current.level).toBe('intermediate')
 })
@@ -19,7 +19,7 @@ test('setLevel updates and persists', () => {
   const { result } = renderHook(() => useLevel(), { wrapper })
   act(() => result.current.setLevel('advanced'))
   expect(result.current.level).toBe('advanced')
-  expect(JSON.parse(localStorage.getItem('ccc:level')!)).toBe('advanced')
+  expect(JSON.parse(localStorage.getItem('ccd:level')!)).toBe('advanced')
 })
 
 test('useLevel throws when used outside a provider', () => {

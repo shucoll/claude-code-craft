@@ -30,7 +30,7 @@ export function HomeHeader() {
       )}
     >
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
-        <span className="font-mono text-lg font-semibold text-foreground">Claude Code Craft</span>
+        <span className="font-mono text-lg font-semibold text-foreground">Claude Code Dojo</span>
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <div

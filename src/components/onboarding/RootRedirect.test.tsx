@@ -31,8 +31,8 @@ test('a fresh visitor is sent to the homepage', () => {
 })
 
 test('an onboarded visitor resumes their last lesson', () => {
-  localStorage.setItem('ccc:onboarded', JSON.stringify(true))
-  localStorage.setItem('ccc:lastLesson', JSON.stringify('/learn/intermediate/workflows/slash-commands'))
+  localStorage.setItem('ccd:onboarded', JSON.stringify(true))
+  localStorage.setItem('ccd:lastLesson', JSON.stringify('/learn/intermediate/workflows/slash-commands'))
   renderRoot()
   expect(screen.getByTestId('path')).toHaveTextContent('/learn/intermediate/workflows/slash-commands')
 })

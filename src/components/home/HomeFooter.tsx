@@ -17,7 +17,7 @@ export function HomeFooter() {
   return (
     <footer className="border-t-2 border-border">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-6 py-10">
-        <span className="font-mono text-base font-semibold text-foreground">Claude Code Craft</span>
+        <span className="font-mono text-base font-semibold text-foreground">Claude Code Dojo</span>
         <p className="max-w-md text-sm text-muted-foreground">{FOOTER.tagline}</p>
         <p className="mt-2 inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
           {FOOTER.note} <HeartIcon />

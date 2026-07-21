@@ -24,7 +24,7 @@ function wrap() {
 
 test('renders brand, chrome controls, sidebar, and children', () => {
   wrap()
-  expect(screen.getByText('Claude Code Craft')).toBeInTheDocument()
+  expect(screen.getByText('Claude Code Dojo')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /switch to (light|dark) theme/i })).toBeInTheDocument()
   expect(screen.getByRole('combobox', { name: /language/i })).toBeInTheDocument()
   expect(screen.getByRole('navigation', { name: /lessons/i })).toBeInTheDocument()

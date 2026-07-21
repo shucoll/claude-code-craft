@@ -35,7 +35,7 @@ test('selecting a level persists it and advances to the language step', async ()
   const user = userEvent.setup()
   renderScreen()
   await user.click(screen.getByRole('button', { name: 'Beginner' }))
-  expect(JSON.parse(localStorage.getItem('ccc:level')!)).toBe('beginner')
+  expect(JSON.parse(localStorage.getItem('ccd:level')!)).toBe('beginner')
   expect(await screen.findByText('LANGUAGE STEP')).toBeInTheDocument()
 })
 

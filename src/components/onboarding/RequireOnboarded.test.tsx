@@ -26,7 +26,7 @@ test('redirects to onboarding when not onboarded', () => {
 })
 
 test('renders children when onboarded', () => {
-  localStorage.setItem('ccc:onboarded', JSON.stringify(true))
+  localStorage.setItem('ccd:onboarded', JSON.stringify(true))
   renderGuarded()
   expect(screen.getByText('PROTECTED')).toBeInTheDocument()
 })

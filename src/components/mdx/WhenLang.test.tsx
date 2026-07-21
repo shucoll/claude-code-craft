@@ -4,7 +4,7 @@ import { LanguageProvider } from '../../context/LanguageContext'
 import { WhenLang } from './WhenLang'
 
 function renderWithLang(lang: string, ui: ReactNode) {
-  localStorage.setItem('ccc:lang', JSON.stringify(lang))
+  localStorage.setItem('ccd:lang', JSON.stringify(lang))
   return render(<LanguageProvider>{ui}</LanguageProvider>)
 }
 

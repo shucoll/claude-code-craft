@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────────────────────────────────
-   Claude Code Craft — Design System
+   Claude Code Dojo — Design System
    Tailwind v4, CSS-first. No tailwind.config.js.
    Layers: primitives → semantic tokens (light + .dark) → @theme mapping.
    See design-system/MASTER.md for rationale and usage rules.
@@ -12,75 +12,75 @@
 
 /* ── 1. Primitive palettes (mode-independent). Never used directly. ──────── */
 :root {
-  --ccc-coral-50: #fcf3ef;
-  --ccc-coral-100: #f8e3d9;
-  --ccc-coral-200: #f1c9b6;
-  --ccc-coral-300: #e8ac92;
-  --ccc-coral-400: #df8e6e;
-  --ccc-coral-500: #d97757; /* brand base */
-  --ccc-coral-600: #c25e3d; /* fill on light / hover */
-  --ccc-coral-700: #a04a2e;
-  --ccc-coral-800: #7e3a24;
-  --ccc-coral-900: #5c2a1a;
+  --ccd-coral-50: #fcf3ef;
+  --ccd-coral-100: #f8e3d9;
+  --ccd-coral-200: #f1c9b6;
+  --ccd-coral-300: #e8ac92;
+  --ccd-coral-400: #df8e6e;
+  --ccd-coral-500: #d97757; /* brand base */
+  --ccd-coral-600: #c25e3d; /* fill on light / hover */
+  --ccd-coral-700: #a04a2e;
+  --ccd-coral-800: #7e3a24;
+  --ccd-coral-900: #5c2a1a;
 
-  --ccc-green-300: #86efac;
-  --ccc-green-400: #4ade80;
-  --ccc-green-500: #22c55e;
-  --ccc-green-600: #16a34a;
-  --ccc-green-700: #15803d;
+  --ccd-green-300: #86efac;
+  --ccd-green-400: #4ade80;
+  --ccd-green-500: #22c55e;
+  --ccd-green-600: #16a34a;
+  --ccd-green-700: #15803d;
 
-  --ccc-red-500: #ef4444;
-  --ccc-red-600: #dc2626;
+  --ccd-red-500: #ef4444;
+  --ccd-red-600: #dc2626;
 
-  --ccc-slate-50: #f8fafc;
-  --ccc-slate-100: #f1f5f9;
-  --ccc-slate-200: #e2e8f0;
-  --ccc-slate-300: #cbd5e1;
-  --ccc-slate-400: #94a3b8;
-  --ccc-slate-500: #64748b;
-  --ccc-slate-600: #475569;
-  --ccc-slate-700: #334155;
-  --ccc-slate-800: #1e293b;
-  --ccc-slate-900: #0f172a;
-  --ccc-slate-950: #020617;
+  --ccd-slate-50: #f8fafc;
+  --ccd-slate-100: #f1f5f9;
+  --ccd-slate-200: #e2e8f0;
+  --ccd-slate-300: #cbd5e1;
+  --ccd-slate-400: #94a3b8;
+  --ccd-slate-500: #64748b;
+  --ccd-slate-600: #475569;
+  --ccd-slate-700: #334155;
+  --ccd-slate-800: #1e293b;
+  --ccd-slate-900: #0f172a;
+  --ccd-slate-950: #020617;
 }
 
 /* ── 2. Semantic tokens — LIGHT (default) ─────────────────────────────────*/
 :root {
   color-scheme: light;
 
-  --background: var(--ccc-slate-50);
-  --foreground: var(--ccc-slate-900);
+  --background: var(--ccd-slate-50);
+  --foreground: var(--ccd-slate-900);
 
   --card: #ffffff;
-  --card-foreground: var(--ccc-slate-900);
+  --card-foreground: var(--ccd-slate-900);
 
-  --muted: var(--ccc-slate-100);
-  --muted-foreground: var(--ccc-slate-600);
+  --muted: var(--ccd-slate-100);
+  --muted-foreground: var(--ccd-slate-600);
 
-  --border: var(--ccc-slate-200);
-  --input: var(--ccc-slate-300);
-  --ring: var(--ccc-coral-500);
+  --border: var(--ccd-slate-200);
+  --input: var(--ccd-slate-300);
+  --ring: var(--ccd-coral-500);
 
   /* Neobrutalist border + hard offset shadow color. */
-  --ink: var(--ccc-slate-900);
+  --ink: var(--ccd-slate-900);
 
-  --primary: var(--ccc-coral-600);
-  --primary-hover: var(--ccc-coral-700);
+  --primary: var(--ccd-coral-600);
+  --primary-hover: var(--ccd-coral-700);
   --primary-foreground: #ffffff;
 
-  --accent: var(--ccc-coral-500);
-  --accent-soft: var(--ccc-coral-100);
-  --accent-foreground: var(--ccc-coral-700);
+  --accent: var(--ccd-coral-500);
+  --accent-soft: var(--ccd-coral-100);
+  --accent-foreground: var(--ccd-coral-700);
 
-  --link: var(--ccc-coral-700);
+  --link: var(--ccd-coral-700);
 
-  --success: var(--ccc-green-600);
+  --success: var(--ccd-green-600);
   --success-soft: #dcfce7;
-  --success-on-soft: var(--ccc-green-700);
+  --success-on-soft: var(--ccd-green-700);
   --success-foreground: #ffffff;
 
-  --destructive: var(--ccc-red-600);
+  --destructive: var(--ccd-red-600);
   --destructive-foreground: #ffffff;
 
   /* Chart tone palette — chart-scoped exception (documented). Not for general UI.
@@ -97,40 +97,40 @@
 .dark {
   color-scheme: dark;
 
-  --background: var(--ccc-slate-900);
-  --foreground: var(--ccc-slate-50);
+  --background: var(--ccd-slate-900);
+  --foreground: var(--ccd-slate-50);
 
   --card: #1b2336;
-  --card-foreground: var(--ccc-slate-50);
+  --card-foreground: var(--ccd-slate-50);
 
-  --muted: var(--ccc-slate-800);
-  --muted-foreground: var(--ccc-slate-400);
+  --muted: var(--ccd-slate-800);
+  --muted-foreground: var(--ccd-slate-400);
 
-  --border: var(--ccc-slate-700);
-  --input: var(--ccc-slate-700);
-  --ring: var(--ccc-coral-500);
+  --border: var(--ccd-slate-700);
+  --input: var(--ccd-slate-700);
+  --ring: var(--ccd-coral-500);
 
   /* Light ink in dark mode: the chunky border + offset shadow stay legible
      against the near-black page background (slate-950 would vanish on slate-900). */
-  --ink: var(--ccc-slate-200);
+  --ink: var(--ccd-slate-200);
 
-  --primary: var(--ccc-coral-500);
-  --primary-hover: var(--ccc-coral-400);
-  --primary-foreground: var(--ccc-slate-900);
+  --primary: var(--ccd-coral-500);
+  --primary-hover: var(--ccd-coral-400);
+  --primary-foreground: var(--ccd-slate-900);
 
-  --accent: var(--ccc-coral-500);
-  --accent-soft: color-mix(in srgb, var(--ccc-coral-500) 18%, transparent);
-  --accent-foreground: var(--ccc-coral-300);
+  --accent: var(--ccd-coral-500);
+  --accent-soft: color-mix(in srgb, var(--ccd-coral-500) 18%, transparent);
+  --accent-foreground: var(--ccd-coral-300);
 
-  --link: var(--ccc-coral-300);
+  --link: var(--ccd-coral-300);
 
-  --success: var(--ccc-green-500);
-  --success-soft: color-mix(in srgb, var(--ccc-green-500) 18%, transparent);
-  --success-on-soft: var(--ccc-green-300);
-  --success-foreground: var(--ccc-slate-900);
+  --success: var(--ccd-green-500);
+  --success-soft: color-mix(in srgb, var(--ccd-green-500) 18%, transparent);
+  --success-on-soft: var(--ccd-green-300);
+  --success-foreground: var(--ccd-slate-900);
 
-  --destructive: var(--ccc-red-500);
-  --destructive-foreground: var(--ccc-slate-900);
+  --destructive: var(--ccd-red-500);
+  --destructive-foreground: var(--ccd-slate-900);
 
   /* Chart tone palette — dark. Deep muted fills with lighter heading text. */
   --chart-neutral-bg: #1e293b; --chart-neutral-border: #334155; --chart-neutral-text: #e2e8f0;

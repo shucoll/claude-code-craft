@@ -1,4 +1,4 @@
-# Claude Code Craft
+# Claude Code Dojo
 
 Interactive, browser-based platform that teaches Claude Code via Beginner/
 Intermediate/Advanced pathways. Pure frontend, no backend.
@@ -8,20 +8,20 @@ Intermediate/Advanced pathways. Pure frontend, no backend.
 - Tailwind CSS v4 (CSS-first config; `@import "tailwindcss"` + `@custom-variant`;
   **no tailwind.config.js**)
 - Framer Motion (animations), MDX (lesson content) — added in later phases
-- State: React Context + localStorage (`ccc:` namespace)
+- State: React Context + localStorage (`ccd:` namespace)
 - Tests: Vitest + React Testing Library (jsdom)
 
 ## Conventions
 - TypeScript strict; no `any` in committed code.
 - Dark mode: `dark` class on `<html>`; never inline-toggle styles.
-- All localStorage keys live in `src/lib/storageKeys.ts`, namespaced `ccc:`.
+- All localStorage keys live in `src/lib/storageKeys.ts`, namespaced `ccd:`.
 - One responsibility per file; keep files small and focused.
 
 ## Design system
 - Tokens, type scale, and primitives: `design-system/MASTER.md`. Spec:
   `docs/superpowers/specs/2026-06-28-design-system-design.md`.
 - Consume **semantic tokens only** (`bg-background`, `text-primary`, `border-ink`) —
-  never raw hex or `--ccc-*` primitives.
+  never raw hex or `--ccd-*` primitives.
 - Brand = coral; green is reserved for success/completed. "Chunky" style (ink
   border + hard offset shadow) on `Button`/`Card`/`Badge` in `src/components/ui/`.
 

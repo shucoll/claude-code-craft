@@ -12,7 +12,7 @@ test('defaults to javascript when nothing is stored', () => {
 })
 
 test('reads a persisted language from localStorage', () => {
-  localStorage.setItem('ccc:lang', JSON.stringify('python'))
+  localStorage.setItem('ccd:lang', JSON.stringify('python'))
   const { result } = renderHook(() => useLanguage(), { wrapper })
   expect(result.current.language).toBe('python')
 })
@@ -21,7 +21,7 @@ test('setLanguage updates and persists', () => {
   const { result } = renderHook(() => useLanguage(), { wrapper })
   act(() => result.current.setLanguage('python'))
   expect(result.current.language).toBe('python')
-  expect(JSON.parse(localStorage.getItem('ccc:lang')!)).toBe('python')
+  expect(JSON.parse(localStorage.getItem('ccd:lang')!)).toBe('python')
 })
 
 test('useLanguage throws when used outside a provider', () => {
