@@ -6,7 +6,8 @@ type: "milestone"
 order: 5
 estimatedMinutes: 25
 volatility: "evolving"
-verifiedAgainstDocsAt: "2026-07-16"
+verifiedAgainstDocsAt: "2026-07-20"
+teaches: ["review-subagent", "separation-of-duties", "fresh-context-review"]
 prerequisites: ["I8.4"]
 references: ["I6.2", "I6.3"]
 docsSources: ["https://code.claude.com/docs/en/sub-agents"]
@@ -14,18 +15,145 @@ docsSources: ["https://code.claude.com/docs/en/sub-agents"]
 
 # Subagent review board
 
+The hooks from <LessonLink id="I8.4" /> made the machine-checkable standards non-negotiable: format, protected paths, passing tests. The standards a machine cannot check, whether the error handling is sound, whether a secret leaks into a log, whether the change is actually covered, still ride on judgment. This milestone gives the project two specialists that carry that judgment: a reviewer and a test-writer, each built for PulseBoard's conventions and wired into the working rhythm.
+
+The reviewer is the one that matters most. It reviews in a fresh window it cannot edit from, two deliberate choices doing two different jobs.
+
 ## Goal for this stage
 
-{/* @@TODO@@ The working artifact this milestone produces. */}
+Build two committed subagents in `.claude/agents/`: a `code-reviewer` that is structurally read-only, and a `test-writer` that fills coverage gaps. Then run them as a pipeline on a real change, implement then review then address then cover, so review becomes a step in the rhythm rather than something you remember to ask for.
+
+**Environment:** the PulseBoard repository. Creating the first file in a new `.claude/agents/` directory needs a session restart before it loads, the watcher caveat from <LessonLink id="I6.2" />; later edits are picked up live.
 
 ## Steps
 
-{/* @@TODO@@ The build steps for this stage. */}
+### 1. Build the read-only reviewer
+
+Two frontmatter choices define this agent, and both come from <LessonLink id="I6.2" />. The `tools` list has no `Write` or `Edit`, so "does not modify files" is enforced by the tool belt rather than requested in prose. And the body is a review checklist written for this codebase, so the reviewer arrives already knowing what PulseBoard cares about instead of being told each time.
+
+Create `.claude/agents/code-reviewer.md`:
+
+```markdown
+---
+name: code-reviewer
+description: Expert code reviewer for PulseBoard. Reviews changes for quality, security, and coverage. Use proactively immediately after writing or modifying code.
+tools: Read, Grep, Glob, Bash
+model: inherit
+memory: project
+---
+
+You are a senior code reviewer for PulseBoard, a GitHub project-health
+dashboard. The conventions you enforce are in CLAUDE.md.
+
+When invoked:
+1. Run `git diff` to see what changed.
+2. Review only the modified files.
+3. Check your memory for issues this project has hit before.
+4. Begin the review immediately, without asking what to look at.
+
+Review for:
+- Error handling on every GitHub API call and database query; both can fail.
+- Secrets in code or logs: the GitHub token is never hardcoded and never logged.
+- The data-access boundary: GitHub and SQLite access stays in the data module.
+  A route that reaches past it to the network or the database is a finding.
+- Input validation on the API routes.
+- Test coverage for the changed behavior.
+- Naming that will confuse someone in six months.
+
+Report findings in three groups: Critical (must fix), Warnings (should fix),
+Suggestions (consider). Give a specific fix for each.
+
+You do not modify files. If a fix is obvious, describe it.
+
+After the review, add any recurring pattern you noticed to your memory.
+```
+
+`model: inherit` keeps the review on whatever model the session is using, since judging soundness is not the kind of work you downgrade. `memory: project` lets the reviewer accumulate the mistakes this project keeps making, committed alongside the agent so the whole team inherits the sharper reviewer. Restart if the `agents` directory is new, then make a change and invoke it:
+
+```prompt
+@"code-reviewer (agent)" review my changes
+```
+
+What returns is the review, not the diff and file reads it worked from. Those stayed in the subagent's window.
+
+### 2. Build the test-writer
+
+Same file shape, a different job, and the difference is visible in `tools`.
+
+Create `.claude/agents/test-writer.md`:
+
+```markdown
+---
+name: test-writer
+description: Writes tests for PulseBoard code that lacks coverage. Use when asked to add tests or after new endpoints are written.
+tools: Read, Grep, Glob, Write, Edit, Bash
+model: sonnet
+---
+
+You are a test author for PulseBoard. The test framework, file layout, and
+commands are in CLAUDE.md.
+
+When invoked:
+1. Read the target code and the existing tests.
+2. Match the framework, file layout, and naming already in use.
+3. Cover the happy path, the boundaries, and the error paths, including a
+   failed GitHub API call and an empty result from the repository.
+4. Honor the house rule: every endpoint ships with a test.
+5. Run the suite and fix your own failures before reporting.
+
+Do not modify the code under test. If it is untestable as written, report
+that instead of changing it.
+
+Report what you added, what you deliberately did not cover, and why.
+```
+
+Writing tests means writing files, so `Write` and `Edit` are in the list. So "do not modify the code under test" cannot be enforced by the tool belt here: the same `Edit` tool writes the tests, so that rule lives in the prompt as a strong instruction rather than a guarantee. The reviewer cannot edit your code; the test-writer is asked not to. `model: sonnet` is a deliberate step down, since matching existing test patterns is pattern-work that runs fine a tier below the session's model.
+
+### 3. Run the board as a pipeline
+
+Run them in sequence on a real change: implement, review, address, cover.
+
+Make a small change to the dashboard, then:
+
+```prompt
+@"code-reviewer (agent)" review my changes
+```
+
+Read the findings, fix them yourself or ask Claude to, then hand the covered work to the other specialist:
+
+```prompt
+@"test-writer (agent)" add tests for the code I just changed
+```
+
+The two never speak to each other. As <LessonLink id="I6.3" /> established, the chain runs through Claude: the reviewer reports, you and Claude act on the report, and the test-writer is dispatched from where things stand now. Nothing passes window to window, which is why the reviewer's report needs to be specific enough to act on without the diff behind it.
+
+Run `/context` before and after. The review and the test-writing each read a stack of files, and almost none of it landed in your window, the isolation payoff from <LessonLink id="I6.1" />.
+
+### 4. Commit and push
+
+Both agents are project standards, so they belong in the repository.
+
+```prompt
+Commit the two agents under .claude/agents/ with a message naming each, then push.
+```
 
 ## The artifact
 
-{/* @@TODO@@ What "done" looks like; how to verify it works. */}
+At the end of this stage you have:
+
+- `.claude/agents/code-reviewer.md`, read-only by its `tools` list, carrying PulseBoard's review checklist, learning from `memory: project`.
+- `.claude/agents/test-writer.md`, able to write tests, told not to touch the code under test, running a tier down on `sonnet`.
+- A working rhythm, implement then review then cover, demonstrated on a real change and run through Claude rather than agent to agent.
+- Both committed and pushed.
+
+**Done looks like:** `@code-reviewer` returns grouped findings without editing anything, `@test-writer` adds passing tests for a change, and `/context` shows that neither one dragged its file reads into your main window.
 
 ## Reasoning recap
 
-{/* @@TODO@@ Why these choices — the transferable lesson behind the build. */}
+Two design choices carry this milestone.
+
+The first is **separation of duties**. The reviewer has no `Write` or `Edit`, so it is structurally incapable of changing the code it judges. A reviewer that can also fix tends to fix, and a fix folded silently into a review is a change nobody reviewed. Taking the tools away makes the boundary real instead of relying on the agent to respect it.
+
+The second is **fresh context**. The reviewer runs in its own window, and it has never seen the conversation where the code was written. In the implementation thread, every shortcut came with a reason that felt good at the time, and a reviewer sitting in that thread inherits all of it. A reviewer that starts cold with only the diff judges the code, not the story you told yourself building it. This is why review is a subagent and not a fresh prompt in the same session.
+
+Together with <LessonLink id="I8.4" />, the definition of done has moved twice now. The Stop hook made it "the tests pass." The review board makes it "reviewed by something that could not edit it, and covered by tests written against it." Next milestone, <LessonLink id="I8.6" />: you run a whole feature through the pipeline you have now assembled, and narrate which mechanism fires where.
