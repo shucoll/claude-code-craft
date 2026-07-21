@@ -1,0 +1,12 @@
+{
+  // Cloudflare Workers config for an assets-only deploy (no server code). `wrangler
+  // deploy` uploads the Vite build in ./dist and serves it from Cloudflare's edge.
+  "name": "claude-code-dojo",
+  "compatibility_date": "2026-07-21",
+  "assets": {
+    "directory": "./dist",
+    // Serve index.html (200) for any path without a matching file, so client-side
+    // routes like /learn/... survive hard refresh and shared deep links.
+    "not_found_handling": "single-page-application"
+  }
+}
