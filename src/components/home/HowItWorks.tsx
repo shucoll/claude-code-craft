@@ -1,5 +1,4 @@
-import { EnterButton } from './EnterButton'
-import { CLOSING, STEPS } from './homeContent'
+import { STEPS } from './homeContent'
 
 export function HowItWorks() {
   return (
@@ -17,12 +16,6 @@ export function HowItWorks() {
           </li>
         ))}
       </ol>
-
-      {/* Closing CTA band */}
-      <div className="mt-16 flex flex-col items-center gap-5 rounded-card border-2 border-ink bg-accent-soft px-6 py-12 text-center shadow-hard">
-        <p className="font-mono text-xl font-semibold text-accent-foreground">{CLOSING.line}</p>
-        <EnterButton />
-      </div>
     </section>
   )
 }

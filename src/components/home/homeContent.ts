@@ -5,7 +5,7 @@ export const HERO = {
   headline: 'Master Claude Code, lesson by lesson.',
   subhead:
     'An interactive course that takes you from your first edit to shipping real projects with Claude Code.',
-  reassurance: 'No signup. Runs in your browser.',
+  reassurance: 'Free and open source. No signup.',
 } as const
 
 export type PillarIcon = 'browser' | 'workflows' | 'charts' | 'milestones'
@@ -19,8 +19,8 @@ export interface Pillar {
 export const PILLARS: Pillar[] = [
   {
     icon: 'browser',
-    title: 'Hands-on in your browser',
-    body: 'Learn by doing, right here. Nothing to install before your first lesson, and you pick the language the examples speak.',
+    title: 'Learn here, build on your machine',
+    body: 'Read interactive lessons with diagrams and examples in the language you work in, nothing to install to start. When you are ready for real work, you set up Claude Code on your own machine and the lessons get you there.',
   },
   {
     icon: 'workflows',
@@ -52,6 +52,16 @@ export const STEPS: Step[] = [
 
 export const CLOSING = {
   line: 'Ready? Pick your level and start.',
+} as const
+
+export const TRUST = {
+  heading: 'Verified and open source',
+  docsTitle: 'Grounded in the official docs',
+  docsBody:
+    "Every lesson is built from Anthropic's official Claude Code documentation and links the exact pages it draws on. Claude Code moves fast, so doc changes are tracked and lessons kept current.",
+  openTitle: 'Free and open source',
+  openBody:
+    'No accounts, no paywalls. Read the source, open an issue, or send a fix on GitHub.',
 } as const
 
 export const FOOTER = {
