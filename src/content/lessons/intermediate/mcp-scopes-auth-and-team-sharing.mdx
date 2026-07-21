@@ -34,7 +34,7 @@ claude mcp add --transport http paypal --scope project https://mcp.paypal.com/mc
 claude mcp add --transport http hubspot --scope user https://mcp.hubspot.com/anthropic # user
 ```
 
-One naming trap: MCP's "local scope" is not the same file as the local *settings* scope you learned in I1.3. Settings use `.claude/settings.local.json` inside the project; MCP local-scoped servers go in `~/.claude.json` in your home directory, keyed by the project path. Same word, different file.
+One naming trap: MCP's "local scope" is not the same file as the local *settings* scope you learned in <LessonLink id="I1.3">I1.3</LessonLink>. Settings use `.claude/settings.local.json` inside the project; MCP local-scoped servers go in `~/.claude.json` in your home directory, keyed by the project path. Same word, different file.
 
 When a server name is defined at more than one scope, Claude Code connects once and takes the whole entry from the highest-precedence source. Fields are not merged.
 

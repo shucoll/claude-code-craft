@@ -166,8 +166,15 @@ footer.
      trailing "not X" antithesis or a cute metaphor payoff tacked onto a
      sentence that was already complete. Banned shapes: "so the room is on your
      map, not so you furnish it yet", "and nothing more, which for most people
-     is the correct amount", "not one clever session". If a clause only
-     re-states the sentence with attitude, delete it; keep the plain version.
+     is the correct amount", "not one clever session". A frequent offender is
+     the "X is not [dismissive little picture]; it is Y" shape — e.g. "The
+     connection is not a thing you set up on your laptop and describe to
+     teammates in a wiki. It is configuration in the repository". Drop the
+     dismissive-picture sentence and state Y plainly ("The connection is
+     configuration in the repository: teammates get it by cloning"). Also watch
+     defensive "not busywork / not a straw man / not hiding it" asides that
+     presume the reader's doubt. If a clause only re-states the sentence with
+     attitude, delete it; keep the plain version.
    - **No meta-narration of a section's own format.** Cut sentences that
      describe the shape of what follows rather than teaching it. Banned shapes:
      "No chart here, just an if/then walk", "here's a table", "what follows is",
@@ -203,6 +210,15 @@ footer.
      `<LessonLink id="B2.3" />` (renders the target lesson's title as a link;
      wrap custom text as `<LessonLink id="B2.3">as we saw earlier</LessonLink>`).
      The id must resolve — `check-snippets` fails on unknown ids.
+   - **Never leave a bare dotted id as plain text.** A lesson reference written
+     literally in prose (e.g. "from I8.1", "the rule I4.2 built", "you learned in
+     I1.3") must be a link, not inert text. When the sentence reads better with
+     the id showing than the title, keep the id as the visible label:
+     `<LessonLink id="I8.1">I8.1</LessonLink>` (possessives too:
+     `<LessonLink id="I8.1">I8.1</LessonLink>'s deny rule`). Otherwise use the
+     default title form. Grep the finished lesson for stragglers:
+     `grep -nE "[^\"/=]\b[IBA][0-9]+\.[0-9]+" <file>` and check every hit outside
+     frontmatter and code fences is inside a `<LessonLink>`.
    - **Inline links that leave the platform** (official docs, pricing,
      anthropic.com, any `http(s)://` URL) are just normal markdown links
      `[text](url)` — the MDX `a` renderer automatically opens them in a new tab

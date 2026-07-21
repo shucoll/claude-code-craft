@@ -43,7 +43,7 @@ Stand up the environment before a single line of application code exists: a `CLA
 
 ### 1. Design the permission policy on paper
 
-Before you write any config, decide the posture. PulseBoard will eventually hold a real GitHub token and talk to the network, so the policy is not busywork. The posture is **deny by default**: nothing runs unattended unless you allowed it, the routine commands are cleared once, and the things you never want touched are blocked outright. You met all three lists in <LessonLink id="I1.2" />; here you author them for a project on purpose rather than growing them by clicking.
+Before you write any config, decide the posture, because PulseBoard will eventually hold a real GitHub token and talk to the network. The posture is **deny by default**: nothing runs unattended unless you allowed it, the routine commands are cleared once, and the things you never want touched are blocked outright. You met all three lists in <LessonLink id="I1.2" />; here you author them for a project on purpose rather than growing them by clicking.
 
 Sort every action into one of four buckets:
 
@@ -124,7 +124,7 @@ and reads one GitHub repository through the GitHub API.
 
 </WhenLang>
 
-Keep it to what is true everywhere, every session. The two conventions about `.env` and migrations are the written form of the policy you designed in step 1: the record of intent that step 4's rules and I8.4's hook will enforce.
+Keep it to what is true everywhere, every session. The two conventions about `.env` and migrations are the written form of the policy you designed in step 1: the record of intent that step 4's rules and <LessonLink id="I8.4">I8.4</LessonLink>'s hook will enforce.
 
 ### 3. Split the slice-specific conventions into `.claude/rules/`
 
@@ -286,6 +286,6 @@ At the end of this stage you have:
 
 The lesson of this milestone is that **environment design is engineering, and it comes first**. At the beginner level `CLAUDE.md` was a note to your future self. Here the environment is a system with parts that enforce each other: the written convention in `CLAUDE.md` records the intent, the scoped rule delivers it at the right moment, the permission policy blocks what must never happen, and the hooks and subagents in later milestones enforce the promises a permission rule cannot keep. Building it first is what makes every later milestone cheaper, because each one drops into a project that already knows its own standards.
 
-The permission policy also surfaced a real boundary rather than hiding it. Protecting `.env` is a job a deny rule does completely. Protecting migrations is not, because "new files yes, edits no" is an exception, and a permission rule cannot carry one. Finding that limit here, on paper, is what sends the migration guard to <LessonLink id="I8.4" /> as a hook instead of a rule that would block your own build.
+The permission policy also surfaced a real boundary. Protecting `.env` is a job a deny rule does completely. Protecting migrations is not, because "new files yes, edits no" is an exception, and a permission rule cannot carry one. Finding that limit here, on paper, is what sends the migration guard to <LessonLink id="I8.4" /> as a hook instead of a rule that would block your own build.
 
 Next milestone, <LessonLink id="I8.2" />: you connect Claude to the repository you just pushed, adding the GitHub MCP server at project scope, and make the honest case for why MCP earns its place here over the `gh` CLI.
