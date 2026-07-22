@@ -7,7 +7,7 @@
 
 ### Learn Claude Code by doing.
 
-A free, community-built platform that teaches [Claude Code](https://docs.claude.com/en/docs/claude-code) through hands-on lessons across three pathways: Beginner, Intermediate, and Advanced.
+A free, open-source platform that teaches [Claude Code](https://docs.claude.com/en/docs/claude-code) through hands-on lessons across three pathways: Beginner, Intermediate, and Advanced.
 
 [![Live](https://img.shields.io/badge/Try%20it%20live-ccdojo.shucoll.com-D97757?style=flat-square)](https://ccdojo.shucoll.com)
 [![CI](https://img.shields.io/github/actions/workflow/status/shucoll/claude-code-dojo/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/shucoll/claude-code-dojo/actions/workflows/ci.yml)
@@ -21,9 +21,7 @@ A free, community-built platform that teaches [Claude Code](https://docs.claude.
 
 ## What it is
 
-Claude Code Dojo is a guided, browser-based course that takes you from your first session to advanced Claude Code workflows. Pick a level and a language, work through a hierarchy of lessons, and your progress persists across sessions. It is free, open source, and built by the community.
-
-No signups required. Open the platform and start.
+Claude Code Dojo is a guided, browser-based course that takes you from your first session to advanced Claude Code workflows. Pick a level and a language, work through a hierarchy of lessons, and your progress persists across sessions. Free, open source, and no signups required!
 
 <div align="center">
   <picture>
@@ -43,8 +41,6 @@ Lessons are mostly language-agnostic. Language selection applies only to the gui
 ## Contribute
 
 This is a community project, and fixes and improvements are welcome. If you spot a problem or want to propose a change or addition, please [open an issue](https://github.com/shucoll/claude-code-dojo/issues) first so it can be discussed. If you then decide to work on it, link your PR to that issue.
-
-Before opening a PR, run `npm run check-snippets` (also enforced in CI).
 
 ## Run it locally
 
