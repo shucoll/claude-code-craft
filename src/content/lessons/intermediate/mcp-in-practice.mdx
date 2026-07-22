@@ -6,7 +6,7 @@ type: "core"
 order: 3
 estimatedMinutes: 13
 volatility: "volatile"
-verifiedAgainstDocsAt: "2026-07-20"
+verifiedAgainstDocsAt: "2026-07-21"
 prerequisites: ["I5.2"]
 references: ["I2.1", "I1.2"]
 docsSources: ["https://code.claude.com/docs/en/mcp", "https://code.claude.com/docs/en/costs", "https://code.claude.com/docs/en/security"]
@@ -52,7 +52,7 @@ If you write servers, a tool can raise its own limit by declaring `_meta["anthro
 
 ### 2. Latency and moving parts
 
-Every connected server is a connection to establish or a process to launch at startup, inside a 30-second timeout. A stdio server that shells out to `npx` pays a cold start. A remote server pays the network, and can be down. If Claude needs a tool from a server still connecting, your request waits for it.
+Every connected server is a connection to establish or a process to launch at startup. A stdio server that shells out to `npx` pays a cold start. A remote server pays the network, and can be down. Startup is non-blocking by default: servers connect in the background, so the wait you actually feel is the first time Claude needs a tool from a server that has not finished connecting. (A server marked `alwaysLoad` is the exception, blocking startup until it connects, capped at a 5-second connect timeout.)
 
 This is the cost that scales with the number of servers you leave connected, and it is paid on every session rather than every call.
 
@@ -151,7 +151,7 @@ The discipline that replaces the old ration-your-servers advice is not "connect 
 
 - **You raise the output limit globally to fix one server.** Now every server may spend 50,000 tokens on a single call. Prefer narrowing the query, or ask the server's author for the per-tool annotation.
 
-- **Startup gets slower and you blame the model.** Each connected server is a startup connection with a 30-second budget. `claude mcp list` shows which ones are slow or failing; disable the ones you are not using.
+- **First calls stall and you blame the model.** Each server connects in the background at startup, and a tool call waits if its server is still connecting or failing. `claude mcp list` shows which ones are slow or failing; disable the ones you are not using.
 
 - **You keep a server connected for a capability you never invoke.** It costs latency, adds to the haystack, and, for a third-party server, keeps a trust relationship open for no return.
 
