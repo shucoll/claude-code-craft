@@ -1,3 +1,15 @@
+# Security headers for every response. This is a static SPA with no backend and no
+# innerHTML sinks, so these are defense-in-depth. The CSP allows Google Fonts and the
+# inline styles that Tailwind v4 and Framer Motion inject; script-src stays 'self'
+# because Vite emits only bundled, hashed modules and index.html has no inline scripts.
+# HSTS is intentionally omitted here — enable it at the Cloudflare edge instead.
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), interest-cohort=()
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'
+
 # Vite fingerprints every file in /assets with a content hash, so the URL changes
 # whenever the bytes do. That makes them safe to cache forever. index.html is left
 # on Cloudflare's default (revalidated) so a new deploy is picked up immediately.
