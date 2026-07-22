@@ -147,46 +147,15 @@ footer.
      entirely if the lesson doesn't need language-specific examples
 
 3. Fill content:
-   - **Prose style: use em-dashes (—) minimally, ideally none.** Reach for
-     periods, commas, colons, or parentheses instead. Overusing em-dashes makes
-     lessons read as machine-authored; keep them rare across all lesson prose.
-   - **No self-referential emphasis.** Never announce that something is
-     important — state it plainly and let it carry itself. Banned shapes:
-     "that is exactly what X resolves", "this is the whole point / the whole
-     answer / the entire point", "is exactly why/what", "and it matters",
-     "worth slowing down for", "hold onto it", "that is the whole game".
-     Also drop filler `exactly`/`precisely` before a comparison ("exactly the
-     shape from B4.1" → "the shape from B4.1"); precise-equality uses are fine
-     ("back exactly where it started").
-   - **Say each point once.** Don't repeat an insight or a cross-link in two
-     sections (e.g. a body step and the recap). Put it where it lands best.
-   - **Avoid "honestly"** as a filler adverb.
-   - **No unnecessary flourish clauses.** Cut the extra clever clause that adds
-     no information and often reads as aggressive or arch. It is usually a
-     trailing "not X" antithesis or a cute metaphor payoff tacked onto a
-     sentence that was already complete. Banned shapes: "so the room is on your
-     map, not so you furnish it yet", "and nothing more, which for most people
-     is the correct amount", "not one clever session". A frequent offender is
-     the "X is not [dismissive little picture]; it is Y" shape — e.g. "The
-     connection is not a thing you set up on your laptop and describe to
-     teammates in a wiki. It is configuration in the repository". Drop the
-     dismissive-picture sentence and state Y plainly ("The connection is
-     configuration in the repository: teammates get it by cloning"). Also watch
-     defensive / presuming-the-reader asides that add no content: "not
-     busywork", "not a straw man", "not hiding it", "and they are easy to
-     conflate", "that is not a nicety", "a consequence worth naming". And cut
-     self-referential importance tags: "its design is the lesson", "that
-     absence is the feature", "the point of X is". If a clause only re-states
-     the sentence with attitude or announces that something matters, delete it;
-     keep the plain version.
-   - **No meta-narration of a section's own format.** Cut sentences that
-     describe the shape of what follows rather than teaching it. Banned shapes:
-     "No chart here, just an if/then walk", "here's a table", "what follows is",
-     "in this section we". Present the ladder/table/example directly.
-
-     These are standing user preferences, flagged repeatedly across reviews.
-     Grep the finished lesson before claiming it done:
-     `grep -niE "exactly (what|why|the)|the whole (point|answer|game)|and it matters|honestly|—" <file>`
+   - **Follow the lesson style guide: `docs/lesson-style-guide.md`.** It is the
+     canonical, up-to-date home for the prose rules (em-dashes minimal/none, no
+     self-referential emphasis, say each point once, no "honestly", no flourish
+     clauses, no section meta-narration) and the content-mechanics rules (fence
+     discipline, no bare dotted ids outside `<LessonLink>`, every inline external
+     URL in `docsSources`). These are standing user preferences, flagged
+     repeatedly across reviews. Run the grep commands in the guide before calling
+     a lesson done, and read the prose for the judgment rules; the `lesson-style`
+     subagent checks a lesson against this guide and reports what it flags.
    - The scaffolder writes the anatomy for the chosen `--type` as headings with
      `@@TODO@@` guidance comments describing what belongs in each section
      (e.g. `core` gets "The problem" → "The concept" → "How it works" →
@@ -210,32 +179,42 @@ footer.
      language pack). Pass `--snippets`/`--prompts` at scaffold time to stub
      those ids in the default pack, then write the real code there and add
      idiomatic versions to the other packs (e.g. `python.ts`).
-   - **Cross-reference other lessons inline** with
-     `<LessonLink id="B2.3" />` (renders the target lesson's title as a link;
-     wrap custom text as `<LessonLink id="B2.3">as we saw earlier</LessonLink>`).
-     The id must resolve — `check-snippets` fails on unknown ids.
-   - **Never leave a bare dotted id as plain text.** A lesson reference written
-     literally in prose (e.g. "from I8.1", "the rule I4.2 built", "you learned in
-     I1.3") must be a link, not inert text. When the sentence reads better with
-     the id showing than the title, keep the id as the visible label:
-     `<LessonLink id="I8.1">I8.1</LessonLink>` (possessives too:
-     `<LessonLink id="I8.1">I8.1</LessonLink>'s deny rule`). Otherwise use the
-     default title form. Grep the finished lesson for stragglers:
-     `grep -nE "[^\"/=]\b[IBA][0-9]+\.[0-9]+" <file>` and check every hit outside
-     frontmatter and code fences is inside a `<LessonLink>`.
+   - **Cross-reference other lessons inline with `<LessonLink>`** —
+     `<LessonLink id="B2.3" />` renders the target lesson's title, or wrap custom
+     text: `<LessonLink id="B2.3">as we saw earlier</LessonLink>`. The id must
+     resolve (`check-snippets` fails on unknown ids). Never leave a bare dotted id
+     as plain text in prose; the style guide covers that rule, the id-as-label
+     forms, and the grep to catch stragglers.
    - **Inline links that leave the platform** (official docs, pricing,
      anthropic.com, any `http(s)://` URL) are just normal markdown links
-     `[text](url)` — the MDX `a` renderer automatically opens them in a new tab
-     and appends the `↗` marker, so don't hand-roll `target`/`rel`. **Every
-     external URL you link inline must also appear in the lesson's `docsSources`**
-     so it shows up in the auto "Official docs" footer (the footer is the
-     canonical list of outbound links; inline links are a subset of it). Add the
-     URL to frontmatter and rerun `npm run gen:curriculum` if you linked it
-     inline first. Internal navigation uses `<LessonLink>`, not a raw link.
+     `[text](url)`; the MDX `a` renderer opens them in a new tab and appends the
+     `↗` marker, so don't hand-roll `target`/`rel`. Every such URL must also be
+     in the lesson's `docsSources` (see the style guide); add it to frontmatter
+     and rerun `npm run gen:curriculum` if you linked it inline first. Internal
+     navigation uses `<LessonLink>`, not a raw link.
 4. Verify: `npm run check-snippets` — this is now the full content check
    (frontmatter validation + snippet/prompt coverage). Resolve every `ERROR`
    before finishing; warnings (fallback gaps, leftover `@@TODO@@` stubs) are
    fine to leave for a later pass.
+5. **Style-check the finished lesson.** Once the content is written and
+   `check-snippets` is green, **automatically dispatch the `lesson-style`
+   subagent** at the lesson (by dotted id or slug). It is read-only and returns a
+   flag-only report against `docs/lesson-style-guide.md`. A lesson is not done
+   until it has been through this check.
+
+   When the report comes back, **do not apply anything blindly.** Analyze each
+   flag and decide whether it is a real violation or a false positive:
+   - `CLEAR` flags are usually genuine; `REVIEW` flags are judgment calls — weigh
+     each in context. Prose rules do not apply to simulated file/terminal content
+     inside fences, so discard flags that misfire there.
+   - Keep only the flags that genuinely need a fix; drop the rest, and be ready to
+     say why you dropped them.
+
+   **Then verify with the user before editing.** Show the flags you judged valid
+   and the specific change you propose for each, and get their go-ahead. Only
+   after they approve do you make the edits, then re-run `npm run check-snippets`
+   (and `npm run gen:curriculum` if you touched frontmatter). Never apply
+   style edits without user confirmation.
 
 ## New levels/modules
 
@@ -286,4 +265,7 @@ Levels and modules are hand-authored containers, not generated. Either:
    — this also runs `gen:curriculum` at the end.
 4. Fill lessons incrementally (as above). `npm run check-snippets` reports what
    remains; leftover `@@TODO@@` stubs are warnings, not errors, so a skeleton
-   can be committed and finished over several passes.
+   can be committed and finished over several passes. Run the **step-5
+   style-check** on each lesson as you finish it (dispatch `lesson-style`,
+   analyze, verify with the user, then apply) — a lesson counts as done only
+   after it passes that check.

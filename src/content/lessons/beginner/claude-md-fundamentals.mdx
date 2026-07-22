@@ -6,7 +6,7 @@ type: "core"
 order: 1
 estimatedMinutes: 14
 volatility: "stable"
-verifiedAgainstDocsAt: "2026-07-09"
+verifiedAgainstDocsAt: "2026-07-21"
 prerequisites: ["B2.1"]
 teaches: ["claude-md", "init", "standing-instructions"]
 references: ["B2.2"]
@@ -25,7 +25,7 @@ Every instruction you find yourself repeating is a gap in your setup, not a flaw
 
 ## The concept
 
-**`CLAUDE.md` is a markdown file that Claude reads at the start of every session.** That is the idea. Put a fact in it and Claude knows that fact every time, without you saying anything.
+**`CLAUDE.md` is a markdown file that Claude reads at the start of every session.** Put a fact in it and Claude knows that fact every time, without you saying anything.
 
 It is the place for what you would otherwise re-explain: how to build the project, how to run the tests, the conventions this codebase follows, the one non-obvious thing that trips up every newcomer.
 
@@ -59,7 +59,7 @@ Claude walks up the directory tree from wherever you launched, collecting `CLAUD
 
 Files in *sub*directories behave differently: they load on demand, only once Claude reads a file in that directory.
 
-One detail explains a loose end from <LessonLink id="B2.2" />: **the project-root `CLAUDE.md` survives compaction.** Afterwards Claude re-reads it from disk and re-injects it. An instruction you merely typed into the conversation gets no such treatment. That is the mechanical reason "put durable rules in `CLAUDE.md`" is real advice rather than tidiness.
+One detail explains a loose end from <LessonLink id="B2.2" />: **the project-root `CLAUDE.md` survives compaction.** Afterwards Claude re-reads it from disk and re-injects it. An instruction you merely typed into the conversation gets no such treatment.
 
 ### What `/init` generates
 
@@ -69,7 +69,7 @@ You do not write the first draft by hand.
 /init
 ```
 
-Claude reads your codebase and writes a starting `CLAUDE.md` from what it finds: the build system, the test runner, the scripts in your package manifest, the conventions it can infer from the code. If a `CLAUDE.md` already exists, `/init` proposes improvements rather than overwriting it. If the repo has an `AGENTS.md`, or config from other coding tools, `/init` reads those too and folds in the relevant parts.
+Claude reads your codebase and writes a starting `CLAUDE.md` from what it finds: the build system, the test runner, the scripts in your package manifest, the conventions it can infer from the code. If a `CLAUDE.md` already exists, `/init` proposes improvements rather than overwriting it. If the repo carries rules from other coding tools, `/init` reads Cursor rules (`.cursor/rules/`, `.cursorrules`) and Copilot rules (`.github/copilot-instructions.md`) and folds in the relevant parts. It does not pick up an existing `AGENTS.md` on its own; to reuse one, import it from your `CLAUDE.md` with `@AGENTS.md`.
 
 Treat its output as **a first draft by someone who has read your code but never worked on it.** It is good at the discoverable facts and blind to everything else. Everything else is your job.
 
@@ -163,11 +163,11 @@ Reach for something else when:
 - **It changes frequently.** A stale file is worse than no file, because Claude believes it.
 - **Claude can discover it by reading the code.** Then it is not information, it is cost.
 
-**The cost, stated plainly:** `CLAUDE.md` loads in full at the start of every session, however long it is. Target **under 200 lines.** Past that you are paying context on every session and, worse, diluting the rules you actually care about. The second half of that sentence is the one that bites.
+**The cost, stated plainly:** `CLAUDE.md` loads in full at the start of every session, however long it is. Target **under 200 lines.** Past that you are paying context on every session and, worse, diluting the rules you actually care about.
 
 ## Pitfalls
 
-- **The bloated file.** The most common failure by far. If Claude keeps ignoring a rule you definitely wrote down, the file is probably too long and the rule is drowning. Apply the test to every line: would removing this cause a mistake? If not, delete it.
+- **The bloated file.** The most common failure by far. If Claude keeps ignoring a rule you definitely wrote down, the file is probably too long and the rule is drowning. Apply the removal test to every line and delete the ones that fail it.
 - **Vague instructions.** "Write good tests" changes nothing. Claude cannot verify it, so it cannot comply with it. Every rule should be concrete enough that *you* could check it.
 - **Documenting what the code already says.** A file-by-file description of the repo is pure cost. Claude reads the repo.
 - **Contradicting yourself.** When two rules conflict, across your user file and the project file, or across a monorepo's nested files, Claude may pick one arbitrarily. Review the whole set periodically, not each file alone.
@@ -190,26 +190,26 @@ One small trick: block-level HTML comments (`<!-- note to maintainers -->`) are 
    - IMPORTANT: never edit files under `dist/`. They are generated.
    ```
 
-4. Run `/memory` and confirm your file is listed as loaded.
+4. Run `/context` and confirm your file appears under **Memory files**.
 5. **Start a fresh session** (`/clear` is enough) and ask Claude to make a small change that your conventions apply to. Say nothing about the conventions.
 
-**Success criteria:** Claude follows both conventions unprompted, and you can name which generated lines you deleted and why. If it ignores a rule, make that rule more specific and try again. That iteration *is* the skill.
+**Success criteria:** Claude follows both conventions unprompted, and you can name which generated lines you deleted and why. If it ignores a rule, make that rule more specific and try again.
 
 ## FAQ
 
-**What is `CLAUDE.md`, and when is it read?** A markdown file of standing instructions, loaded into context at the start of every session, and re-injected from disk after compaction (for the project-root file). It is a message to Claude, not enforced configuration.
+**What is `CLAUDE.md`, and when is it read?** A markdown file of standing instructions, loaded into context at the start of every session. It is a message to Claude, not enforced configuration.
 
 **What belongs in it?** Bash commands Claude cannot guess, code style rules that differ from the defaults, testing instructions, repository etiquette, environment quirks, project-specific architectural decisions, and non-obvious gotchas.
 
 **What does not belong?** Anything Claude can learn by reading the code, standard language conventions it already knows, detailed API documentation (link to it instead), information that changes often, long explanations, file-by-file repo descriptions, and self-evident advice like "write clean code."
 
-**What does `/init` actually generate?** A first draft from analyzing your codebase: build system, test framework, scripts, and inferable conventions. It reads an existing `AGENTS.md` or other tools' config files if present, and it suggests improvements rather than overwriting an existing `CLAUDE.md`.
+**What does `/init` actually generate?** A first draft from analyzing your codebase: build system, test framework, scripts, and inferable conventions. It also folds in Cursor and Copilot rule files if present, and it suggests improvements rather than overwriting an existing `CLAUDE.md`. It does not read an existing `AGENTS.md` by default; import that into `CLAUDE.md` with `@AGENTS.md` to reuse it.
 
-**Project or user-level?** Ask whether a new teammate would need it. A team fact goes in the committed `./CLAUDE.md`. A personal preference across all your projects goes in `~/.claude/CLAUDE.md`. Personal *and* project-specific goes in `./CLAUDE.local.md`, gitignored.
+**Project or user-level?** A team fact goes in the committed `./CLAUDE.md`. A personal preference across all your projects goes in `~/.claude/CLAUDE.md`. Personal *and* project-specific goes in `./CLAUDE.local.md`, gitignored.
 
-**How big is too big?** Target under 200 lines. `CLAUDE.md` loads in full however long it is, so length costs you on every session and dilutes the rules you care about. Growth is a signal to move things into rules or skills.
+**How big is too big?** Target under 200 lines. Growth past that is a signal to move things into rules or skills.
 
-**Why is Claude ignoring my instruction?** Three usual causes, in order of likelihood: the file is too long and the rule is lost; the rule is too vague to act on; or the file is not being loaded at all, which `/memory` tells you in seconds.
+**Why is Claude ignoring my instruction?** Three usual causes, in order of likelihood: the file is too long and the rule is lost; the rule is too vague to act on; or the file is not being loaded at all, which `/context` tells you in seconds.
 
 **Can I split it up?** Yes, with `@path` imports. Be aware that imported files still load at launch, so it helps organization, not context cost. To genuinely reduce cost you want path-scoped rules.
 
