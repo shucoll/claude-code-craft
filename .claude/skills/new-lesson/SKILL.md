@@ -196,6 +196,25 @@ footer.
    (frontmatter validation + snippet/prompt coverage). Resolve every `ERROR`
    before finishing; warnings (fallback gaps, leftover `@@TODO@@` stubs) are
    fine to leave for a later pass.
+5. **Style-check the finished lesson.** Once the content is written and
+   `check-snippets` is green, **automatically dispatch the `lesson-style`
+   subagent** at the lesson (by dotted id or slug). It is read-only and returns a
+   flag-only report against `docs/lesson-style-guide.md`. A lesson is not done
+   until it has been through this check.
+
+   When the report comes back, **do not apply anything blindly.** Analyze each
+   flag and decide whether it is a real violation or a false positive:
+   - `CLEAR` flags are usually genuine; `REVIEW` flags are judgment calls — weigh
+     each in context. Prose rules do not apply to simulated file/terminal content
+     inside fences, so discard flags that misfire there.
+   - Keep only the flags that genuinely need a fix; drop the rest, and be ready to
+     say why you dropped them.
+
+   **Then verify with the user before editing.** Show the flags you judged valid
+   and the specific change you propose for each, and get their go-ahead. Only
+   after they approve do you make the edits, then re-run `npm run check-snippets`
+   (and `npm run gen:curriculum` if you touched frontmatter). Never apply
+   style edits without user confirmation.
 
 ## New levels/modules
 
@@ -246,4 +265,7 @@ Levels and modules are hand-authored containers, not generated. Either:
    — this also runs `gen:curriculum` at the end.
 4. Fill lessons incrementally (as above). `npm run check-snippets` reports what
    remains; leftover `@@TODO@@` stubs are warnings, not errors, so a skeleton
-   can be committed and finished over several passes.
+   can be committed and finished over several passes. Run the **step-5
+   style-check** on each lesson as you finish it (dispatch `lesson-style`,
+   analyze, verify with the user, then apply) — a lesson counts as done only
+   after it passes that check.

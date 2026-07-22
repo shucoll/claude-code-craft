@@ -72,6 +72,14 @@ Rule slugs: `em-dash`, `self-referential-emphasis`, `say-once`, `honestly`,
 `flourish-clause`, `meta-narration`, `fence-discipline`, `bare-id`,
 `external-url-not-in-docsSources`. A clean lesson reports just `Style: CLEAN`.
 
+## Integration with new-lesson
+
+The `new-lesson` skill dispatches `lesson-style` automatically as the final step
+of authoring each lesson (single and batch flows). The main session analyzes the
+returned flags, discards false positives, and **verifies the proposed fixes with
+the user before applying any edit** — the agent stays read-only; the human
+approves the changes.
+
 ## Invariants respected
 
 - The guide is the only place the rules are defined; consumers point at it.
