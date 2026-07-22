@@ -8,6 +8,11 @@ not in either consumer.
 Two groups: **prose rules** (judgment calls about voice) and **content mechanics**
 (near-deterministic conventions about fences, links, and ids).
 
+The prose rules apply to **lesson prose**, not to simulated file or terminal
+content inside code fences. Em-dashes, phrasing, and the like inside a ` ```text `,
+` ```bash `, or sample-config block are showing the reader realistic content, so
+they are exempt — judge them for accuracy and fence type, not voice.
+
 ## Prose rules
 
 - **Use em-dashes (—) minimally, ideally none.** Reach for periods, commas,
